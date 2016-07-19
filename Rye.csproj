@@ -1,0 +1,201 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\Antlr4.4.5-alpha003\build\Antlr4.props" Condition="Exists('..\packages\Antlr4.4.5-alpha003\build\Antlr4.props')" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{0185E174-5D5B-4B00-AA74-8C7F117F9A81}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Rye</RootNamespace>
+    <AssemblyName>Rye</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Antlr4.Runtime, Version=4.5.0.0, Culture=neutral, PublicKeyToken=e9931a4108ef2354, processorArchitecture=MSIL">
+      <HintPath>..\packages\Antlr4.Runtime.4.5-alpha003\lib\net45\Antlr4.Runtime.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Aggregates\Aggregate.cs" />
+    <Compile Include="Aggregates\AggregateAverage.cs" />
+    <Compile Include="Aggregates\AggregateCorrelation.cs" />
+    <Compile Include="Aggregates\AggregateCount.cs" />
+    <Compile Include="Aggregates\AggregateCountAll.cs" />
+    <Compile Include="Aggregates\AggregateCountNull.cs" />
+    <Compile Include="Aggregates\AggregateCovariance.cs" />
+    <Compile Include="Aggregates\AggregateFactory.cs" />
+    <Compile Include="Aggregates\AggregateFreq.cs" />
+    <Compile Include="Aggregates\AggregateIntercept.cs" />
+    <Compile Include="Aggregates\AggregateMax.cs" />
+    <Compile Include="Aggregates\AggregateMin.cs" />
+    <Compile Include="Aggregates\AggregateCollection.cs" />
+    <Compile Include="Aggregates\AggregateSlope.cs" />
+    <Compile Include="Aggregates\AggregateStat.cs" />
+    <Compile Include="Aggregates\AggregateStatCo.cs" />
+    <Compile Include="Aggregates\AggregateStdevP.cs" />
+    <Compile Include="Aggregates\AggregateSum.cs" />
+    <Compile Include="Aggregates\AggregateVarianceP.cs" />
+    <Compile Include="Data\Cell.cs" />
+    <Compile Include="Data\CellAffinity.cs" />
+    <Compile Include="Data\CellAffinityHelper.cs" />
+    <Compile Include="Data\CompoundRecord.cs" />
+    <Compile Include="Data\DataSet.cs" />
+    <Compile Include="Data\Header.cs" />
+    <Compile Include="Data\Kernel.cs" />
+    <Compile Include="Data\Key.cs" />
+    <Compile Include="Data\KeyAffinity.cs" />
+    <Compile Include="Data\Record.cs" />
+    <Compile Include="Data\RecordComparer.cs" />
+    <Compile Include="Data\RecordWriter.cs" />
+    <Compile Include="Data\Schema.cs" />
+    <Compile Include="Expressions\Register.cs" />
+    <Compile Include="Expressions\SystemFunctions.cs" />
+    <Compile Include="Expressions\Expression.cs" />
+    <Compile Include="Expressions\ExpressionAffinity.cs" />
+    <Compile Include="Expressions\Analytics.cs" />
+    <Compile Include="Expressions\ExpressionMatrixRef.cs" />
+    <Compile Include="Expressions\Optimizer.cs" />
+    <Compile Include="Expressions\ExpressionComparer.cs" />
+    <Compile Include="Expressions\Builder.cs" />
+    <Compile Include="Expressions\ExpressionFieldRef.cs" />
+    <Compile Include="Expressions\GradientCalculator.cs" />
+    <Compile Include="Expressions\ExpressionHeapRef.cs" />
+    <Compile Include="Expressions\ExpressionPointer.cs" />
+    <Compile Include="Expressions\ExpressionFunction.cs" />
+    <Compile Include="Expressions\ExpressionCollection.cs" />
+    <Compile Include="Expressions\ExpressionValue.cs" />
+    <Compile Include="Expressions\Lambda.cs" />
+    <Compile Include="Expressions\Filter.cs" />
+    <Compile Include="Data\Matrix.cs" />
+    <Compile Include="Helpers\BooleanParserHelper.cs" />
+    <Compile Include="Helpers\Splitter.cs" />
+    <Compile Include="Interpreter\CommandVisitor.cs" />
+    <Compile Include="Interpreter\CompilerHelper.cs" />
+    <Compile Include="Interpreter\Exceptions.cs" />
+    <Compile Include="Interpreter\ExpressionVisitor.cs" />
+    <Compile Include="Interpreter\MatrixExpressionVisitor.cs" />
+    <Compile Include="Interpreter\MethodVisitor.cs" />
+    <Compile Include="Interpreter\RyeLexer.g4.cs">
+      <DependentUpon>RyeLexer.g4</DependentUpon>
+    </Compile>
+    <Compile Include="Interpreter\RyeParser.g4.cs">
+      <DependentUpon>RyeParser.g4</DependentUpon>
+    </Compile>
+    <Compile Include="Interpreter\RyeScriptProcessorcs.cs" />
+    <Compile Include="Interpreter\Workspace.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpression.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionAdd.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionAddScalar.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionCheckDivide.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionCheckDivideScalar.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionDivide.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionDivideScalar.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionHeap.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionIdentity.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionInverse.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionLiteral.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionMatrixMultiply.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionMinus.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionMultiply.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionMultiplyScalar.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionSubtract.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionSubtractScalar.cs" />
+    <Compile Include="MatrixExpressions\MatrixExpressionTranspose.cs" />
+    <Compile Include="Methods\Method.cs" />
+    <Compile Include="Methods\MethodAppendTo.cs" />
+    <Compile Include="Methods\MethodAppendToAsync.cs" />
+    <Compile Include="Methods\MethodAssignScalar.cs" />
+    <Compile Include="Methods\MethodBeginEnd.cs" />
+    <Compile Include="Methods\MethodEscapeLoop.cs" />
+    <Compile Include="Methods\MethodEscapeRead.cs" />
+    <Compile Include="Methods\MethodFor.cs" />
+    <Compile Include="Methods\MethodGeneric.cs" />
+    <Compile Include="Methods\MethodIf.cs" />
+    <Compile Include="Methods\MethodMatrixAssign.cs" />
+    <Compile Include="Methods\MethodMatrixUnitAssign.cs" />
+    <Compile Include="Methods\MethodNothing.cs" />
+    <Compile Include="Methods\MethodCollection.cs" />
+    <Compile Include="Methods\MethodWhile.cs" />
+    <Compile Include="Structures\FileStructure.cs" />
+    <Compile Include="Expressions\FunctionLibrary.cs" />
+    <Compile Include="Structures\Heap.cs" />
+    <Compile Include="Methods\ProcedureLibrary.cs" />
+    <Compile Include="Methods\StructureMethod.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Query\AggregateProcess.cs" />
+    <Compile Include="Query\DeleteProcess.cs" />
+    <Compile Include="Query\JoinProcess.cs" />
+    <Compile Include="Query\QueryProcess.cs" />
+    <Compile Include="Query\SelectProcess.cs" />
+    <Compile Include="Query\UpdateProcess.cs" />
+    <Compile Include="Structures\MemoryStructure.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <Antlr4 Include="Interpreter\RyeLexer.g4">
+      <Generator>MSBuild:Compile</Generator>
+      <CustomToolNamespace>Rye.Interpreter</CustomToolNamespace>
+    </Antlr4>
+    <Antlr4 Include="Interpreter\RyeParser.g4">
+      <Generator>MSBuild:Compile</Generator>
+      <CustomToolNamespace>Rye.Interpreter</CustomToolNamespace>
+    </Antlr4>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Content Include="Interpreter\TestScript.txt" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Antlr4.4.5-alpha003\build\Antlr4.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Antlr4.4.5-alpha003\build\Antlr4.props'))" />
+    <Error Condition="!Exists('..\packages\Antlr4.4.5-alpha003\build\Antlr4.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Antlr4.4.5-alpha003\build\Antlr4.targets'))" />
+  </Target>
+  <Import Project="..\packages\Antlr4.4.5-alpha003\build\Antlr4.targets" Condition="Exists('..\packages\Antlr4.4.5-alpha003\build\Antlr4.targets')" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

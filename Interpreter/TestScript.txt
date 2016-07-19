@@ -1,0 +1,73 @@
+﻿
+// ---------------------------------- Connect to a disk sink ---------------------------------- //
+CONNECT
+{
+	TEMP, 'C:\Users\pwdlu_000\Documents\Data\TempDB';
+};
+
+// ---------------------------------- LOAD OUR DATA ---------------------------------- //
+DECLARE
+{
+	GLOBAL.TICKS AS INT = 0;
+};
+
+	/*
+
+	CREATE TABLE TEMP.TEST_DATA SIZE 100000
+	{
+		KEY AS INT,
+		B_VALUE AS BOOL,
+		I_VALUE AS INT,
+		T_VALUE AS DATE,
+		D_VALUE AS DOUBLE,
+		S_VALUE AS STRING.32,
+		H_VALUE AS BLOB.32
+	};
+
+
+
+	FOR GLOBAL.I = 1 TO 500000
+	DO
+	{
+
+		APPEND
+		{
+			TEMP.TEST_DATA;
+			GLOBAL.I AS KEY,
+			(GLOBAL.I % 3 == 0 ? TRUE : FALSE) AS B_VALUE,
+			GLOBAL.I % 25 AS I_VALUE,
+			NOW() - GLOBAL.I * 1000 AS T_VALUE,
+			RAND(20160101) * 2D - 1D AS D_VALUE,
+			TOUTF16(SUBSTR(SHA1(RAND(127) -> BLOB), 0, 4)) AS S_VALUE,
+			SHA1(RAND(127) -> BLOB) AS H_VALUE
+			;
+		};
+
+	};
+
+*/
+
+// ---------------------------------- SELECT DATA ---------------------------------- //
+READ
+{
+	FROM TEMP.TEST_DATA;
+	THREADS = 2;
+};
+DECLARE
+{
+	LOCAL.TICKS AS INT = 0;
+};
+MAP
+{
+	LOCAL.TICKS++;
+};
+REDUCE
+{
+	GLOBAL.TICKS += LOCAL.TICKS;
+};
+
+
+
+
+
+
