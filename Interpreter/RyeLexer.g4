@@ -101,6 +101,7 @@ K_PARTITIONS : P A R T I T I O N S | T H R E A D S;
 K_PRINT : P R I N T;
 K_READ : R E A D;
 K_REDUCE : R E D U C E;
+K_RETAIN : R E T A I N;
 K_RIGHT : R I G H T;
 K_SET : S E T;
 K_SIZE : S I Z E;

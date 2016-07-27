@@ -621,10 +621,10 @@ namespace Rye.Data
                 return new Cell(NewAffinity);
 
             // Check nulls //
-            if (Value.Trim().ToUpper() == Cell.NULL_STRING_TEXT)
+            if (Value.ToUpper() == Cell.NULL_STRING_TEXT)
                 return new Cell(NewAffinity);
 
-            string Value2 = RemoveFirstLastQuotes(Value);
+            //string Value2 = RemoveFirstLastQuotes(Value);
 
             // Negative //
             bool Minus = false;
@@ -636,7 +636,7 @@ namespace Rye.Data
 
             // Clean up numerics //
             if (NewAffinity == CellAffinity.DOUBLE || NewAffinity == CellAffinity.INT)
-                Value = Value.Replace("%", "").Replace("%", "").Replace(",", "");
+                Value = Value.Replace("%", "").Replace(",", "");
 
             // Set value //
             switch (NewAffinity)
@@ -649,31 +649,31 @@ namespace Rye.Data
                     }
                     if (Minus)
                     {
-                        return new Cell(-long.Parse(Value));
+                        return new Cell(-long.Parse(Value.Trim()));
                     }
                     else
                     {
-                        return new Cell(long.Parse(Value));
+                        return new Cell(long.Parse(Value.Trim()));
                     }
 
                 case CellAffinity.DOUBLE:
                     if (!IsNumeric(Value, true))
                         return NULL_DOUBLE;
                     if (Minus)
-                        return new Cell(-double.Parse(Value));
-                    return new Cell(double.Parse(Value));
+                        return new Cell(-double.Parse(Value.Trim()));
+                    return new Cell(double.Parse(Value.Trim()));
 
                 case CellAffinity.BOOL:
-                    return new Cell(bool.Parse(Value));
+                    return new Cell(bool.Parse(Value.Trim()));
 
                 case CellAffinity.DATE_TIME:
-                    return DateParse(Value2);
+                    return DateParse(Value.Trim());
 
                 case CellAffinity.STRING:
-                    return new Cell(Value2);
+                    return new Cell(Value); // No parsing
 
                 case CellAffinity.BLOB:
-                    return ByteParse(Value);
+                    return ByteParse(Value.Trim());
 
                 default:
                     return new Cell(NewAffinity);
@@ -2770,7 +2770,7 @@ namespace Rye.Data
                 C.AFFINITY = Type;
                 if (Type == CellAffinity.BOOL || Type == CellAffinity.INT || Type == CellAffinity.DATE_TIME || Type == CellAffinity.DOUBLE)
                 {
-                    C = Cell.TryParse(C.STRING, Type);
+                    C = Cell.TryParse(C.STRING == null ? null : C.STRING.Trim(), Type);
                     //C.INT = 0;
                     return C;
                 }
@@ -3165,13 +3165,13 @@ namespace Rye.Data
                 C.BLOB = b;
                 return C;
             }
-            else if (C.AFFINITY == CellAffinity.STRING)
+            else //if (C.AFFINITY == CellAffinity.STRING)
             {
                 if (Position + Length > C.valueSTRING.Length || Position < 0 || Length < 0)
                     return Cell.NULL_STRING;
                 return new Cell(C.valueSTRING.Substring((int)Position, (int)Length));
             }
-            return new Cell(C.AFFINITY);
+            //return new Cell(C.AFFINITY);
 
         }
 

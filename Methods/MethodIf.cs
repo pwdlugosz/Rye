@@ -20,6 +20,9 @@ namespace Rye.Methods
         public MethodIf(Method Parent, Filter Condition)
             : base(Parent)
         {
+
+            if (Condition.Node.IsVolatile)
+                throw new ArgumentException("The predicate in an if-statement cannot be volaitle");
             this._Condition = Condition;
         }
 
@@ -54,14 +57,11 @@ namespace Rye.Methods
 
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("If");
-            for (int i = 0; i < this._Children.Count; i++)
+            sb.AppendLine("\t" + this._Children[0].Message());
+            if (this._Children.Count >= 2)
             {
-
-                if (i != this._Children.Count - 1)
-                    sb.AppendLine('\t' + this._Children[i].Message());
-                else
-                    sb.Append('\t' + this._Children[i].Message());
-
+                sb.AppendLine("Else");
+                sb.AppendLine("\t" + this._Children[1].Message());
             }
             return sb.ToString();
 

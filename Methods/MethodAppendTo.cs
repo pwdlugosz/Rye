@@ -52,7 +52,7 @@ namespace Rye.Methods
 
         public override string Message()
         {
-            return "Apend";
+            return string.Format("Append: {0}", this._writes);
         }
 
         public override Method CloneOfMe()

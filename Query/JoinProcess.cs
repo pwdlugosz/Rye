@@ -40,7 +40,7 @@ namespace Rye.Query
 
         public override void Invoke()
         {
-            this.Clicks = this._BaseAlgorithm.VolumeJoin(this._BaseType, this._V1, this._M1, this._V2, this._M2, this._RC, this._F, this._C, this._W);
+            this.IOCalls = this._BaseAlgorithm.VolumeJoin(this._BaseType, this._V1, this._M1, this._V2, this._M2, this._RC, this._F, this._C, this._W);
         }
 
         public override void EndInvoke()
@@ -48,10 +48,15 @@ namespace Rye.Query
             this._W.Close();
         }
 
-        public long Clicks
+        public long IOCalls
         {
             get;
             protected set;
+        }
+
+        public long ActualCost
+        {
+            get { return this._RC.Clicks; }
         }
 
     }
@@ -59,17 +64,24 @@ namespace Rye.Query
     public class JoinConsolidation : QueryConsolidation<JoinProcessNode>
     {
 
-        public long Clicks
+        public long IOCalls
         {
             get;
             protected set;
+        }
+
+        public long ActualCost
+        {
+            get;
+            private set;
         }
 
         public override void Consolidate(List<JoinProcessNode> Nodes)
         {
             foreach (JoinProcessNode n in Nodes)
             {
-                this.Clicks += n.Clicks;
+                this.IOCalls += n.IOCalls;
+                this.ActualCost += n.ActualCost;
             }
         }
 
@@ -281,7 +293,6 @@ namespace Rye.Query
             return -1;
 
         }
-
 
         // E x E //
         public abstract long InnerJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory, RecordComparer JoinPredicate,
@@ -666,7 +677,6 @@ namespace Rye.Query
 
         }
 
-
     }
 
     /// <summary>
@@ -846,7 +856,7 @@ namespace Rye.Query
             // If either table is empty, just return //
             if (LeftVolume.RecordCount == 0 || RightVolume.RecordCount == 0)
                 return 0L;
-
+            
             // Check the sort //
             this.CheckSort(LeftVolume, JoinPredicate.LeftKey);
             this.CheckSort(RightVolume, JoinPredicate.RightKey);
@@ -864,7 +874,9 @@ namespace Rye.Query
 
                 // Get the first record compare //
                 CompareResult = JoinPredicate.Compare(left.Memory.Value, right.Memory.Value);
-                
+
+                //Console.WriteLine("{0} : {1} : {2}", CompareResult, Record.Split(left.Memory.Value, JoinPredicate.LeftKey), Record.Split(right.Memory.Value, JoinPredicate.RightKey));
+
                 // If CompareResult > 0, left is higher than right, need to advance right //
                 if (CompareResult > 0)
                 {
@@ -884,6 +896,7 @@ namespace Rye.Query
                         if (Where.Render())
                         {
                             OutputStream.Insert(Output.Evaluate());
+                            clicks++;
                         }
                         RightMemory.Value = r;
                     }
@@ -954,6 +967,7 @@ namespace Rye.Query
                     if (Where.Render())
                     {
                         OutputStream.Insert(Output.Evaluate());
+                        clicks++;
                     }
 
                     left.Advance();
@@ -1115,14 +1129,14 @@ namespace Rye.Query
 
         private void CheckSort(Volume Datum, Key K)
         {
-            if (Datum.IsSortedBy(K))
+            if (Key.EqualsStrong(Datum.SortKey, K))
                 return;
             Datum.Sort(K);
         }
 
         private void CheckSort(Extent Datum, Key K)
         {
-            if (Datum.IsSortedBy(K))
+            if (Key.EqualsStrong(Datum.SortBy, K))
                 return;
             Datum.Sort(K);
         }

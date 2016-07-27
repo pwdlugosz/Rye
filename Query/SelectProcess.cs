@@ -45,7 +45,6 @@ namespace Rye.Query
             : base(ThreadID)
         {
 
-
             this._data = Data;
 
             this._main = Main;
@@ -61,11 +60,13 @@ namespace Rye.Query
             }
             else
             {
+
                 this._key1 = KeyChange;
                 this._peek = new Register("PEEK", this._data.Columns);
                 this._key2 = this._key1.CloneOfMe();
-                this._key2.AssignMemoryRegister(this._key1.GetMemoryRegisters()[0].UID, this._peek);
+                this._key2.AssignMemoryRegister(this._key2.GetMemoryRegisters()[0], this._peek);
                 this._hasKC = true;
+
             }
 
         }
@@ -99,7 +100,9 @@ namespace Rye.Query
         public override void Invoke()
         {
 
-            Console.WriteLine("{0} thread ID", System.Threading.Thread.CurrentThread.ManagedThreadId);
+            // Burn if no records //
+            if (this._data.RecordCount == 0)
+                return;
 
             // Open a stream to read data //
             RecordReader stream = this._data.OpenReader(this._main, this._where);
@@ -109,6 +112,9 @@ namespace Rye.Query
 
             // Create a bool trip flag for the first record //
             bool first = true;
+
+            // Set the initial register for the where clause //
+            this._main.Value = stream.Read();
 
             // Traverse the stream //
             while (!stream.EndOfData)

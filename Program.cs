@@ -17,31 +17,26 @@ namespace Rye
 
             System.Diagnostics.Stopwatch sw = Stopwatch.StartNew();
 
-            string script = System.IO.File.ReadAllText(@"C:\Users\pwdlu_000\Documents\Rye\Rye\Interpreter\TestScript.txt");
+            // Open the file to get the script //
+            string script = System.IO.File.ReadAllText(@"C:\Users\pwdlu_000\Documents\Rye\Rye\Interpreter\TestScript.rye");
             Kernel.TempDirectory = @"C:\Users\pwdlu_000\Documents\Data\TempDB";
+
+            // Render a Workspace
             Workspace enviro = new Workspace();
             enviro.AllowAsync = true;
-            enviro.Structures.Allocate("FILE", new Structures.FileStructure());
+
+            // Add in the structures //
+            enviro.Structures.Allocate(Structures.FileStructure.STRUCT_NAME, new Structures.FileStructure());
+            enviro.Structures.Allocate(Structures.TableStructure.STRUCT_NAME, new Structures.TableStructure(enviro));
+
+            // Create a script process //
             RyeScriptProcessor runner = new RyeScriptProcessor(enviro);
+
+            // Run the script //
             runner.Execute(script);
+
+            // Close down the kernel space //
             Kernel.ShutDown();
-
-            //Extent e = new Extent(new Schema("KEY INT, VALUE DOUBLE"));
-            //for (int i = 0; i < 1000; i++)
-            //{
-            //    RecordBuilder rb = new RecordBuilder();
-            //    rb.Add(i);
-            //    rb.Add(3.1415);
-            //    e.Add(rb.ToRecord());
-            //}
-
-            //Register mem = new Register(e.Columns);
-            //ModeStep m = new ModeStep(e.CreateVolume(), mem);
-            //while (!m.AtEnd)
-            //{
-            //    Console.WriteLine(mem.Value);
-            //    m.Advance();
-            //}
 
             sw.Stop();
             Console.WriteLine("::::::::::::::::::::::::::::::::: Complete :::::::::::::::::::::::::::::::::");

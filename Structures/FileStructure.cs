@@ -176,6 +176,8 @@ namespace Rye.Structures
                 this._CompressedSig.Allocate(FileProcedureLibrary.DELETE, "Deletes a file", "PATH|The file to delete|E|false");
                 this._CompressedSig.Allocate(FileProcedureLibrary.MOVE, "Moves a file to another location", "FROM_PATH|The original file to move|E|false;TO_PATH|The new location to move to|E|false");
                 this._CompressedSig.Allocate(FileProcedureLibrary.COPY, "Copies a file to another location", "FROM_PATH|The original file to copy|E|false;TO_PATH|The path to put the copy in|E|false");
+                this._CompressedSig.Allocate(FileProcedureLibrary.IMPORT, "Loads a file into an existing table", "DATA|The table to load|T|false;PATH|The flat file location|E|false;DELIM|The column delimitor|E|false;ESCAPE|The escape sequence character|E|true;SKIP|The number of lines to skip|E|true");
+                this._CompressedSig.Allocate(FileProcedureLibrary.EXPORT, "Exports a table into a new file", "DATA|The table to export|T|false;PATH|The path to the exported file|E|false;DELIM|The column delimitor|E|false");
                 
             }
 
@@ -203,7 +205,10 @@ namespace Rye.Structures
                         return this.KappaMove(Parent, Parameters);
                     case FileProcedureLibrary.COPY: 
                         return this.KappaCopy(Parent, Parameters);
-                    
+                    case FileProcedureLibrary.IMPORT:
+                        return this.KappaImport(Parent, Parameters);
+                    case FileProcedureLibrary.EXPORT:
+                        return this.KappaExport(Parent, Parameters);
                 }
                 throw new ArgumentException(string.Format("Method '{0}' does not exist in '{1}'", Name, this._Caller.Name));
 
@@ -407,8 +412,8 @@ namespace Rye.Structures
                     DataSet Data = x.Tables["DATA"];
                     string Path = x.Expressions["PATH"].Evaluate().valueSTRING;
                     char[] Delim = x.Expressions["DELIM"].Evaluate().valueSTRING.ToCharArray();
-                    char Escape = (x.Expressions.Exists("ESCAPE") ? x.Expressions["ESCAPE"].Evaluate().valueSTRING.First() : char.MaxValue);
-                    int Skip = (x.Expressions.Exists("SKIP") ? (int)x.Expressions["SKIP"].Evaluate().valueINT : 0);
+                    char Escape = (x.Expressions["ESCAPE"] != null ? x.Expressions["ESCAPE"].Evaluate().valueSTRING.First() : char.MaxValue);
+                    int Skip = (x.Expressions["SKIP"] != null ? (int)x.Expressions["SKIP"].Evaluate().valueINT : 0);
                     Kernel.TextPop(Data, Path, Delim, Escape, Skip);
 
                 };

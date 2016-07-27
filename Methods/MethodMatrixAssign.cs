@@ -33,7 +33,7 @@ namespace Rye.Methods
 
         public override string Message()
         {
-            return "Matrix Assign";
+            return string.Format("Matrix assignment '{0}'", this._Heap.Matricies.Name(this._ref));
         }
 
         public override Method CloneOfMe()

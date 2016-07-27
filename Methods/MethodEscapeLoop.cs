@@ -30,7 +30,7 @@ namespace Rye.Methods
 
         public override string Message()
         {
-            return "Break Loop";
+            return "Escape Loop";
         }
 
         public override Method CloneOfMe()

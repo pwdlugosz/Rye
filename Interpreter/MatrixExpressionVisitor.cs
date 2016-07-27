@@ -195,9 +195,9 @@ namespace Rye.Interpreter
             if (this._structs.Exists(sname))
             {
 
-                if (this._structs[mname].Matricies.Exists(mname))
+                if (this._structs[sname].Matricies.Exists(mname))
                 {
-                    return new MatrixExpressionHeap(this._parent, this._structs[mname].Matricies, this._structs.GetPointer(mname));
+                    return new MatrixExpressionHeap(this._parent, this._structs[sname].Matricies, this._structs[sname].Matricies.GetPointer(mname));
                 }
                 else
                 {

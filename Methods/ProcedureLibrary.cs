@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Rye.Expressions;
 using Rye.Data;
 using Rye.Structures;
+using Rye.Interpreter;
 
 namespace Rye.Methods
 {
@@ -14,7 +15,7 @@ namespace Rye.Methods
     {
 
         protected MemoryStructure _Caller;
-
+        
         public ProcedureLibrary(MemoryStructure Caller)
         {
             this._Caller = Caller;
@@ -41,6 +42,38 @@ namespace Rye.Methods
             get { return this.Names.Length; }
         }
 
+        public sealed class EmptyLibrary : ProcedureLibrary
+        {
+
+            public EmptyLibrary()
+                : base(null)
+            {
+            }
+
+            public override Method RenderMethod(Method Parent, string Name, ParameterCollection Parameters)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override ParameterCollectionSigniture RenderSigniture(string Name)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override string[] Names
+            {
+                get { throw new NotImplementedException(); }
+            }
+
+        }
+
+        public static EmptyLibrary NullLibrary
+        {
+            get { return new EmptyLibrary(); }
+        }
+
     }
+
+    
 
 }

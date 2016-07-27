@@ -136,6 +136,7 @@
     <Compile Include="MatrixExpressions\MatrixExpressionSubtract.cs" />
     <Compile Include="MatrixExpressions\MatrixExpressionSubtractScalar.cs" />
     <Compile Include="MatrixExpressions\MatrixExpressionTranspose.cs" />
+    <Compile Include="Methods\MethodMatrixAllAssign.cs" />
     <Compile Include="Methods\Method.cs" />
     <Compile Include="Methods\MethodAppendTo.cs" />
     <Compile Include="Methods\MethodAppendToAsync.cs" />
@@ -165,6 +166,7 @@
     <Compile Include="Query\SelectProcess.cs" />
     <Compile Include="Query\UpdateProcess.cs" />
     <Compile Include="Structures\MemoryStructure.cs" />
+    <Compile Include="Structures\TableStructure.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -180,7 +182,7 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <Content Include="Interpreter\TestScript.txt" />
+    <None Include="Interpreter\TestScript.rye" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

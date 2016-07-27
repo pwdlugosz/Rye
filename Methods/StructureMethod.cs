@@ -417,7 +417,12 @@ namespace Rye.Methods
 		         return this._CanBeAsync;
 	        }
         }
-    
+
+        public override string Message()
+        {
+            return string.Format("Structure Method: {0}", this.Name);
+        }
+
     }
 
     public sealed class DynamicStructureMethod : StructureMethod

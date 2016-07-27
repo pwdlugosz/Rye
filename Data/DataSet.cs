@@ -786,6 +786,7 @@ namespace Rye.Data
         {
             lock (this._lock)
             {
+
                 long OldCount = this._Refs[(int)ID][OFFSET_COUNT].INT;
                 this.Header.BigRecordCount += (RecordCount - OldCount);
                 this._Refs[(int)ID][OFFSET_COUNT] = new Cell(RecordCount);
@@ -940,7 +941,8 @@ namespace Rye.Data
 
         public override void PreSerialize()
         {
-            
+            this._Head.KeyCount = this._OrderBy.Count;
+            this._Head.Stamp();
         }
 
         internal virtual void CursorClose(Extent Data)
@@ -972,7 +974,7 @@ namespace Rye.Data
                 Extent e = Kernel.RequestBufferExtent(h.Path);
 
                 // Check if it is sorted //
-                if (!Key.EqualsStrict(e.SortBy, OrderBy))
+                if (!Key.EqualsStrong(e.SortBy, OrderBy))
                 {
                     Clicks += e.SortC(OrderBy);
                 }
@@ -997,7 +999,7 @@ namespace Rye.Data
                 Extent e = Data.GetExtent(idx);
 
                 // Check if it is sorted //
-                if (!Key.EqualsStrict(e.SortBy, OrderBy))
+                if (!Key.EqualsStrong(e.SortBy, OrderBy))
                 {
                     Clicks += e.SortC(OrderBy);
                 }
@@ -1096,7 +1098,7 @@ namespace Rye.Data
             
             // Step one: sort all shards //
             Clicks += Table.SortEach(Data, OrderBy);
-
+            
             // if only one shard, break //
             if (Data.ExtentCount == 1) 
                 return Clicks;
@@ -1238,6 +1240,44 @@ namespace Rye.Data
         public override RecordWriter OpenWriter()
         {
             return new TableWriter(this);
+        }
+
+        public string Debug()
+        {
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine(string.Format("Name: {0}", this.Name));
+            sb.AppendLine(string.Format("Directory: {0}", this.Header.Directory));
+            sb.AppendLine(string.Format("Memory Cost: {0}", this.MemCost));
+            sb.AppendLine(string.Format("Disk Cost: {0}", this.DiskCost));
+            sb.AppendLine(string.Format("Record Count: {0}", this.RecordCount));
+            sb.AppendLine(string.Format("Extent Count: {0}", this.ExtentCount));
+            sb.AppendLine(string.Format("Columns:"));
+            for (int i = 0; i < this.Columns.Count; i++)
+            {
+                sb.AppendLine(string.Format("\t{0} : {1} : {2} : {3}", this.Columns.ColumnName(i), this.Columns.ColumnAffinity(i), this.Columns.ColumnSize(i), this.Columns.ColumnNull(i)));
+            }
+            sb.AppendLine(string.Format("Extent Map:"));
+            for (int i = 0; i < this._Refs.Count; i++)
+            {
+                sb.AppendLine(string.Format("\t{0} : {1} ", this._Refs[i][0], this._Refs[i][1]));
+            }
+            sb.AppendLine(string.Format("Header Map:"));
+            for (int i = 0; i < this._Refs.Count; i++)
+            {
+                sb.AppendLine(this.RenderHeader(i).Path);
+            }
+            if (this.IsSorted)
+            {
+                sb.AppendLine(string.Format("Sorted By: {0}", this.SortBy.ToString()));
+            }
+            else
+            {
+                sb.AppendLine("Not Sorted");
+            }
+
+            return sb.ToString();
+
         }
 
         // Private classes //
@@ -2607,7 +2647,7 @@ namespace Rye.Data
         {
             get
             {
-                if (this.EndOfData == true) 
+                if (this.EndOfData == true || this._Memory.Value == null) 
                     return false;
                 return this._Where.Render();
             }

@@ -26,6 +26,11 @@ namespace Rye.Methods
             return new MethodNothing(this.Parent);
         }
 
+        public override string Message()
+        {
+            return "Nothing";
+        }
+
     }
 
 }

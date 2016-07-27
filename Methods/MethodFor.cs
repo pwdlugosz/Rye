@@ -16,18 +16,24 @@ namespace Rye.Methods
     public sealed class MethodFor : Method
     {
 
-        private int _Current;
-        private int _Begin;
-        private int _End;
+        private long _Current;
+        private Expression _Begin;
+        private Expression _End;
         private int _ptrControll;
 
-        public MethodFor(Method Parent, int Begin, int End, MemoryStructure Heap, int CellPointer)
+        public MethodFor(Method Parent, Expression Begin, Expression End, MemoryStructure Heap, int CellPointer)
             : base(Parent)
         {
+            if (Begin.IsVolatile)
+                throw new ArgumentException("The 'Begin' variable cannot be volatible in a for-loop");
+            if (End.IsVolatile)
+                throw new ArgumentException("The 'End' variable cannot be volatile in a for-loop");
+            
             this._Begin = Begin;
             this._End = End;
             this._Heap = Heap;
             this._ptrControll = CellPointer;
+
         }
         
         public override void BeginInvoke()
@@ -45,8 +51,10 @@ namespace Rye.Methods
         public override void Invoke()
         {
 
-            Cell c = new Cell((long)this._Begin);
-            for (this._Current = this._Begin; this._Current <= this._End; this._Current++)
+            long Begin = this._Begin.Evaluate().valueINT;
+            long End = this._End.Evaluate().valueINT;
+            Cell c = new Cell(Begin);
+            for (this._Current = Begin; this._Current <= End; this._Current++)
             {
 
                 // Assign the controll variable //
@@ -74,15 +82,10 @@ namespace Rye.Methods
         {
 
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("For-Loop");
+            sb.AppendLine(string.Format("For Loop: {0} to {1}", this._Begin.Evaluate(), this._End.Evaluate()));
             for (int i = 0; i < this._Children.Count; i++)
             {
-
-                if (i != this._Children.Count - 1)
-                    sb.AppendLine('\t' + this._Children[i].Message());
-                else
-                    sb.Append('\t' + this._Children[i].Message());
-
+                sb.AppendLine('\t' + this._Children[i].Message());
             }
             return sb.ToString();
 

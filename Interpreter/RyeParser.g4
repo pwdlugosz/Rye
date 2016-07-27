@@ -32,7 +32,7 @@ command
 command_debug
 	: DEBUG_DUMP table_name COMMA expression SEMI_COLON;
 
-// Connect / Disconnect //
+// ------------------------------------------ Connect / Disconnect ------------------------------------------ //
 command_connect
 	: K_CONNECT LCURL (connect_unit SEMI_COLON)+ RCURL SEMI_COLON
 	;
@@ -43,7 +43,7 @@ connect_unit
 	: IDENTIFIER (COMMA | K_TO)? expression
 	;
 
-// Create table //
+// ------------------------------------------ Create Table ------------------------------------------ //
 command_create
 	: K_CREATE (K_TABLE)? table_name (K_SIZE LITERAL_INT)? 
 	LCURL 
@@ -54,7 +54,7 @@ create_unit
 	: IDENTIFIER K_AS type
 	;
 
-// Declare //
+// ------------------------------------------ Declare ------------------------------------------ //
 command_declare
 	: K_DECLARE LCURL ((unit_declare_scalar | unit_declare_matrix) SEMI_COLON)+ RCURL SEMI_COLON
 	;
@@ -62,10 +62,10 @@ unit_declare_scalar
 	: IDENTIFIER DOT IDENTIFIER K_AS type (ASSIGN expression)
 	;
 unit_declare_matrix 
-	: IDENTIFIER DOT IDENTIFIER LBRAC expression COMMA expression RBRAC K_AS type
+	: IDENTIFIER DOT IDENTIFIER LBRAC expression (COMMA expression)? RBRAC K_AS type
 	;
 
-// Sort //
+// ------------------------------------------ Sort ------------------------------------------ //
 command_sort
 	: K_SORT LCURL 
 		K_FROM table_name SEMI_COLON
@@ -76,7 +76,7 @@ command_sort
 	;
 sort_unit : IDENTIFIER (K_ASC | K_DESC)?;
 
-// Read //
+// ------------------------------------------ Read ------------------------------------------ //
 command_read
 	: K_READ 
 	base_clause
@@ -92,7 +92,7 @@ reduce_clause
 	: K_REDUCE LCURL method* RCURL SEMI_COLON
 	;
 
-// Aggregate //
+// ------------------------------------------ Aggregate ------------------------------------------ //
 command_aggregate
 	: K_AGGREGATE
 	base_clause
@@ -104,14 +104,14 @@ over_clause
 	: (K_OVER LCURL beta_reduction_list SEMI_COLON RCURL SEMI_COLON)
 	;
 
-// Update //
+// ------------------------------------------ Update ------------------------------------------ //
 command_update
 	: K_UPDATE
 	base_clause
 	K_SET LCURL (IDENTIFIER ASSIGN expression SEMI_COLON)+ RCURL SEMI_COLON
 	;
 
-// Delete //
+// ------------------------------------------ Delete ------------------------------------------ //
 command_delete
 	: K_DELETE
 	base_clause
@@ -119,7 +119,7 @@ command_delete
 
 // Union //
 
-// Join //
+// ------------------------------------------ Join ------------------------------------------ //
 command_join
 	: K_JOIN
 	LCURL 
@@ -140,7 +140,7 @@ join_on_unit
 	: IDENTIFIER DOT IDENTIFIER (EQ | ASSIGN | K_TO) IDENTIFIER DOT IDENTIFIER
 	;
 
-// Query support //
+// ------------------------------------------ Query support ------------------------------------------ //
 by_clause
 	: K_BY LCURL expression_or_wildcard_set SEMI_COLON RCURL SEMI_COLON
 	;
@@ -152,11 +152,16 @@ base_clause
 		RCURL SEMI_COLON
 	;
 
+// ----------------------------------------------------------------------------------------------------- //
+// ---------------------------------------------- ACTIONS ---------------------------------------------- //
+// ----------------------------------------------------------------------------------------------------- //
+
 // Actions //
 command_method : method;
 method
 	: variable_assign																									# ActScalarAssign // x = y
-	| K_PRINT expression_or_wildcard_set SEMI_COLON																		# ActPrint // %print 'hello world!!!';
+	| K_PRINT expression_or_wildcard_set SEMI_COLON																		# ActPrint // print 'hello world!!!';
+	| K_PRINT matrix_expression SEMI_COLON																				# ActPrintMat // Print matrix[]
 	| append_method																										# ActAppend // Return A, B AS C, D * E / F AS G
 	| K_ESCAPE K_FOR SEMI_COLON																							# ActEscapeFor
 	| K_ESCAPE K_READ SEMI_COLON																						# ActEscapeRead
@@ -173,7 +178,7 @@ method
 
 // Append table method //
 append_method
-	: K_APPEND LCURL (K_NEW)? table_name SEMI_COLON expression_or_wildcard_set SEMI_COLON RCURL SEMI_COLON
+	: K_APPEND LCURL (K_NEW)? table_name SEMI_COLON (K_RETAIN expression_or_wildcard_set SEMI_COLON) RCURL SEMI_COLON
 	;
 
 // Structure Methods //
@@ -201,11 +206,19 @@ matrix_unit_assign
 	| IDENTIFIER DOT IDENTIFIER LBRAC expression COMMA expression RBRAC AUTO_INC SEMI_COLON					# MUnit2DAutoInc
 	| IDENTIFIER DOT IDENTIFIER LBRAC expression COMMA expression RBRAC DEC expression SEMI_COLON			# MUnit2DDec
 	| IDENTIFIER DOT IDENTIFIER LBRAC expression COMMA expression RBRAC AUTO_DEC SEMI_COLON					# MUnit2DAutoDec
+
 	| IDENTIFIER DOT IDENTIFIER LBRAC expression RBRAC ASSIGN expression SEMI_COLON							# MUnit1DAssign
 	| IDENTIFIER DOT IDENTIFIER LBRAC expression RBRAC INC expression SEMI_COLON							# MUnit1DInc
 	| IDENTIFIER DOT IDENTIFIER LBRAC expression RBRAC AUTO_INC SEMI_COLON									# MUnit1DAutoInc
 	| IDENTIFIER DOT IDENTIFIER LBRAC expression RBRAC DEC expression SEMI_COLON							# MUnit1DDec
 	| IDENTIFIER DOT IDENTIFIER LBRAC expression RBRAC AUTO_DEC SEMI_COLON									# MUnit1DAutoDec
+
+	| IDENTIFIER DOT IDENTIFIER LBRAC RBRAC ASSIGN expression SEMI_COLON									# MAllAssign
+	| IDENTIFIER DOT IDENTIFIER LBRAC RBRAC INC expression SEMI_COLON										# MAllInc
+	| IDENTIFIER DOT IDENTIFIER LBRAC RBRAC AUTO_INC SEMI_COLON												# MAllAutoInc
+	| IDENTIFIER DOT IDENTIFIER LBRAC RBRAC DEC expression SEMI_COLON										# MAllDec
+	| IDENTIFIER DOT IDENTIFIER LBRAC RBRAC AUTO_DEC SEMI_COLON												# MAllAutoDec
+
 	;
 
 // Assign //
@@ -217,10 +230,10 @@ variable_assign
 	| IDENTIFIER DOT IDENTIFIER AUTO_DEC SEMI_COLON					# ActAutoDec
 	;
 
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-	Matricies:
+// ----------------------------------------------------------------------------------------------------- //
+// ----------------------------------------------- MATRIX ---------------------------------------------- //
+// ----------------------------------------------------------------------------------------------------- //
 
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */ 
  matrix_expression
 	: MINUS matrix_expression															# MatrixMinus
 	| NOT matrix_expression																# MatrixInvert
@@ -252,10 +265,10 @@ vector_literal
 	: LCURL expression (COMMA expression)* RCURL
 	;
 
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-	Beta Reductions:
+// ----------------------------------------------------------------------------------------------------- //
+// --------------------------------------------- AGGREGATES -------------------------------------------- //
+// ----------------------------------------------------------------------------------------------------- //
 
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */ 
  beta_reduction_list 
 	: beta_reduction (COMMA beta_reduction)*
 	;
@@ -263,10 +276,10 @@ vector_literal
 	: SET_REDUCTIONS LPAREN (expression_alias_list)? RPAREN (where_clause)? (K_AS IDENTIFIER)?
 	;
 
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-	Expressions:
+// ----------------------------------------------------------------------------------------------------- //
+// --------------------------------------------- EXPRESSIONS ------------------------------------------- //
+// ----------------------------------------------------------------------------------------------------- //
 
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */ 
  // Lambdas //
 //lambda_unit
 //	: K_LAMBDA IDENTIFIER LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN LAMBDA expression	# LambdaGeneric
@@ -330,14 +343,16 @@ expression
 	| LPAREN expression RPAREN																			# Parens
 	;
 
-/*
+// ----------------------------------------------------------------------------------------------------- //
+// --------------------------------------------- BASE SUPPORT ------------------------------------------ //
+// ----------------------------------------------------------------------------------------------------- //
 
+/*
 	Variables:
 	FieldName -> look only at the table
 	TableName.FieldName -> look only at table
 	Global.FieldName -> look at global heap
 	Local.FieldName -> look at local heap
-
 */
 variable
 	: IDENTIFIER					# VariableNaked

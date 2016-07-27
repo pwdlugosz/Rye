@@ -68,34 +68,8 @@ namespace Rye.Methods
 
         public override string Message()
         {
-            
-            switch (this._AssignID)
-            {
-                //case 0:
-                //    return string.Format("Assign '{0}' to '{1}'", this._Heap.Scalars.Name(this._Index), this._Mapping.Evaluate().valueSTRING);
-                //case 1:
-                //    return string.Format("Increment '{0}' by '{1}'", this._Heap.Scalars.Name(this._Index), this._Mapping.Evaluate().valueSTRING);
-                //case 2:
-                //    return string.Format("Decrement '{0}' by '{1}'", this._Heap.Scalars.Name(this._Index), this._Mapping.Evaluate().valueSTRING);
-                //case 3:
-                //    return string.Format("Auto-Increment '{0}'", this._Heap.Scalars.Name(this._Index));
-                //case 4:
-                //    return string.Format("Auto-Decrement '{0}'", this._Heap.Scalars.Name(this._Index));
 
-                case 0:
-                    return string.Format("Assign '{0}'", this._Heap.Scalars.Name(this._Index));
-                case 1:
-                    return string.Format("Increment '{0}'", this._Heap.Scalars.Name(this._Index));
-                case 2:
-                    return string.Format("Decrement '{0}'", this._Heap.Scalars.Name(this._Index));
-                case 3:
-                    return string.Format("Auto-Increment '{0}'", this._Heap.Scalars.Name(this._Index));
-                case 4:
-                    return string.Format("Auto-Decrement '{0}'", this._Heap.Scalars.Name(this._Index));
-
-            }
-
-            return "TNode.Assign";
+            return string.Format("{0} = {1}", this._Heap.Scalars.Name(this._Index), this._Heap.Scalars[this._Index]);
 
         }
 

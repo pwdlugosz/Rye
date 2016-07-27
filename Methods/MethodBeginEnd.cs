@@ -12,10 +12,10 @@ namespace Rye.Methods
     /// <summary>
     /// Represents set of actions not in a tree
     /// </summary>
-    public sealed class MethodBeginEnd : Method
+    public sealed class MethodDo : Method
     {
 
-        public MethodBeginEnd(Method Parent)
+        public MethodDo(Method Parent)
             : base(Parent)
         {
         }
@@ -41,15 +41,10 @@ namespace Rye.Methods
         {
 
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("Skip-End");
+            sb.AppendLine("DO");
             for (int i = 0; i < this._Children.Count; i++)
             {
-
-                if (i != this._Children.Count - 1)
-                    sb.AppendLine('\t' + this._Children[i].Message());
-                else
-                    sb.Append('\t' + this._Children[i].Message());
-
+                sb.AppendLine('\t' + this._Children[i].Message());
             }
             return sb.ToString();
 
@@ -57,7 +52,7 @@ namespace Rye.Methods
 
         public override Method CloneOfMe()
         {
-            MethodBeginEnd node = new MethodBeginEnd(this.Parent);
+            MethodDo node = new MethodDo(this.Parent);
             foreach (Method t in this._Children)
                 node.AddChild(t.CloneOfMe());
             return node;

@@ -17,10 +17,12 @@ namespace Rye.Methods
         private Extent _RecordCache;
         private ExpressionCollection _Fields;
         private bool _IsTable = false;
+        private long _Writes = 0;
 
         public MethodAppendToAsync(Method Parent, Table UseParentData, ExpressionCollection UseFields)
             : base(Parent)
         {
+
 
             if (UseParentData.Columns.Count != UseFields.Columns.Count)
                 throw new ArgumentException("Output table and fields passed are not compatible");
@@ -38,7 +40,7 @@ namespace Rye.Methods
             : base(Parent)
         {
 
-            if (UseParentData.Columns.GetHashCode() != UseFields.Columns.GetHashCode())
+            if (UseParentData.Columns.Count != UseFields.Columns.Count)
                 throw new ArgumentException("Output table and fields passed are not compatible");
 
             this._tParentData = null;
@@ -68,6 +70,7 @@ namespace Rye.Methods
 
             // Accumulate the record //
             this._RecordCache.Add(this._Fields.Evaluate());
+            this._Writes++;
 
         }
 
@@ -98,6 +101,11 @@ namespace Rye.Methods
                 return new MethodAppendToAsync(this.Parent, this._tParentData, this._Fields);
             else
                 return new MethodAppendToAsync(this.Parent, this._eParentData, this._Fields);
+        }
+
+        public override string Message()
+        {
+            return string.Format("Append: {0}", this._Writes);
         }
 
     }

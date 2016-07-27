@@ -65,12 +65,7 @@ namespace Rye.Methods
             sb.AppendLine("While-Loop");
             for (int i = 0; i < this._Children.Count; i++)
             {
-
-                if (i != this._Children.Count - 1)
-                    sb.AppendLine('\t' + this._Children[i].Message());
-                else
-                    sb.Append('\t' + this._Children[i].Message());
-
+                sb.AppendLine('\t' + this._Children[i].Message());
             }
             return sb.ToString();
 

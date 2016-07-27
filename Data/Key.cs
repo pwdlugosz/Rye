@@ -177,13 +177,15 @@ namespace Rye.Data
         /// <param name="K1">The left key</param>
         /// <param name="K2">The right key</param>
         /// <returns>Boolean indicating if both keys are the same</returns>
-        public static bool EqualsStrict(Key K1, Key K2)
+        public static bool EqualsStrong(Key K1, Key K2)
         {
             int n = Math.Min(K1.Count, K2.Count);
             int o = Math.Max(K1.Count, K2.Count);
-            if (n == 0 && o != 0) return false;
+            if (n == 0 && o != 0) 
+                return false;
             for (int i = 0; i < n; i++)
-                if (K1[i] != K2[i] || K1.Affinity(i) != K2.Affinity(i)) return false;
+                if (K1[i] != K2[i] || K1.Affinity(i) != K2.Affinity(i)) 
+                    return false;
             return true;
         }
 

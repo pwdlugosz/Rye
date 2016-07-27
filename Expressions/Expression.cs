@@ -174,13 +174,17 @@ namespace Rye.Expressions
        
         }
 
-        public virtual void AssignMemoryRegister(Guid OldRegisterUID, Register NewMemoryRegister)
+        public virtual void AssignMemoryRegister(Register OldMemoryRegister, Register NewMemoryRegister)
         {
+
+            // Don't procede if we have not child cache elements
+            if (this._Cache.Count == 0)
+                return;
 
             // Do a recursive seek to update the register //
             foreach (Expression e in this._Cache)
             {
-                e.AssignMemoryRegister(OldRegisterUID, NewMemoryRegister);
+                e.AssignMemoryRegister(OldMemoryRegister, NewMemoryRegister);
             }
 
         }

@@ -205,7 +205,7 @@ namespace Rye.Interpreter
             ExpressionVisitor exp = new ExpressionVisitor(Enviro);
             exp.AddStructure(sname, Heap);
             int row = (int)exp.Visit(context.expression()[0]).Evaluate().INT;
-            int col = (int)exp.Visit(context.expression()[1]).Evaluate().INT;
+            int col = (context.expression().Length == 2 ? (int)exp.Visit(context.expression()[1]).Evaluate().INT : 1);
 
             CellMatrix mat = new CellMatrix(row, col, t);
 

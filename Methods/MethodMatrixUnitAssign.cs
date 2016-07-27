@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Rye.Data;
 using Rye.Expressions;
+using Rye.Structures;
 
 namespace Rye.Methods
 {
@@ -16,51 +17,65 @@ namespace Rye.Methods
     {
 
         private Expression _Node;
-        private CellMatrix _matrix;
-        private Expression _row_id;
-        private Expression _col_id;
+        private Heap<CellMatrix> _MHeap;
+        private Expression _RowID;
+        private Expression _ColID;
         private int _AssignID; // 0 == assign, 1 == increment, 2 == decrement, 3 == auto increment, 4 == auto decrement
+        private int _Ref = -1;
 
-        public MethodMatrixUnitAssign(Method Parent, CellMatrix Data, Expression Node, Expression RowID, Expression ColumnID, int AssignID)
+        public MethodMatrixUnitAssign(Method Parent, Heap<CellMatrix> Heap, int Ref, Expression Node, Expression RowID, Expression ColumnID, int AssignID)
             : base(Parent)
         {
-            this._matrix = Data;
+
+            if (RowID.IsVolatile)
+                throw new ArgumentException("The row index variable cannot be volatile");
+            if (ColumnID.IsVolatile)
+                throw new ArgumentException("The column index variable cannot be volatile");
+
+            this._MHeap = Heap;
+            this._Ref = Ref;
             this._Node = Node;
             this._AssignID = AssignID;
-            this._row_id = RowID;
-            this._col_id = ColumnID;
+            this._RowID = RowID;
+            this._ColID = ColumnID;
+
         }
 
         public override void Invoke()
         {
 
-            int r = (int)this._row_id.Evaluate().INT;
-            int c = (int)this._col_id.Evaluate().INT;
+            int r = (int)this._RowID.Evaluate().INT;
+            int c = (int)this._ColID.Evaluate().INT;
 
             switch (this._AssignID)
             {
                 case 0:
-                    this._matrix[r, c] = this._Node.Evaluate();
+                    this._MHeap[this._Ref][r, c] = this._Node.Evaluate();
                     break;
                 case 1:
-                    this._matrix[r, c] += this._Node.Evaluate();
+                    this._MHeap[this._Ref][r, c] += this._Node.Evaluate();
                     break;
                 case 2:
-                    this._matrix[r, c] -= this._Node.Evaluate();
+                    this._MHeap[this._Ref][r, c] -= this._Node.Evaluate();
                     break;
                 case 3:
-                    this._matrix[r, c]++;
+                    this._MHeap[this._Ref][r, c]++;
                     break;
                 case 4:
-                    this._matrix[r, c]--;
+                    this._MHeap[this._Ref][r, c]--;
                     break;
             }
 
         }
 
+        public override string Message()
+        {
+            return string.Format("Matrix unit assignment '{0}'", this._Heap.Matricies.Name(this._Ref));
+        }
+
         public override Method CloneOfMe()
         {
-            return new MethodMatrixUnitAssign(this.Parent, this._matrix, this._Node.CloneOfMe(), this._row_id.CloneOfMe(), this._col_id.CloneOfMe(), this._AssignID);
+            return new MethodMatrixUnitAssign(this.Parent, this._MHeap, this._Ref, this._Node.CloneOfMe(), this._RowID.CloneOfMe(), this._ColID.CloneOfMe(), this._AssignID);
         }
 
     }

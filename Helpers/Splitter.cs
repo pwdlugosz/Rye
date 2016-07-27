@@ -121,7 +121,7 @@ namespace Rye.Helpers
 
             // Split the data //
             string[] t = Splitter.Split(Text, Delims, Escape, false);
-
+            
             // Check the length //
             if (t.Length != Columns.Count)
                 throw new ArgumentException(string.Format("Text has {0} fields, but schema has {1} fields", t.Length, Columns.Count));

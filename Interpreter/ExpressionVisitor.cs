@@ -263,7 +263,7 @@ namespace Rye.Interpreter
 
             // Accumulate the node //
             t.AddChildren(left);
-
+            
             this.MasterNode = t;
 
             return t;
@@ -687,11 +687,12 @@ namespace Rye.Interpreter
             {
 
                 Expression node = this.ToNode(c.expression());
-                string alias = "F" + fset.Count.ToString();
-                if (node.Name != null)
-                    alias = node.Name;
+
+                string alias = node.Name ?? "G" + fset.Count.ToString();
+
                 if (c.K_AS() != null)
                     alias = c.IDENTIFIER().GetText();
+
                 fset.Add(node, alias);
 
             }
@@ -840,23 +841,35 @@ namespace Rye.Interpreter
             foreach (RyeParser.Expression_or_wildcardContext ctx in context.expression_or_wildcard())
             {
 
+                // If this is a single expression //
                 if (ctx.expression_alias() != null)
                 {
 
-                    string alias = "E" + Expressions.Count.ToString();
+                    // Render expression //
+                    Expression exp = this.ToNode(ctx.expression_alias().expression());
+                    
+                    // Get the defaul alias //
+                    string alias = (exp.Name ?? "F" + Expressions.Count.ToString());
+                    
+                    // If there is an alias //
                     if (ctx.expression_alias().IDENTIFIER() != null)
                         alias = ctx.expression_alias().IDENTIFIER().GetText();
-                    Expression exp = this.ToNode(ctx.expression_alias().expression());
+                    
+                    // Append the set //
                     Expressions.Add(exp, alias);
 
                 }
                 else
                 {
 
+                    // Get the caller name //
                     string sname = ctx.IDENTIFIER().GetText();
+
+                    // If its a memory structure, something like LOCAL.* or GLOBAL.* //
                     if (this._structs.Exists(sname))
                     {
 
+                        // This will naturally alias using the variable name //
                         foreach (KeyValuePair<string, Cell> kv in this._structs[sname].Scalars.Entries)
                         {
                             Expressions.Add(new ExpressionValue(null, kv.Value), kv.Key);
@@ -866,6 +879,7 @@ namespace Rye.Interpreter
                     else if (this._columns.Exists(sname))
                     {
 
+                        // This will alias using the column Name //
                         Schema cols = this._columns[sname];
                         Register reg = this._registers[sname];
                         for (int i = 0; i < cols.Count; i++)

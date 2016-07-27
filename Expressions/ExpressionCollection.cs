@@ -174,22 +174,20 @@ namespace Rye.Expressions
             return this._Registers.Values;
         }
 
-        public void AssignMemoryRegister(Guid OldRegisterUID, Register NewMemoryRegister)
+        public void AssignMemoryRegister(Register OldMemoryRegister, Register NewMemoryRegister)
         {
 
             // Check that the cache entry's UID matches the old register's UID //
-            if (!this._Registers.Exists(NewMemoryRegister.Name))
+            if (!this._Registers.Exists(OldMemoryRegister.Name))
                 return; // Don't want to error out if we try to override a non-existant register //
-            if (this._Registers[NewMemoryRegister.Name].UID != OldRegisterUID)
-                throw new ArgumentException(string.Format("UIDs are incompatible for register '{0}': {1} : {2}", NewMemoryRegister.Name, OldRegisterUID, NewMemoryRegister.UID));
 
             // Actually assign the heap //
-            this._Registers[NewMemoryRegister.Name] = NewMemoryRegister;
+            this._Registers[OldMemoryRegister.Name] = NewMemoryRegister;
 
             // Update the root nodes for each expression //
             foreach (Expression e in this._Nodes.Values)
             {
-                e.AssignMemoryRegister(OldRegisterUID, NewMemoryRegister);
+                e.AssignMemoryRegister(OldMemoryRegister, NewMemoryRegister);
             }
 
 

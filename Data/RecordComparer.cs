@@ -81,7 +81,7 @@ namespace Rye.Data
                 for (int i = 0; i < this._k1.Count; i++)
                 {
 
-                    idx = Cell.Compare(R1[this._k1[i]], R2[this._k1[i]]);
+                    idx = Cell.Compare(R1[this._k1[i]], R2[this._k2[i]]);
                     if (idx != 0)
                         return idx;
 

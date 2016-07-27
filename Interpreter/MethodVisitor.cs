@@ -160,8 +160,8 @@ namespace Rye.Interpreter
                 h.Scalars.Allocate(var_name, Cell.ZeroValue(CellAffinity.INT));
             
             // Determine the begin and end values //
-            int beg = (int)this._exp.ToNode(context.expression()[0]).Evaluate().INT;
-            int end = (int)this._exp.ToNode(context.expression()[1]).Evaluate().INT;
+            Expression beg = this._exp.ToNode(context.expression()[0]);
+            Expression end = this._exp.ToNode(context.expression()[1]);
 
             // Create the parent node //
             Method t = new MethodFor(this._master, beg, end, h, h.Scalars.GetPointer(var_name));
@@ -182,7 +182,7 @@ namespace Rye.Interpreter
         public override Method VisitActBeginEnd(RyeParser.ActBeginEndContext context)
         {
 
-            Method t = new MethodBeginEnd(this._master);
+            Method t = new MethodDo(this._master);
             foreach (RyeParser.MethodContext x in context.method())
             {
                 t.AddChild(this.Visit(x));
@@ -202,278 +202,6 @@ namespace Rye.Interpreter
         public override Method VisitActEscapeRead(RyeParser.ActEscapeReadContext context)
         {
             return new MethodEscapeRead(this._master);
-        }
-
-        public override Method VisitActMatAssign(RyeParser.ActMatAssignContext context)
-        {
-
-            // Get the name //
-            string sname = context.matrix_name().IDENTIFIER()[0].GetText();
-            string mname = context.matrix_name().IDENTIFIER()[0].GetText();
-           
-            // Create a visitor //
-            MatrixExpression mat = this._mat.ToMatrix(context.matrix_expression());
-
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-            
-            // Build a node //
-            return new MethodMatrixAssign(this._master, this._structs[sname].Matricies, this._structs[sname].Matricies.GetPointer(mname), mat);
-
-        }
-
-        public override Method VisitMUnit2DAssign(RyeParser.MUnit2DAssignContext context)
-        {
-
-            // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[0].GetText();
-
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            CellMatrix mat = this._structs[sname].Matricies[mname];
-            Expression row = this._exp.ToNode(context.expression()[0]);
-            Expression col = this._exp.ToNode(context.expression()[1]);
-            Expression exp = this._exp.ToNode(context.expression()[2]);
-
-            return new MethodMatrixUnitAssign(this._master, mat, exp, row, col, 0);
-
-        }
-
-        public override Method VisitMUnit2DInc(RyeParser.MUnit2DIncContext context)
-        {
-
-            // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[0].GetText();
-
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            CellMatrix mat = this._structs[sname].Matricies[mname];
-            Expression row = this._exp.ToNode(context.expression()[0]);
-            Expression col = this._exp.ToNode(context.expression()[1]);
-            Expression exp = this._exp.ToNode(context.expression()[2]);
-
-            return new MethodMatrixUnitAssign(this._master, mat, exp, row, col, 1);
-
-        }
-
-        public override Method VisitMUnit2DDec(RyeParser.MUnit2DDecContext context)
-        {
-
-            // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[0].GetText();
-
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            CellMatrix mat = this._structs[sname].Matricies[mname];
-            Expression row = this._exp.ToNode(context.expression()[0]);
-            Expression col = this._exp.ToNode(context.expression()[1]);
-            Expression exp = this._exp.ToNode(context.expression()[2]);
-
-            return new MethodMatrixUnitAssign(this._master, mat, exp, row, col, 2);
-
-        }
-
-        public override Method VisitMUnit2DAutoInc(RyeParser.MUnit2DAutoIncContext context)
-        {
-
-            // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[0].GetText();
-
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            CellMatrix mat = this._structs[sname].Matricies[mname];
-            Expression row = this._exp.ToNode(context.expression()[0]);
-            Expression col = this._exp.ToNode(context.expression()[1]);
-            //Expression exp = this._exp.ToNode(context.expression()[2]);
-
-            return new MethodMatrixUnitAssign(this._master, mat, null, row, col, 3);
-
-        }
-
-        public override Method VisitMUnit2DAutoDec(RyeParser.MUnit2DAutoDecContext context)
-        {
-
-            // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[0].GetText();
-
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            CellMatrix mat = this._structs[sname].Matricies[mname];
-            Expression row = this._exp.ToNode(context.expression()[0]);
-            Expression col = this._exp.ToNode(context.expression()[1]);
-            //Expression exp = this._exp.ToNode(context.expression()[2]);
-
-            return new MethodMatrixUnitAssign(this._master, mat, null, row, col, 4);
-
-        }
-
-        public override Method VisitMUnit1DAssign(RyeParser.MUnit1DAssignContext context)
-        {
-
-            // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[0].GetText();
-
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            CellMatrix mat = this._structs[sname].Matricies[mname];
-            Expression row = this._exp.ToNode(context.expression()[0]);
-            Expression col = new ExpressionValue(null, new Cell(0));
-            Expression exp = this._exp.ToNode(context.expression()[2]);
-
-            return new MethodMatrixUnitAssign(this._master, mat, exp, row, col, 0);
-
-        }
-
-        public override Method VisitMUnit1DInc(RyeParser.MUnit1DIncContext context)
-        {
-
-            // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[0].GetText();
-
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            CellMatrix mat = this._structs[sname].Matricies[mname];
-            Expression row = this._exp.ToNode(context.expression()[0]);
-            Expression col = new ExpressionValue(null, new Cell(0));
-            Expression exp = this._exp.ToNode(context.expression()[2]);
-
-            return new MethodMatrixUnitAssign(this._master, mat, exp, row, col, 1);
-
-        }
-
-        public override Method VisitMUnit1DDec(RyeParser.MUnit1DDecContext context)
-        {
-
-            // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[0].GetText();
-
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            CellMatrix mat = this._structs[sname].Matricies[mname];
-            Expression row = this._exp.ToNode(context.expression()[0]);
-            Expression col = new ExpressionValue(null, new Cell(0));
-            Expression exp = this._exp.ToNode(context.expression()[2]);
-
-            return new MethodMatrixUnitAssign(this._master, mat, exp, row, col, 2);
-
-        }
-
-        public override Method VisitMUnit1DAutoInc(RyeParser.MUnit1DAutoIncContext context)
-        {
-
-            // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[0].GetText();
-
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            CellMatrix mat = this._structs[sname].Matricies[mname];
-            Expression row = this._exp.ToNode(context.expression());
-            Expression col = new ExpressionValue(null, new Cell(0));
-            
-            return new MethodMatrixUnitAssign(this._master, mat, null, row, col, 3);
-
-        }
-
-        public override Method VisitMUnit1DAutoDec(RyeParser.MUnit1DAutoDecContext context)
-        {
-
-            // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[0].GetText();
-
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            CellMatrix mat = this._structs[sname].Matricies[mname];
-            Expression row = this._exp.ToNode(context.expression());
-            Expression col = new ExpressionValue(null, new Cell(0));
-
-            return new MethodMatrixUnitAssign(this._master, mat, null, row, col, 4);
-
         }
 
         public override Method VisitActWhile(RyeParser.ActWhileContext context)
@@ -500,16 +228,424 @@ namespace Rye.Interpreter
 
         public override Method VisitActPrint(RyeParser.ActPrintContext context)
         {
-            
+
             ExpressionCollection vars = new ExpressionCollection();
             this._exp.AppendSet(vars, context.expression_or_wildcard_set());
-            Action go = () => { this._enviro.IO.WriteLine(vars.Evaluate().ToString());};
+            Action go = () => { this._enviro.IO.WriteLine(vars.Evaluate().ToString()); };
 
             MethodGeneric t = new MethodGeneric(this._master, go);
             return t;
 
         }
 
+        public override Method VisitActPrintMat(RyeParser.ActPrintMatContext context)
+        {
+
+            MatrixExpression mat = this._mat.ToMatrix(context.matrix_expression());
+            Action go = () => { this._enviro.IO.WriteLine(mat.Evaluate().ToString()); };
+
+            MethodGeneric t = new MethodGeneric(this._master, go);
+            return t;
+
+        }
+
+        // Assign a matrix to another matrix //
+        public override Method VisitActMatAssign(RyeParser.ActMatAssignContext context)
+        {
+
+            // Get the name //
+            string sname = context.matrix_name().IDENTIFIER()[0].GetText();
+            string mname = context.matrix_name().IDENTIFIER()[1].GetText();
+           
+            // Create a visitor //
+            MatrixExpression mat = this._mat.ToMatrix(context.matrix_expression());
+
+            if (!this._structs.Exists(sname))
+            {
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            }
+            else if (!this._structs[sname].Matricies.Exists(mname))
+            {
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+            }
+            
+            // Build a node //
+            return new MethodMatrixAssign(this._master, this._structs[sname].Matricies, this._structs[sname].Matricies.GetPointer(mname), mat);
+
+        }
+
+        // Assign an element of a matrix to an expression, using two dimensions //
+        public override Method VisitMUnit2DAssign(RyeParser.MUnit2DAssignContext context)
+        {
+
+            // Get the name //
+            string sname = context.IDENTIFIER()[0].GetText();
+            string mname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._structs.Exists(sname))
+            {
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            }
+            else if (!this._structs[sname].Matricies.Exists(mname))
+            {
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+            }
+
+            Heap<CellMatrix> mat = this._structs[sname].Matricies;
+            int idx = mat.GetPointer(mname);
+
+            Expression row = this._exp.ToNode(context.expression()[0]);
+            Expression col = this._exp.ToNode(context.expression()[1]);
+            Expression exp = this._exp.ToNode(context.expression()[2]);
+
+            return new MethodMatrixUnitAssign(this._master, mat, idx, exp, row, col, 0);
+
+        }
+
+        public override Method VisitMUnit2DInc(RyeParser.MUnit2DIncContext context)
+        {
+
+            // Get the name //
+            string sname = context.IDENTIFIER()[0].GetText();
+            string mname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._structs.Exists(sname))
+            {
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            }
+            else if (!this._structs[sname].Matricies.Exists(mname))
+            {
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+            }
+
+            Heap<CellMatrix> mat = this._structs[sname].Matricies;
+            int idx = mat.GetPointer(mname);
+
+            Expression row = this._exp.ToNode(context.expression()[0]);
+            Expression col = this._exp.ToNode(context.expression()[1]);
+            Expression exp = this._exp.ToNode(context.expression()[2]);
+
+            return new MethodMatrixUnitAssign(this._master, mat, idx, exp, row, col, 1);
+
+        }
+
+        public override Method VisitMUnit2DDec(RyeParser.MUnit2DDecContext context)
+        {
+
+            // Get the name //
+            string sname = context.IDENTIFIER()[0].GetText();
+            string mname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._structs.Exists(sname))
+            {
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            }
+            else if (!this._structs[sname].Matricies.Exists(mname))
+            {
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+            }
+
+            Heap<CellMatrix> mat = this._structs[sname].Matricies;
+            int idx = mat.GetPointer(mname);
+            
+            Expression row = this._exp.ToNode(context.expression()[0]);
+            Expression col = this._exp.ToNode(context.expression()[1]);
+            Expression exp = this._exp.ToNode(context.expression()[2]);
+
+            return new MethodMatrixUnitAssign(this._master, mat, idx, exp, row, col, 2);
+
+        }
+
+        public override Method VisitMUnit2DAutoInc(RyeParser.MUnit2DAutoIncContext context)
+        {
+
+            // Get the name //
+            string sname = context.IDENTIFIER()[0].GetText();
+            string mname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._structs.Exists(sname))
+            {
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            }
+            else if (!this._structs[sname].Matricies.Exists(mname))
+            {
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+            }
+
+            Heap<CellMatrix> mat = this._structs[sname].Matricies;
+            int idx = mat.GetPointer(mname);
+
+            Expression row = this._exp.ToNode(context.expression()[0]);
+            Expression col = this._exp.ToNode(context.expression()[1]);
+            //Expression exp = this._exp.ToNode(context.expression()[2]);
+
+            return new MethodMatrixUnitAssign(this._master, mat, idx, null, row, col, 3);
+
+        }
+
+        public override Method VisitMUnit2DAutoDec(RyeParser.MUnit2DAutoDecContext context)
+        {
+
+            // Get the name //
+            string sname = context.IDENTIFIER()[0].GetText();
+            string mname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._structs.Exists(sname))
+            {
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            }
+            else if (!this._structs[sname].Matricies.Exists(mname))
+            {
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+            }
+
+            Heap<CellMatrix> mat = this._structs[sname].Matricies;
+            int idx = mat.GetPointer(mname);
+
+            Expression row = this._exp.ToNode(context.expression()[0]);
+            Expression col = this._exp.ToNode(context.expression()[1]);
+            //Expression exp = this._exp.ToNode(context.expression()[2]);
+
+            return new MethodMatrixUnitAssign(this._master, mat, idx, null, row, col, 4);
+
+        }
+
+        // Assign an element of a matrix to an expression, using one dimension //
+        public override Method VisitMUnit1DAssign(RyeParser.MUnit1DAssignContext context)
+        {
+
+            // Get the name //
+            string sname = context.IDENTIFIER()[0].GetText();
+            string mname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._structs.Exists(sname))
+            {
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            }
+            else if (!this._structs[sname].Matricies.Exists(mname))
+            {
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+            }
+
+            Heap<CellMatrix> mat = this._structs[sname].Matricies;
+            int idx = mat.GetPointer(mname);
+
+            Expression row = this._exp.ToNode(context.expression()[0]);
+            Expression col = new ExpressionValue(null, new Cell(0));
+            Expression exp = this._exp.ToNode(context.expression()[1]);
+
+            return new MethodMatrixUnitAssign(this._master, mat, idx, exp, row, col, 0);
+
+        }
+
+        public override Method VisitMUnit1DInc(RyeParser.MUnit1DIncContext context)
+        {
+
+            // Get the name //
+            string sname = context.IDENTIFIER()[0].GetText();
+            string mname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._structs.Exists(sname))
+            {
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            }
+            else if (!this._structs[sname].Matricies.Exists(mname))
+            {
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+            }
+
+            Heap<CellMatrix> mat = this._structs[sname].Matricies;
+            int idx = mat.GetPointer(mname);
+
+            Expression row = this._exp.ToNode(context.expression()[0]);
+            Expression col = new ExpressionValue(null, new Cell(0));
+            Expression exp = this._exp.ToNode(context.expression()[1]);
+
+            return new MethodMatrixUnitAssign(this._master, mat, idx, exp, row, col, 1);
+
+        }
+
+        public override Method VisitMUnit1DDec(RyeParser.MUnit1DDecContext context)
+        {
+
+            // Get the name //
+            string sname = context.IDENTIFIER()[0].GetText();
+            string mname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._structs.Exists(sname))
+            {
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            }
+            else if (!this._structs[sname].Matricies.Exists(mname))
+            {
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+            }
+
+            Heap<CellMatrix> mat = this._structs[sname].Matricies;
+            int idx = mat.GetPointer(mname);
+
+            Expression row = this._exp.ToNode(context.expression()[0]);
+            Expression col = new ExpressionValue(null, new Cell(0));
+            Expression exp = this._exp.ToNode(context.expression()[1]);
+
+            return new MethodMatrixUnitAssign(this._master, mat, idx, exp, row, col, 2);
+
+        }
+
+        public override Method VisitMUnit1DAutoInc(RyeParser.MUnit1DAutoIncContext context)
+        {
+
+            // Get the name //
+            string sname = context.IDENTIFIER()[0].GetText();
+            string mname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._structs.Exists(sname))
+            {
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            }
+            else if (!this._structs[sname].Matricies.Exists(mname))
+            {
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+            }
+
+            Heap<CellMatrix> mat = this._structs[sname].Matricies;
+            int idx = mat.GetPointer(mname);
+
+            Expression row = this._exp.ToNode(context.expression());
+            Expression col = new ExpressionValue(null, new Cell(0));
+
+            return new MethodMatrixUnitAssign(this._master, mat, idx, null, row, col, 3);
+
+        }
+
+        public override Method VisitMUnit1DAutoDec(RyeParser.MUnit1DAutoDecContext context)
+        {
+
+            // Get the name //
+            string sname = context.IDENTIFIER()[0].GetText();
+            string mname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._structs.Exists(sname))
+            {
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            }
+            else if (!this._structs[sname].Matricies.Exists(mname))
+            {
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+            }
+
+            Heap<CellMatrix> mat = this._structs[sname].Matricies;
+            int idx = mat.GetPointer(mname);
+
+            Expression row = this._exp.ToNode(context.expression());
+            Expression col = new ExpressionValue(null, new Cell(0));
+
+            return new MethodMatrixUnitAssign(this._master, mat, idx, null, row, col, 4);
+
+        }
+
+        // Assign All //
+        public override Method VisitMAllAssign(RyeParser.MAllAssignContext context)
+        {
+
+            // Get the name //
+            string sname = context.IDENTIFIER()[0].GetText();
+            string mname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._structs.Exists(sname))
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            else if (!this._structs[sname].Matricies.Exists(mname))
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+
+            Heap<CellMatrix> mat = this._structs[sname].Matricies;
+            int idx = mat.GetPointer(mname);
+
+            Expression val = this._exp.ToNode(context.expression());
+            
+            return new MethodMatrixAllAssign(this._master, mat, idx, val, 0);
+
+        }
+
+        public override Method VisitMAllInc(RyeParser.MAllIncContext context)
+        {
+
+            // Get the name //
+            string sname = context.IDENTIFIER()[0].GetText();
+            string mname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._structs.Exists(sname))
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            else if (!this._structs[sname].Matricies.Exists(mname))
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+
+            Heap<CellMatrix> mat = this._structs[sname].Matricies;
+            int idx = mat.GetPointer(mname);
+
+            Expression val = this._exp.ToNode(context.expression());
+
+            return new MethodMatrixAllAssign(this._master, mat, idx, val, 1);
+
+        }
+
+        public override Method VisitMAllDec(RyeParser.MAllDecContext context)
+        {
+
+            // Get the name //
+            string sname = context.IDENTIFIER()[0].GetText();
+            string mname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._structs.Exists(sname))
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            else if (!this._structs[sname].Matricies.Exists(mname))
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+
+            Heap<CellMatrix> mat = this._structs[sname].Matricies;
+            int idx = mat.GetPointer(mname);
+
+            Expression val = this._exp.ToNode(context.expression());
+
+            return new MethodMatrixAllAssign(this._master, mat, idx, val, 2);
+
+        }
+
+        public override Method VisitMAllAutoInc(RyeParser.MAllAutoIncContext context)
+        {
+
+            // Get the name //
+            string sname = context.IDENTIFIER()[0].GetText();
+            string mname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._structs.Exists(sname))
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            else if (!this._structs[sname].Matricies.Exists(mname))
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+
+            Heap<CellMatrix> mat = this._structs[sname].Matricies;
+            int idx = mat.GetPointer(mname);
+
+            return new MethodMatrixAllAssign(this._master, mat, idx, null, 3);
+
+        }
+
+        public override Method VisitMAllAutoDec(RyeParser.MAllAutoDecContext context)
+        {
+
+            // Get the name //
+            string sname = context.IDENTIFIER()[0].GetText();
+            string mname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._structs.Exists(sname))
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            else if (!this._structs[sname].Matricies.Exists(mname))
+                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+
+            Heap<CellMatrix> mat = this._structs[sname].Matricies;
+            int idx = mat.GetPointer(mname);
+
+            return new MethodMatrixAllAssign(this._master, mat, idx, null, 4);
+
+        }
+        
         // Structures //
         public override Method VisitStructure_method_strict(RyeParser.Structure_method_strictContext context)
         {
@@ -556,7 +692,7 @@ namespace Rye.Interpreter
                     exp.AddRegister(alias, new Register(alias, data.Columns));
 
                     // Add the table to the //
-                    parameters.Add(alias, data);
+                    parameters.Add(ctx.IDENTIFIER().GetText(), data);
 
                 }
 

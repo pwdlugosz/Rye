@@ -123,7 +123,12 @@ namespace Rye.Data
                 return Kernel.VirtualBufferExtent(Path);
             }
 
-            return Kernel.BufferExtent(Path);
+            Extent e = Kernel.BufferExtent(Path);
+
+            if (Kernel.CanExceptExtent(e))
+                Kernel.VirtualFlushExtent(e);
+
+            return e;
 
         }
 
@@ -135,7 +140,12 @@ namespace Rye.Data
                 return Kernel.VirtualBufferTable(Path);
             }
 
-            return Kernel.BufferTable(Path);
+            Table t = Kernel.BufferTable(Path);
+
+            if (Kernel.CanExceptTable(t))
+                Kernel.VirtualFlushTable(t);
+
+            return t;
 
         }
 
@@ -779,7 +789,7 @@ namespace Rye.Data
                 throw new Exception("Extent passed is a memory only set");
 
             // Update the header //
-            //Data.PreSerialize();
+            Data.PreSerialize();
 
             // Estimate the size //
             int size = Data.DiskCost + META_SIZE;
@@ -1439,7 +1449,8 @@ namespace Rye.Data
                 while (!reader.EndOfStream)
                 {
 
-                    Record r = Splitter.ToRecord(reader.ReadLine(), Data.Columns, Delim, Escape);
+                    string s = reader.ReadLine();
+                    Record r = Splitter.ToRecord(s, Data.Columns, Delim, Escape);
                     writer.Insert(r);
 
                 }

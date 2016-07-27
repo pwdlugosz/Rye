@@ -23,6 +23,7 @@ namespace Rye.Expressions
             this._affinity = Affinity;
             this._memory = MemoryRef;
             this._size = Size;
+            this._name = MemoryRef.Columns.ColumnName(Index);
         }
 
         public override Cell Evaluate()
@@ -57,15 +58,22 @@ namespace Rye.Expressions
             return new ExpressionFieldRef(this.ParentNode, this._idx, this._affinity, this._size, this._memory.CloneOfMe());
         }
 
-        public override void AssignMemoryRegister(Guid OldRegisterUID, Register NewMemoryRegister)
+        public override void AssignMemoryRegister(Register OldMemoryRegister, Register NewMemoryRegister)
         {
-            if (this._memory.UID == OldRegisterUID)
+
+            if (this._memory.UID == OldMemoryRegister.UID)
                 this._memory = NewMemoryRegister;
+
         }
 
         public override int DataSize()
         {
             return this._size;
+        }
+
+        public override List<Register> GetMemoryRegisters()
+        {
+            return new List<Register> { this._memory };
         }
 
         public int Index

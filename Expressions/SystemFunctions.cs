@@ -749,6 +749,32 @@ namespace Rye.Expressions
 
     }
 
+    public sealed class CellFuncFKTrim : CellFuncFixedKnown
+    {
+
+        public CellFuncFKTrim()
+            : base(SystemFunctionLibrary.FUNC_TRIM, 1, CellAffinity.INT)
+        {
+        }
+
+        public override Cell Evaluate(params Cell[] Data)
+        {
+
+            if (Data[0].NULL == 1)
+                return Data[0];
+
+            if (Data[0].AFFINITY == CellAffinity.STRING)
+            {
+                Cell c = new Cell(Data[0].STRING.Trim());
+                return c;
+            }
+
+            return Data[0];
+
+        }
+
+    }
+
     public sealed class CellFuncFKIsNull : CellFuncFixedKnown
     {
 
@@ -2710,6 +2736,7 @@ namespace Rye.Expressions
         public const string FUNC_REPLACE = "replace";
         public const string FUNC_POSITION = "position";
         public const string FUNC_LENGTH = "length";
+        public const string FUNC_TRIM = "trim";
         public const string FUNC_IS_NULL = "isnull";
         public const string FUNC_IS_NOT_NULL = "isnotnull";
         public const string FUNC_TYPEOF = "typeof";
@@ -2824,6 +2851,7 @@ namespace Rye.Expressions
             FUNC_REPLACE,
             FUNC_POSITION,
             FUNC_LENGTH,
+            FUNC_TRIM,
             FUNC_IS_NULL,
             FUNC_IS_NOT_NULL,
             FUNC_TYPEOF,
@@ -2901,10 +2929,6 @@ namespace Rye.Expressions
 
         #endregion
 
-        public SystemFunctionLibrary()
-        {
-        }
-
         public override CellFunction RenderFunction(string Name)
         {
             
@@ -2966,6 +2990,7 @@ namespace Rye.Expressions
                 case FUNC_REPLACE: return new CellFuncFKReplace();
                 case FUNC_POSITION: return new CellFuncFKPosition();
                 case FUNC_LENGTH: return new CellFuncFKLength();
+                case FUNC_TRIM: return new CellFuncFKTrim();
                 case FUNC_IS_NULL: return new CellFuncFKIsNull();
                 case FUNC_IS_NOT_NULL: return new CellFuncFKIsNotNull();
                 case FUNC_TYPEOF: return new CellFuncFKTypeOf();

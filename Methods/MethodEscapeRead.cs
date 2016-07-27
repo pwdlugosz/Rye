@@ -28,7 +28,7 @@ namespace Rye.Methods
 
         public override string Message()
         {
-            return "Break Read";
+            return "Escape Select";
         }
 
         public override Method CloneOfMe()

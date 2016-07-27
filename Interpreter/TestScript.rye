@@ -1,0 +1,10 @@
+﻿
+// ---------------------------------- Connect to a disk sink ---------------------------------- //
+CONNECT
+{
+	TEMP, 'C:\Users\pwdlu_000\Documents\Data\TempDB';
+};
+
+
+
+
