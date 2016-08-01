@@ -401,12 +401,13 @@ namespace Rye.Data
         {
             get
             {
-                if (this.AFFINITY == CellAffinity.INT)
+                if (this.AFFINITY == CellAffinity.INT || this.AFFINITY == CellAffinity.DATE_TIME)
                     return this.INT;
                 if (this.AFFINITY == CellAffinity.DOUBLE)
                     return (long)this.DOUBLE;
                 if (this.AFFINITY == CellAffinity.BOOL)
                     return this.BOOL ? 1 : 0;
+               
                 return 0;
             }
         }
@@ -1825,16 +1826,18 @@ namespace Rye.Data
             {
 
                 int t = 0;
+                byte[] a = C2.valueBLOB;
                 byte[] b = C2.valueBLOB;
-                for (int i = 0; i < C1.BLOB.Length; i++)
+                for (int i = 0; i < a.Length; i++)
                 {
                     if (t >= b.Length) t = 0;
-                    C1.BLOB[i] = (byte)(C1.BLOB[i] ^ b[t]);
+                    a[i] = (byte)(a[i] ^ b[t]);
                     t++;
                 }
-
+                C1.AFFINITY = CellAffinity.BLOB;
+                C1.BLOB = a;
+            
             }
-
             return C1;
 
         }

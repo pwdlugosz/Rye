@@ -22,6 +22,7 @@ namespace Rye.Expressions
             this._Expression = Expression;
             this._Name = Name;
             this._Pointers = Parameters;
+            this.Count = Parameters.Count;
             
         }
 
@@ -49,6 +50,12 @@ namespace Rye.Expressions
         public List<string> Pointers
         {
             get { return this._Pointers; }
+        }
+
+        public int Count
+        {
+            get;
+            private set;
         }
 
         // Methods //
@@ -115,9 +122,24 @@ namespace Rye.Expressions
 
         }
 
-        public string Unparse(Schema Columns)
+        public string Unparse()
         {
-            return this._Expression.Unparse(Columns);
+            return this._Expression.Unparse(null);
+        }
+
+        public string FormatString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(this.Name);
+            sb.Append("(");
+            for (int i = 0; i < this._Pointers.Count; i++)
+            {
+                sb.Append(this._Pointers[i]);
+                if (i != this.Count - 1) sb.Append(",");
+            }
+            sb.Append(") AS ");
+            sb.Append(this._Expression.Unparse(null));
+            return sb.ToString();
         }
 
     }

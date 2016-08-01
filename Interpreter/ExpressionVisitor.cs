@@ -31,6 +31,7 @@ namespace Rye.Interpreter
         private Heap<MemoryStructure> _structs;
         private Heap<Register> _registers;
         private Heap<Schema> _columns;
+        private Heap2<CellAffinity, int> _pointers;
         
         public ExpressionVisitor()
             : base()
@@ -38,6 +39,7 @@ namespace Rye.Interpreter
             this._structs = new Heap<MemoryStructure>();
             this._registers = new Heap<Register>();
             this._columns = new Heap<Schema>();
+            this._pointers = new Heap2<CellAffinity, int>();
         }
 
         public ExpressionVisitor(Workspace Space)
@@ -59,7 +61,24 @@ namespace Rye.Interpreter
             this._registers.Reallocate(Alias, MemoryLocation);
             this._columns.Reallocate(Alias, MemoryLocation.Columns);
         }
-        
+
+        public void AddPointer(string Alias, CellAffinity Type, int Size)
+        {
+            this._pointers.Reallocate(Alias, Type, Size);
+        }
+
+        public void AddPointer(string Alias, CellAffinity Type)
+        {
+
+            int size = 8;
+            if (Type == CellAffinity.STRING)
+                size = Schema.DEFAULT_STRING_SIZE;
+            else if (Type == CellAffinity.BLOB)
+                size = Schema.DEFAULT_BLOB_SIZE;
+            this.AddPointer(Alias, Type, size);
+
+        }
+
         public Expression MasterNode
         {
             get;
@@ -385,8 +404,39 @@ namespace Rye.Interpreter
             MemoryStructure s = this._structs[sname];
 
             // Lookup the function //
-            if (!s.Functions.Exists(func_name))
-                throw new RyeCompileException("Function '{0}' does not exist", func_name);
+            Expression t = null;
+            if (s.Functions.Exists(func_name))
+            {
+                t = this.VisitSF_Native(context);
+            }
+            else if (s.Lambda.Exists(func_name))
+            {
+                t = this.VisitSF_Lambda(context);
+            }
+            else
+            {
+                throw new RyeCompileException("Function or lambda '{0}' does not exist in '{1}'", func_name, sname);
+            }
+
+            this.MasterNode = t;
+
+            return t;
+
+        }
+
+        private Expression VisitSF_Native(RyeParser.StructureFunctionContext context)
+        {
+
+            // At this point, the compiler has verified the function and structure exist //
+
+            // Get the function //
+            string sname = context.structure_function().IDENTIFIER()[0].GetText();
+            string func_name = context.structure_function().IDENTIFIER()[1].GetText();
+
+            // Lookup the structure //
+            MemoryStructure s = this._structs[sname];
+
+            // Lookup the function //
             CellFunction func_ref = s.Functions.RenderFunction(func_name);
 
             // Check the variable count //
@@ -403,7 +453,40 @@ namespace Rye.Interpreter
                 t.AddChildNode(node);
             }
 
-            this.MasterNode = t;
+            return t;
+
+        }
+
+        private Expression VisitSF_Lambda(RyeParser.StructureFunctionContext context)
+        {
+
+            // At this point, the compiler has verified the lambda and structure exist //
+
+            // Get the function //
+            string sname = context.structure_function().IDENTIFIER()[0].GetText();
+            string func_name = context.structure_function().IDENTIFIER()[1].GetText();
+
+            // Lookup the structure //
+            MemoryStructure s = this._structs[sname];
+
+            // Lookup the function //
+            Lambda fx = s.Lambda[func_name];
+            
+            // Check the variable count //
+            if (fx.Count != context.expression().Length)
+                throw new RyeCompileException("Lambda '{0}' expects {1} parameters but was passed {2} parameters", func_name, fx.Count, context.expression().Length);
+
+            // Get all the paramters //
+            List<Expression> ptrs = new List<Expression>();
+            foreach (RyeParser.ExpressionContext ctx in context.expression())
+            {
+                Expression node = this.Visit(ctx);
+                ptrs.Add(node);
+            }
+
+            // lambda -> expression //
+            Expression t = fx.Bind(ptrs);
+            t.ParentNode = this.MasterNode;
 
             return t;
 
@@ -608,6 +691,12 @@ namespace Rye.Interpreter
             
             // Get the variable name //
             string vname = context.IDENTIFIER().GetText();
+
+            // Check if its a pointer //
+            if (this._pointers.Exists(vname))
+            {
+                return new ExpressionPointer(this.MasterNode, vname, this._pointers[vname].Item1, this._pointers[vname].Item2);
+            }
 
             // go through every schema first looking for this variable //
             foreach (KeyValuePair<string, Schema> kv in this._columns.Entries)

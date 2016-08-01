@@ -16,6 +16,7 @@ namespace Rye.Structures
         protected Heap<Cell> _scalar;
         protected Heap<CellMatrix> _matrix;
         protected Heap<Extent> _extents;
+        protected Heap<Lambda> _lambdas;
         protected FunctionLibrary _functions;
         protected ProcedureLibrary _procedures;
         protected string _name;
@@ -25,6 +26,7 @@ namespace Rye.Structures
             this._scalar = new Heap<Cell>();
             this._matrix = new Heap<CellMatrix>();
             this._extents = new Heap<Extent>();
+            this._lambdas = new Heap<Lambda>();
             this._name = Name;
         }
 
@@ -48,6 +50,11 @@ namespace Rye.Structures
             get { return this._extents; }
         }
 
+        public Heap<Lambda> Lambda
+        {
+            get { return this._lambdas; }
+        }
+
         public FunctionLibrary Functions
         {
             get { return this._functions; }
@@ -68,7 +75,14 @@ namespace Rye.Structures
         public GlobalStructure()
             : base(DEFAULT_NAME)
         {
+
             this._functions = new SystemFunctionLibrary();
+            this._scalar.Allocate("MS_TICKS", new Cell(10000L));
+            this._scalar.Allocate("S_TICKS", new Cell(10000000L));
+            this._scalar.Allocate("M_TICKS", new Cell(600000000L));
+            this._scalar.Allocate("H_TICKS", new Cell(36000000000L));
+            this._scalar.Allocate("D_TICKS", new Cell(864000000000L));
+
         }
 
     }

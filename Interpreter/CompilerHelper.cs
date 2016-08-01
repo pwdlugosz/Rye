@@ -203,14 +203,113 @@ namespace Rye.Interpreter
             int size = GetSize(context.type());
 
             ExpressionVisitor exp = new ExpressionVisitor(Enviro);
+            MatrixExpressionVisitor mat = new MatrixExpressionVisitor(exp);
             exp.AddStructure(sname, Heap);
-            int row = (int)exp.Visit(context.expression()[0]).Evaluate().INT;
+            int row = (context.expression().Length >= 1 ? (int)exp.Visit(context.expression()[0]).Evaluate().INT : 1);
             int col = (context.expression().Length == 2 ? (int)exp.Visit(context.expression()[1]).Evaluate().INT : 1);
 
-            CellMatrix mat = new CellMatrix(row, col, t);
+            CellMatrix m = (context.matrix_expression() == null ? new CellMatrix(row, col, t) : mat.ToMatrix(context.matrix_expression()).Evaluate());
 
-            Heap.Matricies.Reallocate(vname, mat);
+            Heap.Matricies.Reallocate(vname, m);
 
+        }
+
+        public static void AppendLambda(Workspace Enviro, MemoryStructure Heap, RyeParser.Unit_declare_lambdaContext context)
+        {
+
+            if (context.K_GRADIENT() == null)
+            {
+                CompilerHelper.AppendLambdaBuild(Enviro, Heap, context);
+            }
+            else
+            {
+                CompilerHelper.AppendLambdaGradient(Enviro, Heap, context);
+            }
+
+        }
+
+        private static void AppendLambdaBuild(Workspace Enviro, MemoryStructure Heap, RyeParser.Unit_declare_lambdaContext context)
+        {
+
+            // Get the name of lambda //
+            string sname = context.lambda_name()[0].IDENTIFIER()[0].GetText();
+            string vname = context.lambda_name()[0].IDENTIFIER()[1].GetText();
+
+            // Check the caller //
+            if (StringComparer.OrdinalIgnoreCase.Compare(sname, Heap.Name) != 0)
+                throw new ArgumentException(string.Format("Caller structure '{0}' differs from assigned structure '{1}'", Heap.Name, sname));
+
+            // create an expression visitor //
+            ExpressionVisitor exp = new ExpressionVisitor(Enviro);
+            exp.AddStructure(Heap.Name, Heap);
+
+            // add all needed pointers to the visitor //
+            List<string> pointers = new List<string>();
+            foreach (Antlr4.Runtime.Tree.ITerminalNode t in context.IDENTIFIER())
+            {
+                exp.AddPointer(t.GetText(), CellAffinity.INT);
+                pointers.Add(t.GetText());
+            }
+
+            // Now, lets render the lambda ... //
+            Expression mu = exp.ToNode(context.expression());
+
+            // Create the lambda //
+            Lambda l = new Lambda(vname, mu, pointers);
+
+            // Add the lambda to our heap //
+            Heap.Lambda.Reallocate(vname, l);
+
+        }
+
+        private static void AppendLambdaGradient(Workspace Enviro, MemoryStructure Heap, RyeParser.Unit_declare_lambdaContext context)
+        {
+
+            // Get the name of lambda //
+            string sname = context.lambda_name()[0].IDENTIFIER()[0].GetText();
+            string vname = context.lambda_name()[0].IDENTIFIER()[1].GetText();
+
+            // Get the name of the current lambda //
+            string sname_fx = context.lambda_name()[1].IDENTIFIER()[0].GetText();
+            string vname_fx = context.lambda_name()[1].IDENTIFIER()[1].GetText();
+
+            // Check the caller //
+            if (StringComparer.OrdinalIgnoreCase.Compare(sname, Heap.Name) != 0)
+                throw new ArgumentException(string.Format("Caller structure '{0}' differs from assigned structure '{1}'", Heap.Name, sname));
+
+            // Look for the original lambda, f(x) //
+            Lambda l = null;
+            if (Heap.Lambda.Exists(vname_fx) && string.Compare(sname_fx, Heap.Name, true) == 0)
+            {
+                l = Heap.Lambda[vname_fx];
+            }
+            else if (Enviro.Structures.Exists(sname_fx))
+            {
+
+                if (Enviro.Structures[sname_fx].Lambda.Exists(vname_fx))
+                {
+                    l = Enviro.Structures[sname_fx].Lambda[vname_fx];
+                }
+                else
+                {
+                    throw new ArgumentException(string.Format("Cannot find lambda '{0}'", vname_fx));
+                }
+
+            }
+            else
+            {
+                throw new ArgumentException(string.Format("Cannot find lambda '{0}'", vname_fx));
+            }
+
+            // Get the x variable, to calculate f'(x) //
+            string x = context.IDENTIFIER()[0].GetText();
+
+            // Calculate the gradient //
+            Lambda f_prime = l.Gradient(sname, x);
+
+            // Allocate //
+            Heap.Lambda.Reallocate(vname, f_prime);
+            
         }
 
     }

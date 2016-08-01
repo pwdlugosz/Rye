@@ -56,15 +56,21 @@ create_unit
 
 // ------------------------------------------ Declare ------------------------------------------ //
 command_declare
-	: K_DECLARE LCURL ((unit_declare_scalar | unit_declare_matrix) SEMI_COLON)+ RCURL SEMI_COLON
+	: K_DECLARE LCURL ((unit_declare_scalar | unit_declare_matrix | unit_declare_lambda) SEMI_COLON)+ RCURL SEMI_COLON
 	;
 unit_declare_scalar 
 	: IDENTIFIER DOT IDENTIFIER K_AS type (ASSIGN expression)
 	;
 unit_declare_matrix 
-	: IDENTIFIER DOT IDENTIFIER LBRAC expression (COMMA expression)? RBRAC K_AS type
+	: IDENTIFIER DOT IDENTIFIER LBRAC (expression (COMMA expression)?)? RBRAC K_AS type (ASSIGN matrix_expression)?
 	;
-
+unit_declare_lambda
+	: lambda_name LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN K_AS K_LAMBDA ASSIGN expression			// GLOBAL.SQUARE(X,Y) AS LAMBDA = X^2 + Y^2;
+	| lambda_name K_AS K_LAMBDA ASSIGN K_GRADIENT K_OF lambda_name K_OVER IDENTIFIER						// LAMBDA GLOBAL.RATE AS GRADIENT GLOBAL.SQUARE OVER X; WHICH WOULD YEILD 2X
+	;
+lambda_name
+	: IDENTIFIER DOT IDENTIFIER
+	;
 // ------------------------------------------ Sort ------------------------------------------ //
 command_sort
 	: K_SORT LCURL 
@@ -162,6 +168,7 @@ method
 	: variable_assign																									# ActScalarAssign // x = y
 	| K_PRINT expression_or_wildcard_set SEMI_COLON																		# ActPrint // print 'hello world!!!';
 	| K_PRINT matrix_expression SEMI_COLON																				# ActPrintMat // Print matrix[]
+	| K_PRINT K_LAMBDA IDENTIFIER DOT IDENTIFIER SEMI_COLON																# ActPrintLambda
 	| append_method																										# ActAppend // Return A, B AS C, D * E / F AS G
 	| K_ESCAPE K_FOR SEMI_COLON																							# ActEscapeFor
 	| K_ESCAPE K_READ SEMI_COLON																						# ActEscapeRead
@@ -280,12 +287,6 @@ vector_literal
 // --------------------------------------------- EXPRESSIONS ------------------------------------------- //
 // ----------------------------------------------------------------------------------------------------- //
 
- // Lambdas //
-//lambda_unit
-//	: K_LAMBDA IDENTIFIER LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN LAMBDA expression	# LambdaGeneric
-//	| K_LAMBDA IDENTIFIER LAMBDA K_GRADIENT IDENTIFIER K_OVER IDENTIFIER					# LambdaGradient 
-//	;
-
  // Return Expression // 
 expression_or_wildcard_set 
 	: expression_or_wildcard (COMMA expression_or_wildcard)*
@@ -318,14 +319,14 @@ expression_alias
 	: expression (K_AS IDENTIFIER)?
 	;
 expression
-	: type DOT IDENTIFIER (DOT LITERAL_INT)?															# Pointer
+	: IDENTIFIER DOT type																				# Pointer // X.STRING.5
 	| op=(NOT | PLUS | MINUS) expression																# Uniary
 	| expression POW expression																			# Power
 	| expression op=(MUL | DIV | MOD | DIV2) expression													# MultDivMod
 	| expression op=(PLUS | MINUS) expression															# AddSub
 	| expression op=(GT | GTE | LT | LTE) expression													# GreaterLesser
 	| expression op=(EQ | NEQ) expression																# Equality
-	| expression K_IS K_NULL																			# IsNull
+	| expression K_IS LITERAL_NULL																		# IsNull
 	| expression AND expression																			# LogicalAnd
 	| expression op=(OR | XOR) expression																# LogicalOr
 	| expression CAST type  																			# Cast

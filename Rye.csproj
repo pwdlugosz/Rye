@@ -179,6 +179,7 @@
       <CustomToolNamespace>Rye.Interpreter</CustomToolNamespace>
     </Antlr4>
     <None Include="packages.config" />
+    <None Include="Scripts\ExpressionTesting.rye" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

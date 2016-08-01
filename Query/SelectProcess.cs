@@ -134,7 +134,7 @@ namespace Rye.Query
 
                 // Set the key variables //
                 this._local.Scalars[this._extentIDptr] = new Cell(stream.SetID);
-                this._local.Scalars[this._rowIDptr]++;
+                this._local.Scalars[this._rowIDptr] = new Cell(stream.Position);
                 this._local.Scalars[this._isFirstptr] = (first ? Cell.TRUE : Cell.FALSE);
                 this._local.Scalars[this._isLastptr] = (stream.EndOfData ? Cell.TRUE : Cell.FALSE);
                 if (first) 

@@ -49,6 +49,10 @@ namespace Rye.Interpreter
             Expression node = this._exp.ToNode(context.expression());
             string vname = context.IDENTIFIER()[1].GetText();
             string sname = context.IDENTIFIER()[0].GetText();
+            if (!this._structs.Exists(sname))
+                throw new RyeCompileException("Structure does not exist '{0}'", sname);
+            if (!this._structs[sname].Scalars.Exists(vname))
+                throw new RyeCompileException("Variable '{0}' does not exist in structure '{1}'", vname, sname);
             MemoryStructure h = this._structs[sname];
             Method t = new MethodAssignScalar(this._master, h, h.Scalars.GetPointer(vname), node, 0);
             this._master = t;
@@ -243,6 +247,25 @@ namespace Rye.Interpreter
 
             MatrixExpression mat = this._mat.ToMatrix(context.matrix_expression());
             Action go = () => { this._enviro.IO.WriteLine(mat.Evaluate().ToString()); };
+
+            MethodGeneric t = new MethodGeneric(this._master, go);
+            return t;
+
+        }
+
+        public override Method VisitActPrintLambda(RyeParser.ActPrintLambdaContext context)
+        {
+
+            string sname = context.IDENTIFIER()[0].GetText();
+            string lname = context.IDENTIFIER()[1].GetText();
+
+            if (!this._enviro.Structures.Exists(sname))
+                throw new RyeCompileException("Structure '{0}' does not exist", sname);
+            if (!this._enviro.Structures[sname].Lambda.Exists(lname))
+                throw new RyeCompileException("Lambda '{0}' does not exist in '{1}'", lname, sname);
+
+            Lambda l = this._enviro.Structures[sname].Lambda[lname];
+            Action go = () => { this._enviro.IO.WriteLine(l.FormatString()); };
 
             MethodGeneric t = new MethodGeneric(this._master, go);
             return t;

@@ -46,7 +46,8 @@ namespace Rye.Expressions
 
         public override string Unparse(Schema S)
         {
-            return this._Type.ToString().ToUpper() + "." + this._NameID.ToString();
+            //return this._Type.ToString().ToUpper() + "." + this._NameID.ToString();
+            return this._NameID;
         }
 
         public override Expression CloneOfMe()

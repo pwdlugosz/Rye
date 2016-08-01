@@ -29,6 +29,9 @@ namespace Rye.Interpreter
         public override int VisitCommand_method(RyeParser.Command_methodContext context)
         {
 
+            // Notifiy //
+            this._enviro.IO.WriteHeader("Action");
+
             ExpressionVisitor exp_vis = new ExpressionVisitor(this._enviro);
             MatrixExpressionVisitor mat_vis = new MatrixExpressionVisitor(exp_vis, this._enviro);
             MethodVisitor met_vis = new MethodVisitor(exp_vis, mat_vis, this._enviro);
@@ -39,7 +42,6 @@ namespace Rye.Interpreter
             m.EndInvoke();
             sw.Stop();
 
-            this._enviro.IO.WriteHeader("Action");
             this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);
             this._enviro.IO.WriteLine(m.Message());
             this._enviro.IO.WriteLine();
@@ -52,6 +54,8 @@ namespace Rye.Interpreter
         public override int VisitCommand_connect(RyeParser.Command_connectContext context)
         {
 
+            // Notifiy //
+            this._enviro.IO.WriteHeader("Connect");
             ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
             StringBuilder sb = new StringBuilder();
             foreach (RyeParser.Connect_unitContext ctx in context.connect_unit())
@@ -59,6 +63,7 @@ namespace Rye.Interpreter
 
                 string alias = ctx.IDENTIFIER().GetText();
                 string path = exp.Visit(ctx.expression()).Evaluate().valueSTRING;
+                
                 if (!System.IO.Directory.Exists(path))
                 {
                     throw new RyeCompileException("Directory does not exist: \n\t{0}", path);
@@ -67,7 +72,6 @@ namespace Rye.Interpreter
                 sb.AppendLine(string.Format("\t{0} : {1}", alias, path));
             }
             
-            this._enviro.IO.WriteHeader("Connect");
             this._enviro.IO.WriteLine(sb.ToString());
             this._enviro.IO.WriteLine();
 
@@ -78,14 +82,16 @@ namespace Rye.Interpreter
         public override int VisitCommand_disconnect(RyeParser.Command_disconnectContext context)
         {
 
+            // Notifiy //
+            this._enviro.IO.WriteHeader("Disconnect");
+            
             StringBuilder sb = new StringBuilder();
-            foreach (Antlr4.Runtime.IToken t in context.IDENTIFIER())
+            foreach (Antlr4.Runtime.Tree.ITerminalNode t in context.IDENTIFIER())
             {
-                this._enviro.Connections.Deallocate(t.Text);
-                sb.AppendLine("\t" + t.Text);
+                this._enviro.Connections.Deallocate(t.GetText());
+                sb.AppendLine("\t" + t.GetText());
             }
 
-            this._enviro.IO.WriteHeader("Disconnect");
             this._enviro.IO.WriteLine(sb.ToString());
             this._enviro.IO.WriteLine();
 
@@ -96,7 +102,12 @@ namespace Rye.Interpreter
         public override int VisitCommand_declare(RyeParser.Command_declareContext context)
         {
 
+            // Notifiy //
+            this._enviro.IO.WriteHeader("Declare");
+            
             StringBuilder sb = new StringBuilder();
+
+            // Render the scalar variables //
             foreach (RyeParser.Unit_declare_scalarContext ctx1 in context.unit_declare_scalar())
             {
                 
@@ -108,6 +119,7 @@ namespace Rye.Interpreter
 
             }
 
+            // Render each matrix //
             foreach (RyeParser.Unit_declare_matrixContext ctx2 in context.unit_declare_matrix())
             {
 
@@ -118,7 +130,19 @@ namespace Rye.Interpreter
                 sb.AppendLine("\t" + ctx2.IDENTIFIER()[0].GetText() + "." + ctx2.IDENTIFIER()[1].GetText() + "[] AS " + ctx2.type().GetText());
 
             }
-            this._enviro.IO.WriteHeader("Declare");
+
+            // Render the lambdas //
+            foreach (RyeParser.Unit_declare_lambdaContext ctx3 in context.unit_declare_lambda())
+            {
+
+                string sname = ctx3.lambda_name()[0].IDENTIFIER()[0].GetText();
+                if (!this._enviro.Structures.Exists(sname))
+                    throw new RyeCompileException("Structure '{0}' does not exist", sname);
+                CompilerHelper.AppendLambda(this._enviro, this._enviro.Structures[sname], ctx3);
+                sb.AppendLine("\t" + ctx3.lambda_name()[0].GetText());
+
+            }
+
             this._enviro.IO.WriteLine(sb.ToString());
             this._enviro.IO.WriteLine();
             return 1;
@@ -127,6 +151,9 @@ namespace Rye.Interpreter
 
         public override int VisitCommand_create(RyeParser.Command_createContext context)
         {
+
+            // Notifiy //
+            this._enviro.IO.WriteHeader("Create");
             
             // build the schema //
             Schema cols = new Schema();
@@ -167,7 +194,6 @@ namespace Rye.Interpreter
                 throw new RyeCompileException("Structure or connection with alias '{0}' does not exist", sname);
             }
 
-            this._enviro.IO.WriteHeader("Create");
             this._enviro.IO.WriteLine("{0} table '{1}' created in '{2}'", (Table ? "Disk" : "Memory"), tname, sname);
             this._enviro.IO.WriteLine();
 
@@ -177,6 +203,9 @@ namespace Rye.Interpreter
 
         public override int VisitCommand_read(RyeParser.Command_readContext context)
         {
+
+            // Notifiy //
+            this._enviro.IO.WriteHeader("Select");
             
             // Get some high level data first, such as thread count, 'where' clause, and source data //
             DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
@@ -276,7 +305,6 @@ namespace Rye.Interpreter
             sw.Stop();
 
             // Close the output //
-            this._enviro.IO.WriteHeader("Select");
             this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);
             this._enviro.IO.WriteLine();
 
@@ -286,6 +314,9 @@ namespace Rye.Interpreter
 
         public override int VisitCommand_update(RyeParser.Command_updateContext context)
         {
+
+            // Notifiy //
+            this._enviro.IO.WriteHeader("Update");
             
             // Get the source data //
             DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
@@ -338,7 +369,6 @@ namespace Rye.Interpreter
             sw.Stop();
 
             // Close the output //
-            this._enviro.IO.WriteHeader("Update");
             this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);
             this._enviro.IO.WriteLine();
 
@@ -349,6 +379,9 @@ namespace Rye.Interpreter
         public override int VisitCommand_delete(RyeParser.Command_deleteContext context)
         {
 
+            // Notifiy //
+            this._enviro.IO.WriteHeader("Delete");
+            
             // Get the source data //
             DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
             string alias = (context.base_clause().IDENTIFIER() != null ? context.base_clause().IDENTIFIER().GetText() : "T");
@@ -398,7 +431,6 @@ namespace Rye.Interpreter
             sw.Stop();
 
             // Close the output //
-            this._enviro.IO.WriteHeader("Delete");
             this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);
             this._enviro.IO.WriteLine();
 
@@ -409,6 +441,9 @@ namespace Rye.Interpreter
         public override int VisitCommand_aggregate(RyeParser.Command_aggregateContext context)
         {
 
+            // Notify //
+            this._enviro.IO.WriteHeader("Aggregate");
+            
             // Get some high level data first, such as thread count, 'where' clause, and source data //
             DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
             int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
@@ -470,7 +505,6 @@ namespace Rye.Interpreter
             sw.Stop();
 
             // Close the output //
-            this._enviro.IO.WriteHeader("Aggregate");
             this._enviro.IO.WriteLine("Actual Aggregate Cost: {0}", reducer.Clicks);
             this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);
             this._enviro.IO.WriteLine();
@@ -482,6 +516,9 @@ namespace Rye.Interpreter
         public override int VisitCommand_sort(RyeParser.Command_sortContext context)
         {
 
+            // Notify //
+            this._enviro.IO.WriteHeader("Sort");
+            
             // Get the data //
             DataSet data = CompilerHelper.CallData(this._enviro, context.table_name());
             
@@ -507,7 +544,6 @@ namespace Rye.Interpreter
             double nsum = data.ExtentCount * (data.ExtentCount - 1);
 
 
-            this._enviro.IO.WriteHeader("Sort");
             this._enviro.IO.WriteLine("Rows: {0}", data.RecordCount);
             this._enviro.IO.WriteLine("Expected Cost: {0}", avg * Math.Log(avg) * data.ExtentCount + nsum * avg);
             this._enviro.IO.WriteLine("Actual Cost: {0}", cost);
@@ -520,7 +556,10 @@ namespace Rye.Interpreter
 
         public override int VisitCommand_join(RyeParser.Command_joinContext context)
         {
-            
+
+            // Notify //
+            this._enviro.IO.WriteHeader("Join");
+                
             // Get each table //
             DataSet DLeft = CompilerHelper.CallData(this._enviro, context.table_name()[0]);
             DataSet DRight = CompilerHelper.CallData(this._enviro, context.table_name()[1]);
@@ -592,7 +631,6 @@ namespace Rye.Interpreter
             }
             sw.Stop();
 
-            this._enviro.IO.WriteHeader("Join");
             this._enviro.IO.WriteLine("Join Cost: \n\tActual {0} \n\tEstimated {1}", reducer.ActualCost, Engine.Cost(DLeft, DRight, Threads, 1D, JoinImplementationType.Block_VxV));
             this._enviro.IO.WriteLine("IO Calls: {0}", reducer.IOCalls);
             this._enviro.IO.WriteLine("Join Type: {0} : {1}", Engine.BaseJoinAlgorithmType, t);
