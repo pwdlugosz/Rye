@@ -180,8 +180,12 @@
     </Antlr4>
     <None Include="packages.config" />
     <None Include="Scripts\ExpressionTesting.rye" />
+    <None Include="Scripts\MatrixTesting.rye" />
+    <None Include="Scripts\QueryTesting.rye" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="Scripts\ActionTesting.rye" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="Interpreter\TestScript.rye" />
   </ItemGroup>

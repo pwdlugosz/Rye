@@ -70,7 +70,7 @@ namespace Rye.Methods
 
         public override string Message()
         {
-            return string.Format("Matrix unit assignment '{0}'", this._Heap.Matricies.Name(this._Ref));
+            return string.Format("Matrix unit assignment '{0}'", this._MHeap.Name(this._Ref));
         }
 
         public override Method CloneOfMe()

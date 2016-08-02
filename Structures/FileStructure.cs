@@ -132,6 +132,7 @@ namespace Rye.Structures
             public const string COPY = "COPY";
             public const string IMPORT = "IMPORT";
             public const string EXPORT = "EXPORT";
+            public const string DOWNLOAD = "DOWNLOAD";
 
             private static string[] _BaseNames = new string[]
             {
@@ -145,7 +146,8 @@ namespace Rye.Structures
                 MOVE,
                 COPY,
                 IMPORT,
-                EXPORT
+                EXPORT,
+                DOWNLOAD
             };
 
             private Heap2<string, string> _CompressedSig;
@@ -178,6 +180,7 @@ namespace Rye.Structures
                 this._CompressedSig.Allocate(FileProcedureLibrary.COPY, "Copies a file to another location", "FROM_PATH|The original file to copy|E|false;TO_PATH|The path to put the copy in|E|false");
                 this._CompressedSig.Allocate(FileProcedureLibrary.IMPORT, "Loads a file into an existing table", "DATA|The table to load|T|false;PATH|The flat file location|E|false;DELIM|The column delimitor|E|false;ESCAPE|The escape sequence character|E|true;SKIP|The number of lines to skip|E|true");
                 this._CompressedSig.Allocate(FileProcedureLibrary.EXPORT, "Exports a table into a new file", "DATA|The table to export|T|false;PATH|The path to the exported file|E|false;DELIM|The column delimitor|E|false");
+                this._CompressedSig.Allocate(FileProcedureLibrary.DOWNLOAD, "Downloads a url to a file", "URL|The URL to download|E|false;PATH|The path to the exported file|E|false");
                 
             }
 
@@ -209,6 +212,8 @@ namespace Rye.Structures
                         return this.KappaImport(Parent, Parameters);
                     case FileProcedureLibrary.EXPORT:
                         return this.KappaExport(Parent, Parameters);
+                    case FileProcedureLibrary.DOWNLOAD:
+                        return this.KappaDownload(Parent, Parameters);
                 }
                 throw new ArgumentException(string.Format("Method '{0}' does not exist in '{1}'", Name, this._Caller.Name));
 
@@ -415,6 +420,32 @@ namespace Rye.Structures
                     char Escape = (x.Expressions["ESCAPE"] != null ? x.Expressions["ESCAPE"].Evaluate().valueSTRING.First() : char.MaxValue);
                     int Skip = (x.Expressions["SKIP"] != null ? (int)x.Expressions["SKIP"].Evaluate().valueINT : 0);
                     Kernel.TextPop(Data, Path, Delim, Escape, Skip);
+
+                };
+                return new DynamicStructureMethod(Parent, this._Caller, EXPORT, Parameters, false, kappa);
+
+            }
+
+            private DynamicStructureMethod KappaDownload(Method Parent, ParameterCollection Parameters)
+            {
+
+                Action<ParameterCollection> kappa = (x) =>
+                {
+
+                    string url = Parameters.Expressions["URL"].Evaluate().valueSTRING;
+                    string path = Parameters.Expressions["PATH"].Evaluate().valueSTRING;
+
+                    using (Stream writter = File.Create(path))
+                    {
+
+                        System.Net.WebRequest req = System.Net.HttpWebRequest.Create(url);
+
+                        using (Stream reader = req.GetResponse().GetResponseStream())
+                        {
+                            reader.CopyTo(writter);
+                        }
+
+                    }
 
                 };
                 return new DynamicStructureMethod(Parent, this._Caller, EXPORT, Parameters, false, kappa);
