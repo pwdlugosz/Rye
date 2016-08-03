@@ -10,7 +10,10 @@ using Rye.Aggregates;
 namespace Rye.Query
 {
     
-    public sealed class AggregateProcessNode : QueryNode
+    /// <summary>
+    /// Aggregates a table using a hash table
+    /// </summary>
+    public sealed class AggregateHashTableProcessNode : QueryNode
     {
 
         private Volume _data;
@@ -22,7 +25,7 @@ namespace Rye.Query
         private Register _MemoryLocation;
         private long _clicks = 0;
 
-        public AggregateProcessNode(int ThreadID, Volume Data, ExpressionCollection Keys, AggregateCollection Values, Filter Where, Register Memory)
+        public AggregateHashTableProcessNode(int ThreadID, Volume Data, ExpressionCollection Keys, AggregateCollection Values, Filter Where, Register Memory)
             : base(ThreadID)
         {
 
@@ -107,7 +110,10 @@ namespace Rye.Query
 
     }
 
-    public sealed class AggregateConsolidationProcess : QueryConsolidation<AggregateProcessNode>
+    /// <summary>
+    /// Consolidates an aggregate hash table node
+    /// </summary>
+    public sealed class AggregateHashTableConsolidationProcess : QueryConsolidation<AggregateHashTableProcessNode>
     {
 
         /* This is the most complicated consolidator, but it could be even more complicated (and may be in the future if we need to squeeze more performance out)
@@ -129,7 +135,7 @@ namespace Rye.Query
         private ExpressionCollection _Select;
         private long _Clicks = 0;
 
-        public AggregateConsolidationProcess(ExpressionCollection Keys, AggregateCollection Values, RecordWriter Output, ExpressionCollection Select, Register Memory)
+        public AggregateHashTableConsolidationProcess(ExpressionCollection Keys, AggregateCollection Values, RecordWriter Output, ExpressionCollection Select, Register Memory)
             : base()
         {
 
@@ -142,12 +148,12 @@ namespace Rye.Query
 
         }
 
-        public override void Consolidate(List<AggregateProcessNode> Nodes)
+        public override void Consolidate(List<AggregateHashTableProcessNode> Nodes)
         {
             
             // Combine all headers //
             this._RawHeaders.Clear();
-            foreach (AggregateProcessNode q in Nodes)
+            foreach (AggregateHashTableProcessNode q in Nodes)
             {
                 this._RawHeaders.AddRange(q.Headers);
                 this._Clicks += q.Clicks;
@@ -181,6 +187,12 @@ namespace Rye.Query
 
             }
 
+            // Burn all the row headers //
+            for (int i = 0; i < this._RawHeaders.Count; i++)
+            {
+                Kernel.RequestDropTable(this._RawHeaders[i].Path);
+            }
+
             // Close the stream //
             this._output.Close();
 
@@ -193,6 +205,9 @@ namespace Rye.Query
 
     }
 
+    /// <summary>
+    /// Internal hash table class
+    /// </summary>
     internal sealed class KeyValueSet
     {
 
@@ -451,5 +466,225 @@ namespace Rye.Query
 
     }
 
+    public sealed class AggregateOrderedProcessNode : QueryNode
+    {
+
+        private Volume _data;
+        private ExpressionCollection _By;
+        private AggregateCollection _Over;
+        private Filter _Where;
+        private Register _MemoryLocation;
+        private RecordWriter _Writer;
+        private long _clicks = 0;
+
+        private ExpressionCollection _OutputKey;
+        private Register _OutputMemory;
+
+        private Record _BeginEdgeKey;
+        private Record _EndEdgeKey;
+        private CompoundRecord _BeginEdgeValue;
+        private CompoundRecord _EndEdgeValue;
+        private bool _LowerEdge = false; // true == lower edge initialized, false = not initialized
+
+        private Record _WorkingKey;
+        private CompoundRecord _WorkingValue;
+
+        public AggregateOrderedProcessNode(int ThreadID, Volume Data, ExpressionCollection Keys, AggregateCollection Values, Filter Where, Register Memory, 
+            ExpressionCollection OutputKeys, Register OutputMemory, RecordWriter Writer)
+            : base(ThreadID)
+        {
+
+            this._data = Data;
+            this._By = Keys;
+            this._Over = Values;
+            this._Where = Where;
+            this._MemoryLocation = Memory;
+            this._Writer = Writer;
+
+            this._OutputKey = OutputKeys;
+            this._OutputMemory = OutputMemory;
+
+        }
+
+        public override void Invoke()
+        {
+
+            // Create a record comparer //
+            RecordComparer rc = new RecordComparer();
+
+            // go through each extent //
+            foreach (Extent e in this._data.Extents)
+            {
+
+                // go through each record //
+                for (int i = 0; i < e.Count; i++)
+                {
+
+                    // assign register //
+                    this._MemoryLocation.Value = e[i];
+
+                    // check our condition //
+                    if (this._Where.Render())
+                    {
+
+                        // Render the key record //
+                        Record r = this._By.Evaluate();
+
+                        // Do a null check //
+                        if (this._WorkingKey == null)
+                            this._WorkingKey = r;
+
+                        // Check if the keys match //
+                        if (!rc.Equals(this._WorkingKey, r))
+                        {
+
+                            // Output the current record //
+                            if (this._LowerEdge)
+                            {
+                                this._OutputMemory.Value = Record.Join(this._WorkingKey, this._Over.Evaluate(this._WorkingValue));
+                                this._Writer.Insert(this._OutputKey.Evaluate());
+                            }
+                            else
+                            {
+                                this._LowerEdge = true;
+                                this._BeginEdgeKey = this._WorkingKey;
+                                this._BeginEdgeValue = this._WorkingValue;
+                            }
+
+                            // Update the key and re-set the value //
+                            this._WorkingKey = r;
+                            this._WorkingValue = this._Over.Initialize();
+
+                        }
+
+                        // Accumulate the value //
+                        this._Over.Accumulate(this._WorkingValue);
+
+                    } // End where 
+
+                } // End Unit Extent Loop 
+
+            } // End Volume Loop
+
+            // Handle the edge cases //
+            this._EndEdgeKey = this._WorkingKey;
+            this._EndEdgeValue = this._WorkingValue;
+
+            this._clicks += rc.Clicks;
+
+        }
+
+        public long Clicks
+        {
+            get { return this._clicks; }
+        }
+
+        public Record BeginEdgeKey 
+        { 
+            get { return this._BeginEdgeKey; } 
+        }
+
+        public Record EndEdgeKey 
+        { 
+            get { return this._EndEdgeKey; } 
+        }
+
+        public CompoundRecord BeginEdgeValue 
+        { 
+            get { return this._BeginEdgeValue; } 
+        }
+
+        public CompoundRecord EndEdgeValue 
+        { 
+            get { return this._EndEdgeValue; } 
+        }
+
+    }
+
+    public sealed class AggregateOrderedConsolidationProcess : QueryConsolidation<AggregateOrderedProcessNode>
+    {
+
+        private RecordWriter _output;
+        private ExpressionCollection _By;
+        private AggregateCollection _Over;
+        private Register _MemoryLocation;
+        private ExpressionCollection _Select;
+        private long _Clicks = 0;
+
+        public AggregateOrderedConsolidationProcess(ExpressionCollection Keys, AggregateCollection Values, RecordWriter Output, 
+            ExpressionCollection Select, Register Memory)
+            : base()
+        {
+
+            this._output = Output;
+            this._By = Keys;
+            this._Over = Values;
+            this._Select = Select;
+            this._MemoryLocation = Memory;
+
+        }
+
+        public override void Consolidate(List<AggregateOrderedProcessNode> Nodes)
+        {
+
+            /* 
+             * Create a dictionary to load the data into, merging all like edges allong the way 
+             * 
+             * We do it this way because we're not sure the nodes will finish in order, otherwise we could do simple
+             * comparison to A's end to B's begin.
+             * 
+             */
+            RecordComparer rc = new RecordComparer();
+            Dictionary<Record, CompoundRecord> HashTable = new Dictionary<Record, CompoundRecord>(rc);
+            foreach (AggregateOrderedProcessNode n in Nodes)
+            {
+
+                // Check the begin edge //
+                if (HashTable.ContainsKey(n.BeginEdgeKey))
+                {
+                    this._Over.Merge(n.BeginEdgeValue, HashTable[n.BeginEdgeKey]);
+                }
+                else
+                {
+                    HashTable.Add(n.BeginEdgeKey, n.BeginEdgeValue);
+                }
+
+                // Check the end edge //
+                if (HashTable.ContainsKey(n.EndEdgeKey))
+                {
+                    this._Over.Merge(n.EndEdgeValue, HashTable[n.EndEdgeKey]);
+                }
+                else
+                {
+                    HashTable.Add(n.EndEdgeKey, n.EndEdgeValue);
+                }
+
+                // Clicks //
+                this._Clicks += n.Clicks;
+
+            }
+
+            // Dump the data to the stream //
+            foreach (KeyValuePair<Record, CompoundRecord> kv in HashTable)
+            {
+                this._MemoryLocation.Value = Record.Join(kv.Key, this._Over.Evaluate(kv.Value));
+                this._output.Insert(this._Select.Evaluate());
+            }
+
+            // Close the stream //
+            this._output.Close();
+
+            // Clicks //
+            this._Clicks += rc.Clicks;
+
+        }
+
+        public long Clicks
+        {
+            get { return this._Clicks; }
+        }
+
+
+    }
 
 }

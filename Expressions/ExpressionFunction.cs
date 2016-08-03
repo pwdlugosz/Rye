@@ -17,7 +17,7 @@ namespace Rye.Expressions
             : base(Parent, ExpressionAffinity.Result)
         {
             this._Func = Function;
-            this._name = Function.NameSig;
+            this._name = null;
         }
 
         public void SetParameterCount(int Count)

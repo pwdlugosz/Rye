@@ -14,7 +14,7 @@ namespace Rye.Data
         // Properties //
         public abstract Schema Columns { get; }
 
-        public abstract Key SortBy { get; }
+        public abstract Key SortBy { get; set; }
 
         public bool IsSorted 
         { 
@@ -41,12 +41,14 @@ namespace Rye.Data
 
         public abstract Volume CreateVolume(int ThreadID, int ThreadCount);
         
+        /*
         public virtual void Sort(Key K)
         {
             long clicks = this.SortC(K);
         }
 
         public abstract long SortC(Key K);
+        */
 
         public bool IsSortedBy(Key K)
         {
@@ -131,6 +133,10 @@ namespace Rye.Data
             get
             {
                 return this._OrderBy;
+            }
+            set
+            {
+                this._OrderBy = value;
             }
         }
 
@@ -351,11 +357,12 @@ namespace Rye.Data
             return (int)l;
         }
 
+        /*
         public override void Sort(Key K)
         {
 
             this._OrderBy = K;
-            this._Cache.Sort(new RecordComparer(K, K));
+            this._Cache.Sort(new KeyedRecordComparer(K, K));
             if (this.Header.IsMemoryOnly)
             {
                 Kernel.RequestFlushExtent(this);
@@ -365,12 +372,13 @@ namespace Rye.Data
 
         public override long SortC(Key K)
         {
-            RecordComparer rc = new RecordComparer(K, K);
+            KeyedRecordComparer rc = new KeyedRecordComparer(K, K);
             this._Cache.Sort(rc);
             this._OrderBy = K;
             return rc.Clicks;
         }
-
+        */
+        
         public override int DiskCost
         {
             get 
@@ -510,7 +518,7 @@ namespace Rye.Data
 
             public override void Sort(Key K)
             {
-                this._E.Sort(K);
+                long l = SortMaster.Sort(this._E, K);
             }
 
             public override DataSet Parent
@@ -633,6 +641,7 @@ namespace Rye.Data
             this._Head = h;
             this._OrderBy = new Key();
             this._Refs = new Extent(new Schema("ID INT, COUNT INT"), h);
+            this._Refs.MaxRecords = Extent.DEFAULT_MAX_RECORD_COUNT;
 
             if (Flush)
             {
@@ -705,6 +714,10 @@ namespace Rye.Data
             get
             {
                 return this._OrderBy;
+            }
+            set
+            {
+                this._OrderBy = value;
             }
         }
 
@@ -957,12 +970,15 @@ namespace Rye.Data
         }
 
         // Sorts //
+        /*
         public override long SortC(Key K)
         {
             return Table.SortBase(this, K);
         }
+        */
 
         // Sort support //
+        /*
         internal static long SortEach(Table Data, Key OrderBy)
         {
 
@@ -1022,7 +1038,7 @@ namespace Rye.Data
             y.MaxRecords = B.MaxRecords;
             int CompareResult = 0;
 
-            RecordComparer rec = new RecordComparer(Columns, Columns);
+            KeyedRecordComparer rec = new KeyedRecordComparer(Columns, Columns);
             
             // Main record loop //
             int ptra = 0, ptrb = 0;
@@ -1201,7 +1217,8 @@ namespace Rye.Data
             return Clicks;
 
         }
-
+        */
+        
         // Override //
         public override int GetHashCode()
         {
@@ -2165,7 +2182,7 @@ namespace Rye.Data
 
             public override void Sort(Key K)
             {
-                Table.SortBase(this._T, K, this._ExtentIDs);
+                long l = SortMaster.Sort(this._T, K, this._ExtentIDs);
             }
 
             public override RecordReader OpenReader(Register Memory, Filter Predicate)

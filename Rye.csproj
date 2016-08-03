@@ -152,6 +152,7 @@
     <Compile Include="Methods\MethodNothing.cs" />
     <Compile Include="Methods\MethodCollection.cs" />
     <Compile Include="Methods\MethodWhile.cs" />
+    <Compile Include="Data\SortMaster.cs" />
     <Compile Include="Structures\FileStructure.cs" />
     <Compile Include="Expressions\FunctionLibrary.cs" />
     <Compile Include="Structures\Heap.cs" />

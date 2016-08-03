@@ -82,6 +82,7 @@ K_FOR : F O R;
 K_FROM : F R O M;
 K_FULL : F U L L;
 K_GRADIENT : G R A D I E N T;
+K_HINT : H I N T;
 K_IDENTITY : I D E N T I T Y | I D E N T;
 K_IF : I F;
 K_IN : I N;

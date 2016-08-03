@@ -447,7 +447,7 @@ namespace Rye.Interpreter
             // Get some high level data first, such as thread count, 'where' clause, and source data //
             DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
             int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
-            List<AggregateProcessNode> nodes = new List<AggregateProcessNode>();
+            List<AggregateHashTableProcessNode> nodes = new List<AggregateHashTableProcessNode>();
             string alias = (context.base_clause().IDENTIFIER() == null ? data.Header.Name : context.base_clause().IDENTIFIER().GetText());
 
             // Create all the aggregate process nodes //
@@ -466,7 +466,7 @@ namespace Rye.Interpreter
                 AggregateCollection aggs = in_exp.ToReducers(context.over_clause().beta_reduction_list());
                 Filter where = CompilerHelper.GetWhere(in_exp, context.base_clause().where_clause());
 
-                AggregateProcessNode n = new AggregateProcessNode(i, data.CreateVolume(i, threads), keys, aggs, where, in_mem);
+                AggregateHashTableProcessNode n = new AggregateHashTableProcessNode(i, data.CreateVolume(i, threads), keys, aggs, where, in_mem);
                 nodes.Add(n);
 
                 // Save the key/value //
@@ -487,10 +487,10 @@ namespace Rye.Interpreter
             RecordWriter out_writer = out_data.OpenWriter();
 
             // Create the consolidation process //
-            AggregateConsolidationProcess reducer = new AggregateConsolidationProcess(FinalKey, FinalValue, out_writer, out_keys, out_mem);
+            AggregateHashTableConsolidationProcess reducer = new AggregateHashTableConsolidationProcess(FinalKey, FinalValue, out_writer, out_keys, out_mem);
 
             // Build the query process that will handle this //
-            QueryProcess<AggregateProcessNode> process = new QueryProcess<AggregateProcessNode>(nodes, reducer);
+            QueryProcess<AggregateHashTableProcessNode> process = new QueryProcess<AggregateHashTableProcessNode>(nodes, reducer);
 
             // Run the process //
             Stopwatch sw = Stopwatch.StartNew();
@@ -521,31 +521,47 @@ namespace Rye.Interpreter
             
             // Get the data //
             DataSet data = CompilerHelper.CallData(this._enviro, context.table_name());
+            string alias = (context.K_AS() == null ? data.Name : context.IDENTIFIER().GetText());
             
+            // Create a visitor / register //
+            Register r = new Register(data.Name, data.Columns);
+            ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
+            exp.AddRegister(alias, r);
+
             // Build the sort key //
             Key k = new Key();
+            ExpressionCollection cols = new ExpressionCollection();
+            int idx = 0;
             foreach (RyeParser.Sort_unitContext ctx in context.sort_unit())
             {
 
-                int idx = data.Columns.ColumnIndex(ctx.IDENTIFIER().GetText());
-                if (idx == -1)
-                    throw new RyeCompileException("Field '{0}' does not exist in '{1}'", ctx.IDENTIFIER().GetText(), data.Name);
+                Expression e = exp.ToNode(ctx.expression());
+                cols.Add(e);
                 KeyAffinity ka = KeyAffinity.Ascending;
                 if (ctx.K_DESC() != null)
                     ka = KeyAffinity.Descending;
                 k.Add(idx, ka);
 
+                idx++;
+
             }
 
             Stopwatch sw = Stopwatch.StartNew();
-            long cost = data.SortC(k);
+            long cost = 0;
+            if (data.Header.Affinity == HeaderType.Extent)
+            {
+                 cost = SortMaster.Sort(data as Extent, cols, r, k);
+            }
+            else
+            {
+                cost = SortMaster.Sort(data as Table, cols, r, k);
+            }
             sw.Stop();
             double avg = (double)data.RecordCount / (double)data.ExtentCount;
             double nsum = data.ExtentCount * (data.ExtentCount - 1);
 
-
             this._enviro.IO.WriteLine("Rows: {0}", data.RecordCount);
-            this._enviro.IO.WriteLine("Expected Cost: {0}", avg * Math.Log(avg) * data.ExtentCount + nsum * avg);
+            this._enviro.IO.WriteLine("Expected Cost: {0}", avg * Math.Log(avg, 2D) * data.ExtentCount + nsum * avg);
             this._enviro.IO.WriteLine("Actual Cost: {0}", cost);
             this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);
             this._enviro.IO.WriteLine();
@@ -586,7 +602,7 @@ namespace Rye.Interpreter
             {
 
                 // Create a record comparer //
-                RecordComparer rc = this.RenderJoinRecordComparer(DLeft.Columns, DRight.Columns, ALeft, ARight, context.join_on_unit());
+                KeyedRecordComparer rc = this.RenderJoinRecordComparer(DLeft.Columns, DRight.Columns, ALeft, ARight, context.join_on_unit());
 
                 // Create out registers //
                 Register MemLeft = new Register(ALeft, DLeft.Columns);
@@ -658,7 +674,7 @@ namespace Rye.Interpreter
 
         }
 
-        private RecordComparer RenderJoinRecordComparer(Schema SLeft, Schema SRight, string ALeft, string ARight, RyeParser.Join_on_unitContext[] Predicates)
+        private KeyedRecordComparer RenderJoinRecordComparer(Schema SLeft, Schema SRight, string ALeft, string ARight, RyeParser.Join_on_unitContext[] Predicates)
         {
 
             Key KLeft = new Key();
@@ -705,7 +721,7 @@ namespace Rye.Interpreter
 
             }
 
-            return new RecordComparer(KLeft, KRight);
+            return new KeyedRecordComparer(KLeft, KRight);
 
         }
 

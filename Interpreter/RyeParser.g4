@@ -74,13 +74,13 @@ lambda_name
 // ------------------------------------------ Sort ------------------------------------------ //
 command_sort
 	: K_SORT LCURL 
-		K_FROM table_name SEMI_COLON
+		K_FROM table_name (K_AS IDENTIFIER)? SEMI_COLON
 	RCURL SEMI_COLON
 	K_BY LCURL
 		sort_unit (COMMA sort_unit)* SEMI_COLON
 	RCURL SEMI_COLON
 	;
-sort_unit : IDENTIFIER (K_ASC | K_DESC)?;
+sort_unit : expression (K_ASC | K_DESC)?;
 
 // ------------------------------------------ Read ------------------------------------------ //
 command_read

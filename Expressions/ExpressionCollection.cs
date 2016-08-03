@@ -88,6 +88,19 @@ namespace Rye.Expressions
 
         }
 
+        public bool IsVolatile
+        {
+            get
+            {
+                foreach (Expression e in this._Nodes.Values)
+                {
+                    if (e.IsVolatile)
+                        return true;
+                }
+                return false;
+            }
+        }
+
         // Adds //
         public void Add(Expression Node, string Alias)
         {

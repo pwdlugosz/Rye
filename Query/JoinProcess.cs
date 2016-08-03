@@ -17,12 +17,12 @@ namespace Rye.Query
         protected JoinType _BaseType;
         protected Volume _V1, _V2;
         protected Register _M1, _M2;
-        protected RecordComparer _RC;
+        protected KeyedRecordComparer _RC;
         protected Filter _F;
         protected ExpressionCollection _C;
         protected RecordWriter _W;
         
-        public JoinProcessNode(int ThreadID, JoinAlgorithm JA, JoinType JT, Volume V1, Register M1, Volume V2, Register M2, RecordComparer RC, Filter F, ExpressionCollection C, RecordWriter W)
+        public JoinProcessNode(int ThreadID, JoinAlgorithm JA, JoinType JT, Volume V1, Register M1, Volume V2, Register M2, KeyedRecordComparer RC, Filter F, ExpressionCollection C, RecordWriter W)
             : base(ThreadID)
         {
             this._BaseAlgorithm = JA;
@@ -234,7 +234,7 @@ namespace Rye.Query
         }
 
         // Core Joins //
-        public long VolumeJoin(JoinType Type, Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public long VolumeJoin(JoinType Type, Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
 
@@ -264,7 +264,7 @@ namespace Rye.Query
 
         }
 
-        public long BlockJoin(JoinType Type, Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public long BlockJoin(JoinType Type, Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
 
@@ -295,38 +295,38 @@ namespace Rye.Query
         }
 
         // E x E //
-        public abstract long InnerJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory, RecordComparer JoinPredicate,
+        public abstract long InnerJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream);
 
-        public abstract long LeftJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory, RecordComparer JoinPredicate,
+        public abstract long LeftJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream, BitArray NullReferenceMap);
 
-        public abstract long AntiLeftJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory, RecordComparer JoinPredicate,
+        public abstract long AntiLeftJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream, BitArray NullReferenceMap);
 
         // V x V //
-        public abstract long InnerJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public abstract long InnerJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream);
 
-        public abstract long LeftJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public abstract long LeftJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream);
 
-        public abstract long AntiLeftJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public abstract long AntiLeftJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream);
 
-        public virtual long RightJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public virtual long RightJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
             return this.LeftJoin(RightVolume, RightMemory, LeftVolume, LeftMemory, JoinPredicate.Reverse(), Where, Output, OutputStream);
         }
 
-        public virtual long AntiRightJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public virtual long AntiRightJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
             return this.AntiLeftJoin(RightVolume, RightMemory, LeftVolume, LeftMemory, JoinPredicate.Reverse(), Where, Output, OutputStream);
         }
 
-        public virtual long AntiInnerJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public virtual long AntiInnerJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
             long clicks = this.AntiLeftJoin(LeftVolume, LeftMemory, RightVolume, RightMemory, JoinPredicate, Where, Output, OutputStream);
@@ -334,7 +334,7 @@ namespace Rye.Query
             return clicks;
         }
 
-        public virtual long FullJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public virtual long FullJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
             long clicks = this.LeftJoin(LeftVolume, LeftMemory, RightVolume, RightMemory, JoinPredicate, Where, Output, OutputStream);
@@ -343,7 +343,7 @@ namespace Rye.Query
         }
 
         // Block Joins //
-        public virtual long BlockInnerJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public virtual long BlockInnerJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
 
@@ -368,7 +368,7 @@ namespace Rye.Query
 
         }
 
-        public virtual long BlockAntiInnerJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public virtual long BlockAntiInnerJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
 
@@ -378,7 +378,7 @@ namespace Rye.Query
 
         }
 
-        public virtual long BlockLeftJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public virtual long BlockLeftJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
 
@@ -410,7 +410,7 @@ namespace Rye.Query
 
         }
 
-        public virtual long BlockAntiLeftJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public virtual long BlockAntiLeftJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
 
@@ -441,19 +441,19 @@ namespace Rye.Query
 
         }
 
-        public virtual long BlockRightJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public virtual long BlockRightJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
             return this.BlockLeftJoin(RightVolume, RightMemory, LeftVolume, LeftMemory, JoinPredicate, Where, Output, OutputStream);
         }
 
-        public virtual long BlockAntiRightJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public virtual long BlockAntiRightJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
             return this.BlockAntiLeftJoin(RightVolume, RightMemory, LeftVolume, LeftMemory, JoinPredicate, Where, Output, OutputStream);
         }
 
-        public virtual long BlockFullJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        public virtual long BlockFullJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
 
@@ -693,44 +693,44 @@ namespace Rye.Query
 
         // E x E Joins //
         public override long InnerJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory, 
-            RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
+            KeyedRecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
             return this.SortMergeBase(LeftExtent, LeftMemory, RightExtent, RightMemory, JoinPredicate, Where, Output, OutputStream, null, true, false);
         }
 
         public override long LeftJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory, 
-            RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream, BitArray NullReferenceMap)
+            KeyedRecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream, BitArray NullReferenceMap)
         {
             return this.SortMergeBase(LeftExtent, LeftMemory, RightExtent, RightMemory, JoinPredicate, Where, Output, OutputStream, NullReferenceMap, true, true);
         }
 
         public override long AntiLeftJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory, 
-            RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream, BitArray NullReferenceMap)
+            KeyedRecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream, BitArray NullReferenceMap)
         {
             return this.SortMergeBase(LeftExtent, LeftMemory, RightExtent, RightMemory, JoinPredicate, Where, Output, OutputStream, NullReferenceMap, false, true);
         }
 
         // V x V Joins //
         public override long InnerJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, 
-            RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
+            KeyedRecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
             return this.SortMergeBase(LeftVolume, LeftMemory, RightVolume, RightMemory, JoinPredicate, Where, Output, OutputStream, true, false);
         }
 
         public override long LeftJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, 
-            RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
+            KeyedRecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
             return this.SortMergeBase(LeftVolume, LeftMemory, RightVolume, RightMemory, JoinPredicate, Where, Output, OutputStream, true, true);
         }
 
         public override long AntiLeftJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, 
-            RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
+            KeyedRecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
             return this.SortMergeBase(LeftVolume, LeftMemory, RightVolume, RightMemory, JoinPredicate, Where, Output, OutputStream, false, true);
         }
 
         // Base Methods //
-        private long SortMergeBase(Extent LeftTable, Register LeftMemory, Extent RightTable, Register RightMemory, RecordComparer JoinPredicate, 
+        private long SortMergeBase(Extent LeftTable, Register LeftMemory, Extent RightTable, Register RightMemory, KeyedRecordComparer JoinPredicate, 
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream, BitArray NullReferenceMap, bool Intersection, bool Difference)
         {
 
@@ -845,7 +845,7 @@ namespace Rye.Query
 
         }
 
-        private long SortMergeBase(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        private long SortMergeBase(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream, bool Intersection, bool Difference)
         {
 
@@ -980,7 +980,7 @@ namespace Rye.Query
 
         }
 
-        private long OptimizedFullJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
+        private long OptimizedFullJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, KeyedRecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream, bool Intersection)
         {
 
@@ -1138,7 +1138,7 @@ namespace Rye.Query
         {
             if (Key.EqualsStrong(Datum.SortBy, K))
                 return;
-            Datum.Sort(K);
+            SortMaster.Sort(Datum, K);
         }
 
         // Cost metrics //
@@ -1222,45 +1222,45 @@ namespace Rye.Query
 
         // E x E Joins //
         public override long InnerJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory,
-            RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
+            KeyedRecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
             return this.NestedLoopBase(LeftExtent, LeftMemory, RightExtent, RightMemory, JoinPredicate, Where, Output, OutputStream, null, true, false);
         }
 
         public override long LeftJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory,
-            RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream, BitArray NullReferenceMap)
+            KeyedRecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream, BitArray NullReferenceMap)
         {
             return this.NestedLoopBase(LeftExtent, LeftMemory, RightExtent, RightMemory, JoinPredicate, Where, Output, OutputStream, NullReferenceMap, true, true);
         }
 
         public override long AntiLeftJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory,
-            RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream, BitArray NullReferenceMap)
+            KeyedRecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream, BitArray NullReferenceMap)
         {
             return this.NestedLoopBase(LeftExtent, LeftMemory, RightExtent, RightMemory, JoinPredicate, Where, Output, OutputStream, NullReferenceMap, false, true);
         }
 
         // V x V Joins //
         public override long InnerJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory,
-            RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
+            KeyedRecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
             return this.NestedLoopBase(LeftVolume, LeftMemory, RightVolume, RightMemory, JoinPredicate, Where, Output, OutputStream, true, false);
         }
 
         public override long LeftJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory,
-            RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
+            KeyedRecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
             return this.NestedLoopBase(LeftVolume, LeftMemory, RightVolume, RightMemory, JoinPredicate, Where, Output, OutputStream, true, true);
         }
 
         public override long AntiLeftJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory,
-            RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
+            KeyedRecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
             return this.NestedLoopBase(LeftVolume, LeftMemory, RightVolume, RightMemory, JoinPredicate, Where, Output, OutputStream, false, true);
         }
 
         // Base algorithms //
         private long NestedLoopBase(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory,
-            RecordComparer MergePredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream, BitArray NullReferenceMap,
+            KeyedRecordComparer MergePredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream, BitArray NullReferenceMap,
             bool Intersection, bool Difference)
         {
 
@@ -1319,7 +1319,7 @@ namespace Rye.Query
         }
 
         private long NestedLoopBase(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory,
-            RecordComparer MergePredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream,
+            KeyedRecordComparer MergePredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream,
             bool Intersection, bool Difference)
         {
 
