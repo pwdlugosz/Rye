@@ -248,6 +248,16 @@ namespace Rye.Expressions
             return t;
         }
 
+        public static int DecompileToFieldRef(Expression E)
+        {
+            
+            if (E == null)
+                return -1;
+            if (E is ExpressionFieldRef)
+                return (E as ExpressionFieldRef).Index;
+            return -1;
+
+        }
 
     }
 

@@ -349,8 +349,8 @@ namespace Rye.Query
         public void WriteToFinal(RecordWriter Writter)
         {
             Schema s = Schema.Join(this._Maps.Columns, this._Reducers.Columns);
-            ExpressionCollection leafs = ExpressionCollection.Render(s, "OUT");
-            Register mem = leafs.GetMemoryRegister("OUT");
+            Register mem = new Register("OUT", s);
+            ExpressionCollection leafs = ExpressionCollection.Render(s, "OUT", mem);
             this.WriteToFinal(Writter, leafs, mem);
         }
 
@@ -504,6 +504,9 @@ namespace Rye.Query
             this._OutputKey = OutputKeys;
             this._OutputMemory = OutputMemory;
 
+            // Set up the work pieces //
+            this._WorkingValue = this._Over.Initialize();
+
         }
 
         public override void Invoke()
@@ -599,6 +602,31 @@ namespace Rye.Query
             get { return this._EndEdgeValue; } 
         }
 
+        public ExpressionCollection HashKey
+        {
+            get { return this._By; }
+        }
+
+        public AggregateCollection HashValue
+        {
+            get { return this._Over; }
+        }
+
+        public ExpressionCollection Select
+        {
+            get { return this._OutputKey; }
+        }
+
+        public Register SelectMemory
+        {
+            get { return this._OutputMemory; }
+        }
+
+        public RecordWriter OutputWriter
+        {
+            get { return this._Writer; }
+        }
+    
     }
 
     public sealed class AggregateOrderedConsolidationProcess : QueryConsolidation<AggregateOrderedProcessNode>
@@ -611,21 +639,20 @@ namespace Rye.Query
         private ExpressionCollection _Select;
         private long _Clicks = 0;
 
-        public AggregateOrderedConsolidationProcess(ExpressionCollection Keys, AggregateCollection Values, RecordWriter Output, 
-            ExpressionCollection Select, Register Memory)
+        public AggregateOrderedConsolidationProcess()
             : base()
         {
-
-            this._output = Output;
-            this._By = Keys;
-            this._Over = Values;
-            this._Select = Select;
-            this._MemoryLocation = Memory;
-
         }
 
         public override void Consolidate(List<AggregateOrderedProcessNode> Nodes)
         {
+
+            // Get our working variables //
+            this._By = Nodes.First().HashKey;
+            this._Over = Nodes.First().HashValue;
+            this._MemoryLocation = Nodes.First().SelectMemory;
+            this._Select = Nodes.First().Select;
+            this._output = Nodes.First().OutputWriter;
 
             /* 
              * Create a dictionary to load the data into, merging all like edges allong the way 
@@ -642,7 +669,7 @@ namespace Rye.Query
                 // Check the begin edge //
                 if (HashTable.ContainsKey(n.BeginEdgeKey))
                 {
-                    this._Over.Merge(n.BeginEdgeValue, HashTable[n.BeginEdgeKey]);
+                    n.HashValue.Merge(n.BeginEdgeValue, HashTable[n.BeginEdgeKey]);
                 }
                 else
                 {
@@ -652,7 +679,7 @@ namespace Rye.Query
                 // Check the end edge //
                 if (HashTable.ContainsKey(n.EndEdgeKey))
                 {
-                    this._Over.Merge(n.EndEdgeValue, HashTable[n.EndEdgeKey]);
+                    n.HashValue.Merge(n.EndEdgeValue, HashTable[n.EndEdgeKey]);
                 }
                 else
                 {
@@ -672,7 +699,11 @@ namespace Rye.Query
             }
 
             // Close the stream //
-            this._output.Close();
+            foreach (AggregateOrderedProcessNode node in Nodes)
+            {
+                node.OutputWriter.Close();
+            }
+            //this._output.Close();
 
             // Clicks //
             this._Clicks += rc.Clicks;

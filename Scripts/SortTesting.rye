@@ -1,0 +1,51 @@
+﻿
+// CONNECT //
+CONNECT
+{
+	TEMP TO 'C:\Users\pwdlu_000\Documents\Data\TempDB';
+};
+
+CREATE TABLE TEMP.SORT_TEST SIZE 10
+{
+	KEY AS INT,
+	VALUE1 AS INT,
+	VALUE2 AS INT
+};
+
+FOR GLOBAL.I = 0 TO 100
+DO
+{
+	
+	APPEND
+	{
+		TEMP.SORT_TEST;
+		RETAIN
+			GLOBAL.I, 
+			GLOBAL.I % 7 AS VALUE1, 
+			GLOBAL.I ^ 10 % (11 * 7) AS VALUE2;
+	};
+
+};
+
+FILE.EXPORT
+{
+	DATA = TABLE TEMP.SORT_TEST;
+	PATH = 'C:\Users\pwdlu_000\Documents\RyeProjects\Pre_Sort.txt';
+	DELIM = ',';
+};
+
+SORT
+{
+	FROM TEMP.SORT_TEST AS A;
+};
+BY
+{
+	KEY % 7 DESC, KEY ^ 10 % 77;
+};
+
+FILE.EXPORT
+{
+	DATA = TABLE TEMP.SORT_TEST;
+	PATH = 'C:\Users\pwdlu_000\Documents\RyeProjects\Post_Sort.txt';
+	DELIM = ',';
+};

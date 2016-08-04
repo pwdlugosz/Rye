@@ -26,6 +26,7 @@ namespace Rye.Interpreter
             this._enviro = Enviro;
         }
 
+        // Action //
         public override int VisitCommand_method(RyeParser.Command_methodContext context)
         {
 
@@ -51,6 +52,7 @@ namespace Rye.Interpreter
 
         }
 
+        // Connect / Disconnect //
         public override int VisitCommand_connect(RyeParser.Command_connectContext context)
         {
 
@@ -99,6 +101,7 @@ namespace Rye.Interpreter
 
         }
 
+        // Declare //
         public override int VisitCommand_declare(RyeParser.Command_declareContext context)
         {
 
@@ -149,6 +152,7 @@ namespace Rye.Interpreter
 
         }
 
+        // Create //
         public override int VisitCommand_create(RyeParser.Command_createContext context)
         {
 
@@ -201,6 +205,7 @@ namespace Rye.Interpreter
 
         }
 
+        // Select / Read //
         public override int VisitCommand_read(RyeParser.Command_readContext context)
         {
 
@@ -312,6 +317,7 @@ namespace Rye.Interpreter
 
         }
 
+        // Update //
         public override int VisitCommand_update(RyeParser.Command_updateContext context)
         {
 
@@ -376,6 +382,7 @@ namespace Rye.Interpreter
 
         }
 
+        // Delete //
         public override int VisitCommand_delete(RyeParser.Command_deleteContext context)
         {
 
@@ -438,12 +445,30 @@ namespace Rye.Interpreter
             
         }
 
+        // Aggregates //
         public override int VisitCommand_aggregate(RyeParser.Command_aggregateContext context)
         {
 
+            /*
+             * Check the hints:
+             * HINT = 'SORT' => ordered aggregate
+             * HINT = 'HASH' => has table aggregate
+             * 
+             */
+            Cell hint = CompilerHelper.GetHint(this._enviro, context.base_clause());
+            if (hint.valueSTRING.ToUpper() == "SORT")
+                return this.AggregateOrdered(context);
+            else
+                return this.AggregateHashTable(context);
+
+        }
+
+        private int AggregateHashTable(RyeParser.Command_aggregateContext context)
+        {
+
             // Notify //
-            this._enviro.IO.WriteHeader("Aggregate");
-            
+            this._enviro.IO.WriteHeader("Aggregate - Hash Table");
+
             // Get some high level data first, such as thread count, 'where' clause, and source data //
             DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
             int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
@@ -512,7 +537,126 @@ namespace Rye.Interpreter
             return 1;
 
         }
+        
+        private int AggregateOrdered(RyeParser.Command_aggregateContext context)
+        {
 
+            // Notify //
+            this._enviro.IO.WriteHeader("Aggregate - Order");
+
+            // Get some high level data first, such as thread count, 'where' clause, and source data //
+            DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
+            int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
+            List<AggregateOrderedProcessNode> nodes = new List<AggregateOrderedProcessNode>();
+            string alias = (context.base_clause().IDENTIFIER() == null ? data.Header.Name : context.base_clause().IDENTIFIER().GetText());
+
+            // Create all the aggregate process nodes //
+            DataSet out_data = this.RenderAggregateDestination(context);
+            for (int i = 0; i < threads; i++)
+            {
+
+                // Construct the expression visitor and memory register used in the aggregation process //
+                ExpressionVisitor in_exp = new ExpressionVisitor(this._enviro);
+                Register in_mem = new Register(alias, data.Columns);
+                in_exp.AddRegister(alias, in_mem);
+
+                // Get the keys, the aggregates and the where clause //
+                ExpressionCollection keys = in_exp.ToNodes(context.by_clause().expression_or_wildcard_set());
+                AggregateCollection aggs = in_exp.ToReducers(context.over_clause().beta_reduction_list());
+                Filter where = CompilerHelper.GetWhere(in_exp, context.base_clause().where_clause());
+
+                // Create the output expression visitor //
+                Schema out_columns = Schema.Join(keys.Columns, aggs.Columns);
+                ExpressionVisitor out_exp = new ExpressionVisitor(this._enviro);
+                Register out_mem = new Register("OUT", out_columns);
+                out_exp.AddRegister("OUT", out_mem); // TODO, think of a better alias to use
+                ExpressionCollection out_keys = out_exp.ToNodes(context.append_method().expression_or_wildcard_set());
+                
+                // Render the record writer that will be used to fill the output //
+                RecordWriter out_writer = out_data.OpenWriter();
+
+                // Render the node //
+                AggregateOrderedProcessNode n = new AggregateOrderedProcessNode(i, data.CreateVolume(i, threads), keys, aggs, where, in_mem, out_keys, out_mem, out_writer);
+                nodes.Add(n);
+
+            }
+
+            // Create the consolidation process //
+            AggregateOrderedConsolidationProcess reducer = new AggregateOrderedConsolidationProcess();
+
+            // Build the query process that will handle this //
+            QueryProcess<AggregateOrderedProcessNode> process = new QueryProcess<AggregateOrderedProcessNode>(nodes, reducer);
+
+            // Run the process //
+            Stopwatch sw = Stopwatch.StartNew();
+
+            // Sort the dataset //
+            PreProcessor p = this.RenderAggregatePreProcessor(context, data, alias);
+            process.AddPreProcessor(p);
+
+            // Run the gruoper //
+            if (this._enviro.AllowAsync && threads > 1)
+            {
+                process.ExecuteAsync();
+            }
+            else
+            {
+                process.Execute();
+            }
+            sw.Stop();
+
+            // Close the output //
+            this._enviro.IO.WriteLine("Actual Aggregate Cost: {0}", reducer.Clicks + p.Clicks);
+            this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);
+            this._enviro.IO.WriteLine();
+
+            return 1;
+
+        }
+
+        private DataSet RenderAggregateDestination(RyeParser.Command_aggregateContext context)
+        {
+
+            // Get some high level data first, such as thread count, 'where' clause, and source data //
+            DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
+            string alias = (context.base_clause().IDENTIFIER() == null ? data.Header.Name : context.base_clause().IDENTIFIER().GetText());
+
+            // Construct the expression visitor and memory register used in the aggregation process //
+            ExpressionVisitor in_exp = new ExpressionVisitor(this._enviro);
+            Register in_mem = new Register(alias, data.Columns);
+            in_exp.AddRegister(alias, in_mem);
+
+            // Get the keys, the aggregates and the where clause //
+            ExpressionCollection keys = in_exp.ToNodes(context.by_clause().expression_or_wildcard_set());
+            AggregateCollection aggs = in_exp.ToReducers(context.over_clause().beta_reduction_list());
+           
+            // Create the output expression visitor //
+            Schema out_columns = Schema.Join(keys.Columns, aggs.Columns);
+            ExpressionVisitor out_exp = new ExpressionVisitor(this._enviro);
+            Register out_mem = new Register("OUT", out_columns);
+            out_exp.AddRegister("OUT", out_mem); // TODO, think of a better alias to use
+            ExpressionCollection out_keys = out_exp.ToNodes(context.append_method().expression_or_wildcard_set());
+
+            // Render the record writer that will be used to fill the output //
+            return CompilerHelper.RenderData(this._enviro, out_keys, context.append_method());
+
+        }
+
+        private PreProcessor RenderAggregatePreProcessor(RyeParser.Command_aggregateContext context, DataSet Data, string Alias)
+        {
+
+            // Construct the expression visitor and memory register used in the aggregation process //
+            ExpressionVisitor in_exp = new ExpressionVisitor(this._enviro);
+            Register in_mem = new Register(Alias, Data.Columns);
+            in_exp.AddRegister(Alias, in_mem);
+
+            // Sort the data //
+            ExpressionCollection keys = in_exp.ToNodes(context.by_clause().expression_or_wildcard_set());
+            return new SortPreProcessor(Data, keys, in_mem);
+
+        }
+
+        // Sort //
         public override int VisitCommand_sort(RyeParser.Command_sortContext context)
         {
 
@@ -570,6 +714,7 @@ namespace Rye.Interpreter
 
         }
 
+        // Join //
         public override int VisitCommand_join(RyeParser.Command_joinContext context)
         {
 
@@ -635,6 +780,11 @@ namespace Rye.Interpreter
             JoinConsolidation reducer = new JoinConsolidation();
             QueryProcess<JoinProcessNode> process = new QueryProcess<JoinProcessNode>(Nodes, reducer);
 
+            // Create a record comparer //
+            KeyedRecordComparer comp = this.RenderJoinRecordComparer(DLeft.Columns, DRight.Columns, ALeft, ARight, context.join_on_unit());
+            process.AddPreProcessor(new SortPreProcessor(DLeft, comp.LeftKey));
+            process.AddPreProcessor(new SortPreProcessor(DRight, comp.RightKey));
+
             // Run the process //
             Stopwatch sw = Stopwatch.StartNew();
             if (this._enviro.AllowAsync && Threads > 1)
@@ -657,30 +807,13 @@ namespace Rye.Interpreter
 
         }
 
-        public override int VisitCommand_debug(RyeParser.Command_debugContext context)
-        {
-
-            // Get the data //
-            DataSet data = CompilerHelper.CallData(this._enviro, context.table_name());
-           
-            // Get the string //
-            ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
-            string path = exp.ToNode(context.expression()).Evaluate().valueSTRING;
-
-            // Dump //
-            Kernel.TextDump(data, path,',');
-
-            return 1;
-
-        }
-
         private KeyedRecordComparer RenderJoinRecordComparer(Schema SLeft, Schema SRight, string ALeft, string ARight, RyeParser.Join_on_unitContext[] Predicates)
         {
 
             Key KLeft = new Key();
             Key KRight = new Key();
 
-            for (int i = 0; i < Predicates.Length; i++ )
+            for (int i = 0; i < Predicates.Length; i++)
             {
 
                 string AL = Predicates[i].IDENTIFIER()[0].GetText();
@@ -755,6 +888,24 @@ namespace Rye.Interpreter
             }
 
             throw new RyeCompileException("Invalid join type '{0}'", context.GetText());
+
+        }
+
+        // Debug //
+        public override int VisitCommand_debug(RyeParser.Command_debugContext context)
+        {
+
+            // Get the data //
+            DataSet data = CompilerHelper.CallData(this._enviro, context.table_name());
+           
+            // Get the string //
+            ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
+            string path = exp.ToNode(context.expression()).Evaluate().valueSTRING;
+
+            // Dump //
+            Kernel.TextDump(data, path,',');
+
+            return 1;
 
         }
 

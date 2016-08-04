@@ -75,6 +75,11 @@ namespace Rye.Data
             return R.GetHashCode();
         }
 
+        public virtual RecordComparer Reverse()
+        {
+            return new RecordComparer();
+        }
+
     }
 
     public sealed class KeyedRecordComparer : RecordComparer, IEqualityComparer<Record>, IComparer<Record>
@@ -150,7 +155,7 @@ namespace Rye.Data
             return Record.Split(R, this._k1).GetHashCode();
         }
 
-        public KeyedRecordComparer Reverse()
+        public override RecordComparer Reverse()
         {
             return new KeyedRecordComparer(this._k2, this._k1);
         }
@@ -209,6 +214,11 @@ namespace Rye.Data
 
         }
 
+        public override RecordComparer Reverse()
+        {
+            return new ExpressionRecordComparer(this._e2, this._r2, this._e1, this._r1);
+        }
+
     }
 
     public sealed class ExpressionSortComparer : RecordComparer, IEqualityComparer<Record>, IComparer<Record>
@@ -230,6 +240,11 @@ namespace Rye.Data
             this._r = R;
             this._k = K;
 
+        }
+
+        public ExpressionSortComparer(ExpressionCollection E, Register R)
+            : this(E, R, Key.Build(E.Count))
+        {
         }
 
         public override int Compare(Record R1, Record R2)
@@ -265,6 +280,11 @@ namespace Rye.Data
 
             return base.Equals(x1, x2);
 
+        }
+
+        public override RecordComparer Reverse()
+        {
+            return new ExpressionSortComparer(this._e, this._r, this._k);
         }
 
     }

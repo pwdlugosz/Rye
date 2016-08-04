@@ -153,6 +153,7 @@
     <Compile Include="Methods\MethodCollection.cs" />
     <Compile Include="Methods\MethodWhile.cs" />
     <Compile Include="Data\SortMaster.cs" />
+    <Compile Include="Query\PreProcessor.cs" />
     <Compile Include="Structures\FileStructure.cs" />
     <Compile Include="Expressions\FunctionLibrary.cs" />
     <Compile Include="Structures\Heap.cs" />
@@ -180,9 +181,11 @@
       <CustomToolNamespace>Rye.Interpreter</CustomToolNamespace>
     </Antlr4>
     <None Include="packages.config" />
+    <None Include="Scripts\AggregateTesting.rye" />
     <None Include="Scripts\ExpressionTesting.rye" />
     <None Include="Scripts\MatrixTesting.rye" />
     <None Include="Scripts\QueryTesting.rye" />
+    <None Include="Scripts\SortTesting.rye" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Scripts\ActionTesting.rye" />

@@ -56,17 +56,66 @@ namespace Rye.Query
         private int _ThreadCount;
         private List<Q> _Nodes;
         private QueryConsolidation<Q> _Consolidator;
-
+        private List<PreProcessor> _PreProcessorNodes;
+        
         public QueryProcess(List<Q> Nodes, QueryConsolidation<Q> Consolidator)
         {
+            
             this._ThreadCount = Nodes.Count;
             this._Consolidator = Consolidator;
             this._Nodes = Nodes;
+            this._PreProcessorNodes = new List<PreProcessor>();
+
         }
 
         public void Execute()
         {
 
+            // Preprocessor //
+            this.RunPreProcessor();
+
+            // Nodes //
+            this.RunNodes();
+
+            // Consolidate //
+            this.RunConsolidator();
+
+        }
+
+        public void ExecuteAsync()
+        {
+
+            // Preprocessor //
+            this.RunPreProcessor();
+
+            // Nodes //
+            this.RunNodesAsync();
+            
+            // Consolidate //
+            this.RunConsolidator();
+
+        }
+
+        public void AddPreProcessor(PreProcessor P)
+        {
+            this._PreProcessorNodes.Add(P);
+        }
+
+        // Private methods //
+        public void RunPreProcessor()
+        {
+
+            foreach (PreProcessor p in this._PreProcessorNodes)
+            {
+                p.Invoke();
+            }
+
+        }
+
+        private void RunNodes()
+        {
+
+            // Render Each node, only on one thread //
             foreach (Q q in this._Nodes)
             {
                 q.BeginInvoke();
@@ -74,11 +123,9 @@ namespace Rye.Query
                 q.EndInvoke();
             }
 
-            this._Consolidator.Consolidate(this._Nodes);
-
         }
 
-        public void ExecuteAsync()
+        private void RunNodesAsync()
         {
 
             List<Task> t = new List<Task>();
@@ -90,17 +137,17 @@ namespace Rye.Query
             }
 
             // Kick off the run //
-            t.ForEach((x) => 
-                { 
-                    x.Start(); 
-                }
+            t.ForEach((x) =>
+            {
+                x.Start();
+            }
             );
-            
+
             // Tell each to wait //
-            t.ForEach((x) => 
-                { 
-                    x.Wait(); 
-                }
+            t.ForEach((x) =>
+            {
+                x.Wait();
+            }
             );
 
             // End the invoke //
@@ -109,8 +156,11 @@ namespace Rye.Query
                 q.EndInvoke();
             }
 
-            this._Consolidator.Consolidate(this._Nodes);
+        }
 
+        private void RunConsolidator()
+        {
+            this._Consolidator.Consolidate(this._Nodes);
         }
 
     }

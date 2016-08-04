@@ -70,6 +70,16 @@ namespace Rye.Interpreter
 
         }
 
+        public static Cell GetHint(Workspace Enviro, RyeParser.Base_clauseContext context)
+        {
+
+            if (context.K_HINT() == null)
+                return Cell.NULL_INT;
+
+            return new ExpressionVisitor(Enviro).ToNode(context.expression()).Evaluate();
+
+        }
+
         // Get the data //
         public static DataSet CallData(Workspace Enviro, RyeParser.Table_nameContext context)
         {

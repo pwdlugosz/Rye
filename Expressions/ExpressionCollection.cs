@@ -229,25 +229,42 @@ namespace Rye.Expressions
 
         }
 
-        public static ExpressionCollection Render(Schema Columns, string Alias, Key KeepValues)
+        public static ExpressionCollection Render(Schema Columns, string Alias, Register Memory, Key KeepValues)
         {
-            return ExpressionCollection.Render(Schema.Split(Columns, KeepValues), Alias);
+            return ExpressionCollection.Render(Schema.Split(Columns, KeepValues), Alias, Memory);
         }
 
-        public static ExpressionCollection Render(Schema Columns, string Alias)
+        public static ExpressionCollection Render(Schema Columns, string Alias, Register Memory)
         {
 
-            Register reg = new Register(Alias, Columns);
             ExpressionCollection col = new ExpressionCollection();
             for (int i = 0; i < Columns.Count; i++)
             {
-                Expression e = new ExpressionFieldRef(null, i, Columns.ColumnAffinity(i), Columns.ColumnSize(i), reg);
+                Expression e = new ExpressionFieldRef(null, i, Columns.ColumnAffinity(i), Columns.ColumnSize(i), Memory);
                 col.Add(e, Columns.ColumnName(i));
             }
             return col;
 
         }
 
+        public static Key DecompileToKey(ExpressionCollection E)
+        {
+
+            // Check that there is only one register //
+            if (E._Registers.Count != 1)
+                return new Key();
+
+            Key K = new Key();
+            foreach (Expression e in E._Nodes.Values)
+            {
+                int idx = Expression.DecompileToFieldRef(e);
+                if (idx != -1)
+                    K.Add(idx);
+            }
+
+            return K;
+
+        }
 
     }
 

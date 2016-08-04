@@ -187,24 +187,6 @@ namespace Rye.Expressions
 
         }
 
-        public static Key AllFields(Expression Node)
-        {
-
-            List<Expression> all_nodes = AllNodes(Node, ExpressionAffinity.Result);
-            List<ExpressionFieldRef> fields = Convert<ExpressionFieldRef>(all_nodes);
-            Key k = new Key();
-            foreach (ExpressionFieldRef n in fields)
-                k.Add(n.Index);
-            return k;
-
-        }
-
-        public static ExpressionCollection AllFields(Expression Node, Schema Columns, string Alias)
-        {
-            Key k = AllFields(Node);
-            return ExpressionCollection.Render(Columns, Alias, k);
-        }
-
         public static List<Cell> AllCellValues(Expression Node)
         {
 

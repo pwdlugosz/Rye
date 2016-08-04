@@ -154,6 +154,7 @@ base_clause
 	: LCURL 
 		K_FROM table_name (K_AS IDENTIFIER)? SEMI_COLON 
 		(where_clause SEMI_COLON)? 
+		(K_HINT expression SEMI_COLON)?
 		(thread_clause SEMI_COLON)? 
 		RCURL SEMI_COLON
 	;
