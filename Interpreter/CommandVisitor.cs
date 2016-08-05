@@ -107,18 +107,20 @@ namespace Rye.Interpreter
 
             // Notifiy //
             this._enviro.IO.WriteHeader("Declare");
-            
             StringBuilder sb = new StringBuilder();
+
+            // Create visitor //
+            ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
 
             // Render the scalar variables //
             foreach (RyeParser.Unit_declare_scalarContext ctx1 in context.unit_declare_scalar())
             {
-                
-                string sname = ctx1.IDENTIFIER()[0].GetText();
+
+                string sname = CompilerHelper.GetParentName(ctx1.generic_name(), this._enviro.Global.Name);
                 if (!this._enviro.Structures.Exists(sname))
                     throw new RyeCompileException("Structure '{0}' does not exist", sname);
-                CompilerHelper.AppendScalar(this._enviro, this._enviro.Structures[sname], ctx1);
-                sb.AppendLine("\t" + ctx1.IDENTIFIER()[0].GetText() + "." + ctx1.IDENTIFIER()[1].GetText() + " AS " + ctx1.type().GetText());
+                CompilerHelper.AppendScalar(this._enviro, this._enviro.Structures[sname], exp, ctx1);
+                sb.AppendLine("\t" + sname + "." + CompilerHelper.GetVariableName(ctx1.generic_name()) + " AS " + ctx1.type().GetText());
 
             }
 
@@ -126,11 +128,11 @@ namespace Rye.Interpreter
             foreach (RyeParser.Unit_declare_matrixContext ctx2 in context.unit_declare_matrix())
             {
 
-                string sname = ctx2.IDENTIFIER()[0].GetText();
+                string sname = CompilerHelper.GetParentName(ctx2.generic_name(), this._enviro.Global.Name);
                 if (!this._enviro.Structures.Exists(sname))
                     throw new RyeCompileException("Structure '{0}' does not exist", sname);
-                CompilerHelper.AppendMatrix(this._enviro, this._enviro.Structures[sname], ctx2);
-                sb.AppendLine("\t" + ctx2.IDENTIFIER()[0].GetText() + "." + ctx2.IDENTIFIER()[1].GetText() + "[] AS " + ctx2.type().GetText());
+                CompilerHelper.AppendMatrix(this._enviro, this._enviro.Structures[sname], exp, ctx2);
+                sb.AppendLine("\t" + sname + "." + CompilerHelper.GetVariableName(ctx2.generic_name()) + "[] AS " + ctx2.type().GetText());
 
             }
 
@@ -198,7 +200,7 @@ namespace Rye.Interpreter
                 throw new RyeCompileException("Structure or connection with alias '{0}' does not exist", sname);
             }
 
-            this._enviro.IO.WriteLine("{0} table '{1}' created in '{2}'", (Table ? "Disk" : "Memory"), tname, sname);
+            this._enviro.IO.WriteLine("{0} table '{1}' created in '{2}'", (Table ? "Disk" : "Value"), tname, sname);
             this._enviro.IO.WriteLine();
 
             return 1;
@@ -239,6 +241,7 @@ namespace Rye.Interpreter
                 // Accumulate the heap and register to the expression visitor //
                 exp.AddRegister(alias, reg);
                 exp.AddStructure("LOCAL", local);
+                exp.SetPrimary(local);
 
                 // Process the 'by' clause //
                 ExpressionCollection by_clause = (context.by_clause() == null ? null : exp.ToNodes(context.by_clause().expression_or_wildcard_set()));
@@ -257,11 +260,17 @@ namespace Rye.Interpreter
 
                     foreach (RyeParser.Unit_declare_scalarContext ctx in context.command_declare().unit_declare_scalar())
                     {
-                        CompilerHelper.AppendScalar(this._enviro, local, ctx);
+                        string sname = CompilerHelper.GetParentName(ctx.generic_name(), "LOCAL");
+                        if (!StringComparer.OrdinalIgnoreCase.Equals(sname, "LOCAL"))
+                            throw new RyeCompileException("Attempting to declare a variable outside of the local scope '{0}'", sname);
+                        CompilerHelper.AppendScalar(this._enviro, local, exp, ctx);
                     }
                     foreach (RyeParser.Unit_declare_matrixContext ctx in context.command_declare().unit_declare_matrix())
                     {
-                        CompilerHelper.AppendMatrix(this._enviro, local, ctx);
+                        string sname = CompilerHelper.GetParentName(ctx.generic_name(), "LOCAL");
+                        if (!StringComparer.OrdinalIgnoreCase.Equals(sname, "LOCAL"))
+                            throw new RyeCompileException("Attempting to declare a matrix outside of the local scope '{0}'", sname);
+                        CompilerHelper.AppendMatrix(this._enviro, local, exp, ctx);
                     }
 
                 }
@@ -733,9 +742,12 @@ namespace Rye.Interpreter
             int Threads = CompilerHelper.GetThreadCount(context.thread_clause());
             Threads = Math.Min(Threads, (int)DLeft.ExtentCount);
 
+            // Get the hint //
+            Cell hint = CompilerHelper.GetHint(this._enviro, context);
+
             // Create an algorithm //
             JoinAlgorithm Engine = new NestedLoop();
-            if (context.join_on_unit() != null)
+            if (context.join_on_unit() != null && hint.valueSTRING.ToUpper() != "LOOP")
                 Engine = new SortMerge();
 
             // Get the join type //

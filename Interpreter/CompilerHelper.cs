@@ -80,6 +80,16 @@ namespace Rye.Interpreter
 
         }
 
+        public static Cell GetHint(Workspace Enviro, RyeParser.Command_joinContext context)
+        {
+
+            if (context.K_HINT() == null)
+                return Cell.NULL_INT;
+
+            return new ExpressionVisitor(Enviro).ToNode(context.expression()).Evaluate();
+
+        }
+
         // Get the data //
         public static DataSet CallData(Workspace Enviro, RyeParser.Table_nameContext context)
         {
@@ -183,11 +193,24 @@ namespace Rye.Interpreter
         }
 
         // Declarations //
-        public static void AppendScalar(Workspace Enviro, MemoryStructure Heap, RyeParser.Unit_declare_scalarContext context)
+        public static string GetParentName(RyeParser.Generic_nameContext context, string DefaultName)
+        {
+            if (context.IDENTIFIER().Length == 2)
+                return context.IDENTIFIER()[0].GetText();
+            return DefaultName;
+        }
+
+        public static string GetVariableName(RyeParser.Generic_nameContext context)
+        {
+            if (context.IDENTIFIER().Length == 2)
+                return context.IDENTIFIER()[1].GetText();
+            return context.IDENTIFIER()[0].GetText();
+        }
+        
+        public static void AppendScalar(Workspace Enviro, MemoryStructure Heap, ExpressionVisitor Visitor, RyeParser.Unit_declare_scalarContext context)
         {
 
-            string sname = context.IDENTIFIER()[0].GetText();
-            string vname = context.IDENTIFIER()[1].GetText();
+            string vname = GetVariableName(context.generic_name());
             CellAffinity t = GetAffinity(context.type());
             int size = GetSize(context.type());
 
@@ -195,28 +218,24 @@ namespace Rye.Interpreter
 
             if (context.expression() != null)
             {
-                ExpressionVisitor exp = new ExpressionVisitor(Enviro);
-                exp.AddStructure(sname, Heap);
-                c = exp.Visit(context.expression()).Evaluate();
+                c = Visitor.Visit(context.expression()).Evaluate();
             }
 
             Heap.Scalars.Reallocate(vname, c);
 
         }
 
-        public static void AppendMatrix(Workspace Enviro, MemoryStructure Heap, RyeParser.Unit_declare_matrixContext context)
+        public static void AppendMatrix(Workspace Enviro, MemoryStructure Heap, ExpressionVisitor Visitor, RyeParser.Unit_declare_matrixContext context)
         {
 
-            string sname = context.IDENTIFIER()[0].GetText();
-            string vname = context.IDENTIFIER()[1].GetText();
+            string vname = GetVariableName(context.generic_name());
             CellAffinity t = GetAffinity(context.type());
             int size = GetSize(context.type());
 
-            ExpressionVisitor exp = new ExpressionVisitor(Enviro);
-            MatrixExpressionVisitor mat = new MatrixExpressionVisitor(exp);
-            exp.AddStructure(sname, Heap);
-            int row = (context.expression().Length >= 1 ? (int)exp.Visit(context.expression()[0]).Evaluate().INT : 1);
-            int col = (context.expression().Length == 2 ? (int)exp.Visit(context.expression()[1]).Evaluate().INT : 1);
+            MatrixExpressionVisitor mat = new MatrixExpressionVisitor(Visitor);
+ 
+            int row = (context.expression().Length >= 1 ? (int)Visitor.Visit(context.expression()[0]).Evaluate().INT : 1);
+            int col = (context.expression().Length == 2 ? (int)Visitor.Visit(context.expression()[1]).Evaluate().INT : 1);
 
             CellMatrix m = (context.matrix_expression() == null ? new CellMatrix(row, col, t) : mat.ToMatrix(context.matrix_expression()).Evaluate());
 

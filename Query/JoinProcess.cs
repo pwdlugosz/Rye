@@ -875,7 +875,7 @@ namespace Rye.Query
                 // Get the first record compare //
                 CompareResult = JoinPredicate.Compare(left.Memory.Value, right.Memory.Value);
 
-                //Console.WriteLine("{0} : {1} : {2}", CompareResult, Record.Split(left.Memory.Value, JoinPredicate.LeftKey), Record.Split(right.Memory.Value, JoinPredicate.RightKey));
+                //Console.WriteLine("{0} : {1} : {2}", CompareResult, Record.Split(left.Value.Value, JoinPredicate.LeftKey), Record.Split(right.Value.Value, JoinPredicate.RightKey));
 
                 // If CompareResult > 0, left is higher than right, need to advance right //
                 if (CompareResult > 0)

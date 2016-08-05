@@ -32,23 +32,33 @@ namespace Rye.Interpreter
         private Heap<Register> _registers;
         private Heap<Schema> _columns;
         private Heap2<CellAffinity, int> _pointers;
+        private MemoryStructure _Primary;
+        private string _PrimaryName;
+        private Workspace _Session;
         
         public ExpressionVisitor()
             : base()
         {
+
             this._structs = new Heap<MemoryStructure>();
             this._registers = new Heap<Register>();
             this._columns = new Heap<Schema>();
             this._pointers = new Heap2<CellAffinity, int>();
+            this.SetPrimary(new MemoryStructure("!@#$%^&*()")); // create a dummy primary in case
+            this._Session = null;
         }
 
         public ExpressionVisitor(Workspace Space)
             : this()
         {
+            
             foreach (KeyValuePair<string, MemoryStructure> kv in Space.Structures.Entries)
             {
                 this._structs.Allocate(kv.Key, kv.Value);
             }
+            this.SetPrimary(Space.Global);
+            this._Session = Space;
+
         }
 
         public void AddStructure(string Alias, MemoryStructure Structure)
@@ -83,6 +93,19 @@ namespace Rye.Interpreter
         {
             get;
             private set;
+        }
+
+        public void SetPrimary(MemoryStructure Value)
+        {
+            this._Primary = Value;
+            if (!this._structs.Exists(Value.Name))
+                this._structs.Allocate(Value.Name, Value);
+            this._PrimaryName = Value.Name;
+        }
+
+        public MemoryStructure Primary
+        {
+            get { return this._Primary; }
         }
 
         // Overrides //
@@ -554,24 +577,26 @@ namespace Rye.Interpreter
         {
 
             // Get the matrix //
-            string mname = context.IDENTIFIER().GetText();
-
+            string vname = context.IDENTIFIER().GetText();
             Expression row = this.Visit(context.expression()[0]);
             Expression col = this.Visit(context.expression()[1]);
 
-            foreach (MemoryStructure x in this._structs.Values)
+            // Check the primary structure //
+            if (this._Primary.Scalars.Exists(vname))
             {
-
-                if (x.Matricies.Exists(mname))
-                {
-
-                    return new ExpressionArrayDynamicRef(this.MasterNode, row, col, x, mname);
-
-                }
-
+                return new ExpressionArrayDynamicRef(this.MasterNode, row, col, this._Primary, vname);
             }
 
-            throw new RyeCompileException("Can't find matrix '{0}'", mname);
+            // Check global //
+            if (this._Session != null)
+            {
+                if (this._Session.Global.Scalars.Exists(vname))
+                {
+                    return new ExpressionArrayDynamicRef(this.MasterNode, row, col, this._Session.Global, vname);
+                }
+            }
+
+            throw new RyeCompileException("Can't find matrix '{0}'", vname);
 
         }
 
@@ -579,24 +604,26 @@ namespace Rye.Interpreter
         {
 
             // Get the matrix //
-            string mname = context.IDENTIFIER().GetText();
-
+            string vname = context.IDENTIFIER().GetText();
             Expression row = this.Visit(context.expression());
-            Expression col = new ExpressionValue(null, Cell.ZeroValue(CellAffinity.INT));
+            Expression col = new ExpressionValue(this.MasterNode, new Cell(0L));
 
-            foreach (MemoryStructure x in this._structs.Values)
+            // Check the primary structure //
+            if (this._Primary.Scalars.Exists(vname))
             {
-
-                if (x.Matricies.Exists(mname))
-                {
-
-                    return new ExpressionArrayDynamicRef(this.MasterNode, row, col, x, mname);
-
-                }
-
+                return new ExpressionArrayDynamicRef(this.MasterNode, row, col, this._Primary, vname);
             }
 
-            throw new RyeCompileException("Can't find matrix '{0}'", mname);
+            // Check global //
+            if (this._Session != null)
+            {
+                if (this._Session.Global.Scalars.Exists(vname))
+                {
+                    return new ExpressionArrayDynamicRef(this.MasterNode, row, col, this._Session.Global, vname);
+                }
+            }
+
+            throw new RyeCompileException("Can't find matrix '{0}'", vname);
 
         }
 
@@ -710,13 +737,20 @@ namespace Rye.Interpreter
 
             }
 
-            // go through every structure //
-            foreach (KeyValuePair<string, MemoryStructure> kv in this._structs.Entries)
+            // Check the primary structure //
+            if (this._Primary.Scalars.Exists(vname))
+            {
+                Expression e = new ExpressionHeapRef(this.MasterNode, this._Primary, this._Primary.Scalars.GetPointer(vname));
+                return e;
+            }
+
+            // Check global //
+            if (this._Session != null)
             {
 
-                if (kv.Value.Scalars.Exists(vname))
+                if (this._Session.Global.Scalars.Exists(vname))
                 {
-                    Expression e = new ExpressionHeapRef(this.MasterNode, kv.Value, kv.Value.Scalars.GetPointer(vname));
+                    Expression e = new ExpressionHeapRef(this.MasterNode, this._Session.Global, this._Session.Global.Scalars.GetPointer(vname));
                     return e;
                 }
 

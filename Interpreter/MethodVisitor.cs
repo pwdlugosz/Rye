@@ -21,6 +21,8 @@ namespace Rye.Interpreter
         private Method _master;
         private Heap<MemoryStructure> _structs;
         private Workspace _enviro;
+        private MemoryStructure _Primary;
+        private string _PrimaryName;
 
         public MethodVisitor(ExpressionVisitor ExpVisitor, MatrixExpressionVisitor MatVisitor, Workspace Enviro)
             : base()
@@ -33,13 +35,27 @@ namespace Rye.Interpreter
             this._structs = new Heap<MemoryStructure>();
             foreach (KeyValuePair<string, MemoryStructure> kv in Enviro.Structures.Entries)
             {
-                this._structs.Allocate(kv.Key, kv.Value);
+                this._structs.Reallocate(kv.Key, kv.Value);
             }
+
+            if (ExpVisitor.Primary == null)
+                this.SetPrimary(Enviro.Global);
+            else
+                this.SetPrimary(ExpVisitor.Primary);
+
         }
 
         public void AddStructure(string Alias, MemoryStructure Structure)
         {
-            this._structs.Allocate(Alias, Structure);
+            this._structs.Reallocate(Alias, Structure);
+        }
+
+        public void SetPrimary(MemoryStructure Value)
+        {
+            this._Primary = Value;
+            if (!this._structs.Exists(Value.Name))
+                this._structs.Allocate(Value.Name, Value);
+            this._PrimaryName = Value.Name;
         }
 
         // Actions //
@@ -47,8 +63,8 @@ namespace Rye.Interpreter
         {
 
             Expression node = this._exp.ToNode(context.expression());
-            string vname = context.IDENTIFIER()[1].GetText();
-            string sname = context.IDENTIFIER()[0].GetText();
+            string vname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
             if (!this._structs.Exists(sname))
                 throw new RyeCompileException("Structure does not exist '{0}'", sname);
             if (!this._structs[sname].Scalars.Exists(vname))
@@ -64,8 +80,8 @@ namespace Rye.Interpreter
         {
 
             Expression node = this._exp.ToNode(context.expression());
-            string vname = context.IDENTIFIER()[1].GetText();
-            string sname = context.IDENTIFIER()[0].GetText();
+            string vname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
             MemoryStructure h = this._structs[sname];
             Method t = new MethodAssignScalar(this._master, h, h.Scalars.GetPointer(vname), node, 1);
             this._master = t;
@@ -77,8 +93,8 @@ namespace Rye.Interpreter
         {
 
             Expression node = this._exp.ToNode(context.expression());
-            string vname = context.IDENTIFIER()[1].GetText();
-            string sname = context.IDENTIFIER()[0].GetText();
+            string vname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
             MemoryStructure h = this._structs[sname];
             Method t = new MethodAssignScalar(this._master, h, h.Scalars.GetPointer(vname), node, 2);
             this._master = t;
@@ -89,8 +105,8 @@ namespace Rye.Interpreter
         public override Method VisitActAutoInc(RyeParser.ActAutoIncContext context)
         {
 
-            string vname = context.IDENTIFIER()[1].GetText();
-            string sname = context.IDENTIFIER()[0].GetText();
+            string vname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
             MemoryStructure h = this._structs[sname];
             Method t = new MethodAssignScalar(this._master, h, h.Scalars.GetPointer(vname), null, 3);
             this._master = t;
@@ -101,8 +117,8 @@ namespace Rye.Interpreter
         public override Method VisitActAutoDec(RyeParser.ActAutoDecContext context)
         {
 
-            string vname = context.IDENTIFIER()[1].GetText();
-            string sname = context.IDENTIFIER()[0].GetText();
+            string vname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
             MemoryStructure h = this._structs[sname];
             Method t = new MethodAssignScalar(this._master, h, h.Scalars.GetPointer(vname), null, 4);
             this._master = t;
@@ -154,8 +170,8 @@ namespace Rye.Interpreter
         {
 
             // Get the variable name, which is located on one of the heaps //
-            string struct_name = context.IDENTIFIER()[0].GetText();
-            string var_name = context.IDENTIFIER()[1].GetText();
+            string struct_name = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            string var_name = CompilerHelper.GetVariableName(context.generic_name());
 
             if (!this._structs.Exists(struct_name))
                 throw new RyeCompileException("Structure '{0}' does not exist", struct_name);
@@ -277,9 +293,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.matrix_name().IDENTIFIER()[0].GetText();
-            string mname = context.matrix_name().IDENTIFIER()[1].GetText();
-           
+            string mname = CompilerHelper.GetVariableName(context.matrix_name().generic_name());
+            string sname = CompilerHelper.GetParentName(context.matrix_name().generic_name(), this._PrimaryName);
+            
             // Create a visitor //
             MatrixExpression mat = this._mat.ToMatrix(context.matrix_expression());
 
@@ -302,9 +318,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[1].GetText();
-
+            string mname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            
             if (!this._structs.Exists(sname))
             {
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
@@ -329,9 +345,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[1].GetText();
-
+            string mname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            
             if (!this._structs.Exists(sname))
             {
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
@@ -356,9 +372,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[1].GetText();
-
+            string mname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            
             if (!this._structs.Exists(sname))
             {
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
@@ -383,9 +399,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[1].GetText();
-
+            string mname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            
             if (!this._structs.Exists(sname))
             {
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
@@ -410,9 +426,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[1].GetText();
-
+            string mname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            
             if (!this._structs.Exists(sname))
             {
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
@@ -438,9 +454,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[1].GetText();
-
+            string mname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            
             if (!this._structs.Exists(sname))
             {
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
@@ -465,9 +481,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[1].GetText();
-
+            string mname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            
             if (!this._structs.Exists(sname))
             {
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
@@ -492,9 +508,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[1].GetText();
-
+            string mname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            
             if (!this._structs.Exists(sname))
             {
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
@@ -519,9 +535,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[1].GetText();
-
+            string mname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            
             if (!this._structs.Exists(sname))
             {
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
@@ -545,9 +561,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[1].GetText();
-
+            string mname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            
             if (!this._structs.Exists(sname))
             {
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
@@ -572,9 +588,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[1].GetText();
-
+            string mname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            
             if (!this._structs.Exists(sname))
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
             else if (!this._structs[sname].Matricies.Exists(mname))
@@ -593,9 +609,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[1].GetText();
-
+            string mname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            
             if (!this._structs.Exists(sname))
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
             else if (!this._structs[sname].Matricies.Exists(mname))
@@ -614,9 +630,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[1].GetText();
-
+            string mname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            
             if (!this._structs.Exists(sname))
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
             else if (!this._structs[sname].Matricies.Exists(mname))
@@ -635,9 +651,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[1].GetText();
-
+            string mname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            
             if (!this._structs.Exists(sname))
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
             else if (!this._structs[sname].Matricies.Exists(mname))
@@ -654,9 +670,9 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string sname = context.IDENTIFIER()[0].GetText();
-            string mname = context.IDENTIFIER()[1].GetText();
-
+            string mname = CompilerHelper.GetVariableName(context.generic_name());
+            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
+            
             if (!this._structs.Exists(sname))
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
             else if (!this._structs[sname].Matricies.Exists(mname))

@@ -794,7 +794,7 @@ namespace Rye.Data
             // Estimate the size //
             int size = Data.DiskCost + META_SIZE;
 
-            // Memory stack //
+            // Value stack //
             byte[] memory = new byte[size];
 
             // Write the meta data //
@@ -824,7 +824,7 @@ namespace Rye.Data
             // Get the size //
             int size = Data.DiskCost + META_SIZE;
 
-            // Memory //
+            // Value //
             byte[] memory = new byte[size];
 
             // Write the meta data //
@@ -1359,6 +1359,10 @@ namespace Rye.Data
 
         private static Table BufferTable(string FullPath)
         {
+
+            // Check the file exists //
+            if (!File.Exists(FullPath))
+                throw new ArgumentException(string.Format("File does not exist '{0}'", FullPath));
 
             // Open a stream //
             byte[] b = File.ReadAllBytes(FullPath);

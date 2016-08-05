@@ -378,6 +378,52 @@ namespace Rye.Data
 
         }
 
+        /// <summary>
+        /// Returns a hash value as a long integer
+        /// </summary>
+        public long LASH
+        {
+
+            get
+            {
+
+                if (this.NULL == 1)
+                {
+                    return 0L;
+                }
+                else if (this.AFFINITY != CellAffinity.STRING && this.AFFINITY != CellAffinity.BLOB)
+                {
+                    return this.INT;
+                }
+                else if (this.AFFINITY == CellAffinity.STRING)
+                {
+                    
+                    long l = 0;
+                    for (int i = 0; i < this.STRING.Length; i++)
+                    {
+                        l += (i + 1) * (this.STRING[i] + 1);
+                    }
+                    return l;
+
+                }
+                else if (this.AFFINITY == CellAffinity.BLOB)
+                {
+
+                    long l = 0;
+                    for (int i = 0; i < this.BLOB.Length; i++)
+                    {
+                        l += (i + 1) * (this.BLOB[i] + 1);
+                    }
+                    return l;
+
+                }
+
+                return 0;
+
+            }
+
+        }
+
         #endregion
 
         #region SafeValues

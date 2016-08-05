@@ -1,80 +1,28 @@
 ﻿
-// CONNECT //
-CONNECT
-{
-	TEMP TO 'C:\Users\pwdlu_000\Documents\Data\TempDB';
-};
-
-CREATE TABLE TEMP.AGG_TEST SIZE 10000
-{
-	KEY AS INT,
-	VALUE1 AS DOUBLE,
-	VALUE2 AS DOUBLE
-};
-
-FOR GLOBAL.I = 1 TO 150000
+FOR I = 0 TO 20
 DO
 {
+
 	APPEND
 	{
-		TEMP.AGG_TEST;
+		NEW GLOBAL.TEMP;
 		RETAIN
-			GLOBAL.I AS KEY,
-			RAND(128) * 2D - 1D AS VALUE1,
-			RAND(129) * 2D - 1D AS VALUE2;
+			I AS KEY,
+			I % 4 AS VALUE;
 	};
-};
 
-AGGREGATE
-{
-	FROM TEMP.AGG_TEST AS A;
-	HINT 'SORT';
-};
-BY
-{
-	KEY % 10 AS KEY_MOD10
-	;
-};
-OVER
-{	
-	COUNT(VALUE1) AS COUNT_OF,
-	SUM(VALUE1) AS SUM_OF,
-	MIN(VALUE1) AS MIN_OF,
-	MAX(VALUE1) AS MAX_OF
-	;
-};
-APPEND
-{
-	NEW TEMP.AGG_OUT;
-	RETAIN
-		KEY_MOD10,
-		COUNT_OF,
-		SUM_OF,
-		MIN_OF,
-		MAX_OF;
-};
-
-SORT
-{
-	FROM TEMP.AGG_OUT;
-};
-BY
-{
-	KEY_MOD10;
 };
 
 SELECT
 {
-	FROM TEMP.AGG_OUT AS T;
+	FROM GLOBAL.TEMP;
+};
+DECLARE
+{
+	A AS INT = 0;
 };
 MAP
 {
-	PRINT T.*;
-};
-
-FILE.EXPORT
-{
-	DATA = TABLE TEMP.AGG_OUT;
-	PATH = 'C:\Users\pwdlu_000\Documents\RyeProjects\Agg_Test_Ordered.txt';
-	DELIM = TAB;
+	PRINT local.A;
+	A++;
 };

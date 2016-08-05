@@ -59,10 +59,10 @@ command_declare
 	: K_DECLARE LCURL ((unit_declare_scalar | unit_declare_matrix | unit_declare_lambda) SEMI_COLON)+ RCURL SEMI_COLON
 	;
 unit_declare_scalar 
-	: IDENTIFIER DOT IDENTIFIER K_AS type (ASSIGN expression)
+	: generic_name K_AS type (ASSIGN expression)?
 	;
 unit_declare_matrix 
-	: IDENTIFIER DOT IDENTIFIER LBRAC (expression (COMMA expression)?)? RBRAC K_AS type (ASSIGN matrix_expression)?
+	: generic_name LBRAC (expression (COMMA expression)?)? RBRAC K_AS type (ASSIGN matrix_expression)?
 	;
 unit_declare_lambda
 	: lambda_name LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN K_AS K_LAMBDA ASSIGN expression			// GLOBAL.SQUARE(X,Y) AS LAMBDA = X^2 + Y^2;
@@ -134,6 +134,7 @@ command_join
 		(where_clause SEMI_COLON)? 
 		(thread_clause SEMI_COLON)? 
 		(join_type SEMI_COLON)?
+		(K_HINT expression SEMI_COLON)?
 	RCURL SEMI_COLON
 	(K_ON LCURL (join_on_unit SEMI_COLON)+ RCURL SEMI_COLON)?
 	append_method
@@ -180,7 +181,7 @@ method
 	
 	| K_DO LCURL (method)+ RCURL SEMI_COLON																				# ActBeginEnd // Begin <...> End
 	| K_IF expression K_THEN method (K_ELSE method)?																	# ActIf // IF t == v THEN (x++) ELSE (x--)
-	| K_FOR IDENTIFIER DOT IDENTIFIER ASSIGN expression K_TO expression method											# ActFor // For T = 0 to 10 (I++,I--)
+	| K_FOR generic_name ASSIGN expression K_TO expression method											# ActFor // For T = 0 to 10 (I++,I--)
 	| K_WHILE expression method																							# ActWhile
 	;
 
@@ -209,33 +210,33 @@ method_param
 
 // Matrix //
 matrix_unit_assign
-	: IDENTIFIER DOT IDENTIFIER LBRAC expression COMMA expression RBRAC ASSIGN expression SEMI_COLON		# MUnit2DAssign
-	| IDENTIFIER DOT IDENTIFIER LBRAC expression COMMA expression RBRAC INC expression SEMI_COLON			# MUnit2DInc
-	| IDENTIFIER DOT IDENTIFIER LBRAC expression COMMA expression RBRAC AUTO_INC SEMI_COLON					# MUnit2DAutoInc
-	| IDENTIFIER DOT IDENTIFIER LBRAC expression COMMA expression RBRAC DEC expression SEMI_COLON			# MUnit2DDec
-	| IDENTIFIER DOT IDENTIFIER LBRAC expression COMMA expression RBRAC AUTO_DEC SEMI_COLON					# MUnit2DAutoDec
+	: generic_name LBRAC expression COMMA expression RBRAC ASSIGN expression SEMI_COLON		# MUnit2DAssign
+	| generic_name LBRAC expression COMMA expression RBRAC INC expression SEMI_COLON		# MUnit2DInc
+	| generic_name LBRAC expression COMMA expression RBRAC AUTO_INC SEMI_COLON				# MUnit2DAutoInc
+	| generic_name LBRAC expression COMMA expression RBRAC DEC expression SEMI_COLON		# MUnit2DDec
+	| generic_name LBRAC expression COMMA expression RBRAC AUTO_DEC SEMI_COLON				# MUnit2DAutoDec
 
-	| IDENTIFIER DOT IDENTIFIER LBRAC expression RBRAC ASSIGN expression SEMI_COLON							# MUnit1DAssign
-	| IDENTIFIER DOT IDENTIFIER LBRAC expression RBRAC INC expression SEMI_COLON							# MUnit1DInc
-	| IDENTIFIER DOT IDENTIFIER LBRAC expression RBRAC AUTO_INC SEMI_COLON									# MUnit1DAutoInc
-	| IDENTIFIER DOT IDENTIFIER LBRAC expression RBRAC DEC expression SEMI_COLON							# MUnit1DDec
-	| IDENTIFIER DOT IDENTIFIER LBRAC expression RBRAC AUTO_DEC SEMI_COLON									# MUnit1DAutoDec
+	| generic_name LBRAC expression RBRAC ASSIGN expression SEMI_COLON						# MUnit1DAssign
+	| generic_name LBRAC expression RBRAC INC expression SEMI_COLON							# MUnit1DInc
+	| generic_name LBRAC expression RBRAC AUTO_INC SEMI_COLON								# MUnit1DAutoInc
+	| generic_name LBRAC expression RBRAC DEC expression SEMI_COLON							# MUnit1DDec
+	| generic_name LBRAC expression RBRAC AUTO_DEC SEMI_COLON								# MUnit1DAutoDec
 
-	| IDENTIFIER DOT IDENTIFIER LBRAC RBRAC ASSIGN expression SEMI_COLON									# MAllAssign
-	| IDENTIFIER DOT IDENTIFIER LBRAC RBRAC INC expression SEMI_COLON										# MAllInc
-	| IDENTIFIER DOT IDENTIFIER LBRAC RBRAC AUTO_INC SEMI_COLON												# MAllAutoInc
-	| IDENTIFIER DOT IDENTIFIER LBRAC RBRAC DEC expression SEMI_COLON										# MAllDec
-	| IDENTIFIER DOT IDENTIFIER LBRAC RBRAC AUTO_DEC SEMI_COLON												# MAllAutoDec
+	| generic_name LBRAC RBRAC ASSIGN expression SEMI_COLON									# MAllAssign
+	| generic_name LBRAC RBRAC INC expression SEMI_COLON									# MAllInc
+	| generic_name LBRAC RBRAC AUTO_INC SEMI_COLON											# MAllAutoInc
+	| generic_name LBRAC RBRAC DEC expression SEMI_COLON									# MAllDec
+	| generic_name LBRAC RBRAC AUTO_DEC SEMI_COLON											# MAllAutoDec
 
 	;
 
 // Assign //
 variable_assign
-	: IDENTIFIER DOT IDENTIFIER ASSIGN expression SEMI_COLON		# ActAssign
-	| IDENTIFIER DOT IDENTIFIER INC expression SEMI_COLON			# ActInc
-	| IDENTIFIER DOT IDENTIFIER AUTO_INC SEMI_COLON					# ActAutoInc
-	| IDENTIFIER DOT IDENTIFIER DEC expression SEMI_COLON			# ActDec
-	| IDENTIFIER DOT IDENTIFIER AUTO_DEC SEMI_COLON					# ActAutoDec
+	: generic_name ASSIGN expression SEMI_COLON						# ActAssign
+	| generic_name INC expression SEMI_COLON						# ActInc
+	| generic_name AUTO_INC SEMI_COLON								# ActAutoInc
+	| generic_name DEC expression SEMI_COLON						# ActDec
+	| generic_name AUTO_DEC SEMI_COLON								# ActAutoDec
 	;
 
 // ----------------------------------------------------------------------------------------------------- //
@@ -256,7 +257,7 @@ variable_assign
 	| expression op=(PLUS | MINUS) matrix_expression									# MatrixAddSubLeft
 	| matrix_expression op=(PLUS | MINUS) expression									# MatrixAddSubRight
 
-	| matrix_name																		# MatrixLookup
+	| generic_name																		# MatrixLookup
 	| matrix_literal																	# MatrixLiteral
 	| K_IDENTITY LPAREN type COMMA expression RPAREN									# MatrixIdent
 
@@ -264,7 +265,7 @@ variable_assign
 	;
 
 matrix_name 
-	: IDENTIFIER DOT IDENTIFIER LBRAC RBRAC
+	: generic_name LBRAC RBRAC
 	;
 matrix_literal 
 	: vector_literal (COMMA vector_literal)*
@@ -359,6 +360,11 @@ expression
 variable
 	: IDENTIFIER					# VariableNaked
 	| IDENTIFIER DOT IDENTIFIER		# SpecificVariable
+	;
+
+// Generics //
+generic_name
+	: (IDENTIFIER DOT)? IDENTIFIER
 	;
 
 // Cell Logic //

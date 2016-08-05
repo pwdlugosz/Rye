@@ -45,6 +45,11 @@ namespace Rye.Interpreter
             private set;
         }
 
+        public MemoryStructure Global
+        {
+            get { return this.Structures[GlobalStructure.DEFAULT_NAME]; }
+        }
+
         public Table GetTable(string Alias, string Name)
         {
 

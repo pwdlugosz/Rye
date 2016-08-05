@@ -1484,6 +1484,66 @@ namespace Rye.Expressions
 
     }
 
+    public sealed class CellFuncBASH : CellFuncFixedKnown
+    {
+
+        public CellFuncBASH()
+            : base(SystemFunctionLibrary.HASH_BASH, -1, CellAffinity.BLOB)
+        {
+        }
+
+        public override int ReturnSize(CellAffinity Type, params int[] Sizes)
+        {
+            return Sizes.Sum();
+        }
+
+        public override Cell Evaluate(Cell[] Data)
+        {
+            List<byte> bash = new List<byte>();
+            foreach (Cell c in Data)
+            {
+
+                foreach (byte b in c.valueBLOB)
+                {
+                    bash.Add(b);
+                }
+
+            }
+            return new Cell(bash.ToArray());
+
+        }
+
+    }
+
+    public sealed class CellFuncLASH : CellFuncFixedKnown
+    {
+
+        public CellFuncLASH()
+            : base(SystemFunctionLibrary.HASH_LASH, -1, CellAffinity.INT)
+        {
+        }
+
+        public override int ReturnSize(CellAffinity Type, params int[] Sizes)
+        {
+            return 8;
+        }
+
+        public override Cell Evaluate(Cell[] Data)
+        {
+
+            long l = 0, i = 0;
+            foreach (Cell c in Data)
+            {
+                i++;
+                l += i * c.LASH;
+            }
+            return new Cell(l);
+
+        }
+
+
+    }
+
     #endregion
 
     // Special //
@@ -1677,6 +1737,7 @@ namespace Rye.Expressions
         public CellRandom()
             : base(SystemFunctionLibrary.MUTABLE_RAND, -1, true)
         {
+            this.IsVolatile = true;
         }
 
         public override Cell Evaluate(params Cell[] Data)
@@ -1743,6 +1804,7 @@ namespace Rye.Expressions
         public CellRandomInt()
             : base(SystemFunctionLibrary.MUTABLE_RANDINT, -1, true)
         {
+            this.IsVolatile = true;
         }
 
         public override Cell Evaluate(params Cell[] Data)
@@ -2773,6 +2835,8 @@ namespace Rye.Expressions
         public const string HASH_MD5 = "md5";
         public const string HASH_SHA1 = "sha1";
         public const string HASH_SHA256 = "sha256";
+        public const string HASH_BASH = "bash";
+        public const string HASH_LASH = "lash";
 
         public const string MUTABLE_RAND = "rand";
         public const string MUTABLE_RANDINT = "randint";
@@ -2888,6 +2952,8 @@ namespace Rye.Expressions
             HASH_MD5,
             HASH_SHA1,
             HASH_SHA256,
+            HASH_BASH,
+            HASH_LASH,
 
             MUTABLE_RAND,
             MUTABLE_RANDINT,
@@ -2934,6 +3000,7 @@ namespace Rye.Expressions
             
             switch (Name.ToLower())
             {
+
                 case TOKEN_UNI_PLUS: return new CellUniPlus();
                 case UNI_PLUS: return new CellUniPlus();
                 case TOKEN_UNI_MINUS: return new CellUniMinus();
@@ -3028,6 +3095,8 @@ namespace Rye.Expressions
                 case HASH_MD5: return new CellFuncCHMD5();
                 case HASH_SHA1: return new CellFuncCHSHA1();
                 case HASH_SHA256: return new CellFuncCHSHA256();
+                case HASH_BASH: return new CellFuncBASH();
+                case HASH_LASH: return new CellFuncLASH();
 
                 case MUTABLE_RAND: return new CellRandom();
                 case MUTABLE_RANDINT: return new CellRandomInt();

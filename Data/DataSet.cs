@@ -623,11 +623,12 @@ namespace Rye.Data
         public Table(Header H, Schema S, List<Record> R, Key SortedKeySet)
         {
 
-            //this._Cache = HS;
+            Header t = Rye.Data.Header.NewMemoryOnlyExtentHeader(H.Name, S.Count, Extent.DEFAULT_MAX_RECORD_COUNT);
+
             this._Columns = S;
             this._Head = H;
             this._OrderBy = SortedKeySet;
-            this._Refs = new Extent(new Schema("ID INT, COUNT INT"), Header, R, SortedKeySet);
+            this._Refs = new Extent(new Schema("ID INT, COUNT INT"), t, R, SortedKeySet);
 
         }
 
@@ -635,12 +636,12 @@ namespace Rye.Data
         {
 
             Header h = Data.Header.NewTableHeader(Directory, Name, S.Count, MaxRecords);
+            Header t = Rye.Data.Header.NewMemoryOnlyExtentHeader(Name, S.Count, Extent.DEFAULT_MAX_RECORD_COUNT);
 
-            //this._Cache = new List<Header>();
             this._Columns = S;
             this._Head = h;
             this._OrderBy = new Key();
-            this._Refs = new Extent(new Schema("ID INT, COUNT INT"), h);
+            this._Refs = new Extent(new Schema("ID INT, COUNT INT"), t);
             this._Refs.MaxRecords = Extent.DEFAULT_MAX_RECORD_COUNT;
 
             if (Flush)
@@ -1265,7 +1266,7 @@ namespace Rye.Data
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(string.Format("Name: {0}", this.Name));
             sb.AppendLine(string.Format("Directory: {0}", this.Header.Directory));
-            sb.AppendLine(string.Format("Memory Cost: {0}", this.MemCost));
+            sb.AppendLine(string.Format("Value Cost: {0}", this.MemCost));
             sb.AppendLine(string.Format("Disk Cost: {0}", this.DiskCost));
             sb.AppendLine(string.Format("Record Count: {0}", this.RecordCount));
             sb.AppendLine(string.Format("Extent Count: {0}", this.ExtentCount));
