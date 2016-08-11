@@ -466,9 +466,44 @@ namespace Rye.Interpreter
              */
             Cell hint = CompilerHelper.GetHint(this._enviro, context.base_clause());
             if (hint.valueSTRING.ToUpper() == "SORT")
+            {
                 return this.AggregateOrdered(context);
-            else
+            }
+            else if (hint.valueSTRING.ToUpper() == "HASH")
+            {
                 return this.AggregateHashTable(context);
+            }
+
+            // Otherwise, lets optimize //
+            DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
+            int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
+            string alias = (context.base_clause().IDENTIFIER() == null ? data.Header.Name : context.base_clause().IDENTIFIER().GetText());
+
+            // Construct the expression visitor and memory register //
+            ExpressionVisitor in_exp = new ExpressionVisitor(this._enviro);
+            Register in_mem = new Register(alias, data.Columns);
+            in_exp.AddRegister(alias, in_mem);
+
+            // Get the keys, the aggregates and the where clause //
+            ExpressionCollection keys = in_exp.ToNodes(context.by_clause().expression_or_wildcard_set());
+            
+            // Check to see if the expression can be reduced to a key //
+            Key k = ExpressionCollection.DecompileToKey(keys);
+
+            // If the key is not the same length as the expression collection, then the collection must not be all field refs, so use a hash table //
+            if (k.Count != keys.Count)
+            {
+                return this.AggregateHashTable(context);
+            }
+
+            // Check if the data set is sorted by the key, if it is, then use the ordered set algorithm //
+            if (KeyComparer.IsWeakSubset(data.SortBy ?? new Key(), k))
+            {
+                return this.AggregateOrdered(context);
+            }
+
+            // Otherwise, use the hash table algorithm //
+            return this.AggregateHashTable(context);
 
         }
 
@@ -615,6 +650,8 @@ namespace Rye.Interpreter
             sw.Stop();
 
             // Close the output //
+            if (p.Clicks == 0)
+                this._enviro.IO.WriteLine("Aggregate operation optimized using naturally sorted data");
             this._enviro.IO.WriteLine("Actual Aggregate Cost: {0}", reducer.Clicks + p.Clicks);
             this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);
             this._enviro.IO.WriteLine();
@@ -659,8 +696,16 @@ namespace Rye.Interpreter
             Register in_mem = new Register(Alias, Data.Columns);
             in_exp.AddRegister(Alias, in_mem);
 
-            // Sort the data //
+            // Generate the expression collection //
             ExpressionCollection keys = in_exp.ToNodes(context.by_clause().expression_or_wildcard_set());
+
+            // Now try to decompile the keys //
+            //Key k = ExpressionCollection.DecompileToKey(keys);
+            //if (k.Count == keys.Count)
+            //{
+            //    return new SortPreProcessor(Data, k);
+            //}
+
             return new SortPreProcessor(Data, keys, in_mem);
 
         }
@@ -699,15 +744,39 @@ namespace Rye.Interpreter
 
             }
 
+            // Try to see if we can decomile to a raw key based sort, which should be faster //
+            Key TryDecompile = ExpressionCollection.DecompileToKey(cols);
+            bool CanOptimize = false;
+            if (TryDecompile.Count == cols.Count)
+            {
+
+                for (int i = 0; i < TryDecompile.Count; i++)
+                {
+                    TryDecompile.SetAffinity(i, k.Affinity(i));
+                }
+                CanOptimize = true;
+
+            }
+
             Stopwatch sw = Stopwatch.StartNew();
             long cost = 0;
-            if (data.Header.Affinity == HeaderType.Extent)
+            if (data.Header.Affinity == HeaderType.Extent && !CanOptimize)
             {
                  cost = SortMaster.Sort(data as Extent, cols, r, k);
             }
-            else
+            else if (!CanOptimize && data.Header.Affinity == HeaderType.Table)
             {
                 cost = SortMaster.Sort(data as Table, cols, r, k);
+            }
+            else if (CanOptimize && data.Header.Affinity == HeaderType.Extent)
+            {
+                this._enviro.IO.WriteLine("Sort optimized to to use field keys");
+                cost = SortMaster.Sort(data as Extent, TryDecompile);
+            }
+            else if (CanOptimize && data.Header.Affinity == HeaderType.Table)
+            {
+                this._enviro.IO.WriteLine("Sort optimized to to use field keys");
+                cost = SortMaster.Sort(data as Table, TryDecompile);
             }
             sw.Stop();
             double avg = (double)data.RecordCount / (double)data.ExtentCount;
@@ -793,9 +862,30 @@ namespace Rye.Interpreter
             QueryProcess<JoinProcessNode> process = new QueryProcess<JoinProcessNode>(Nodes, reducer);
 
             // Create a record comparer //
-            KeyedRecordComparer comp = this.RenderJoinRecordComparer(DLeft.Columns, DRight.Columns, ALeft, ARight, context.join_on_unit());
-            process.AddPreProcessor(new SortPreProcessor(DLeft, comp.LeftKey));
-            process.AddPreProcessor(new SortPreProcessor(DRight, comp.RightKey));
+            if (Engine.BaseJoinAlgorithmType == JoinAlgorithmType.SortMerge)
+            {
+
+                KeyedRecordComparer comp = this.RenderJoinRecordComparer(DLeft.Columns, DRight.Columns, ALeft, ARight, context.join_on_unit());
+
+                if (KeyComparer.IsStrongSubset(DLeft.SortBy, comp.LeftKey))
+                {
+                    this._enviro.IO.WriteLine("Join optimized for '{0}' by using pre-sorted data", DLeft.Name);
+                }
+                else
+                {
+                    process.AddPreProcessor(new SortPreProcessor(DLeft, comp.LeftKey));
+                }
+
+                if (KeyComparer.IsStrongSubset(DRight.SortBy, comp.RightKey))
+                {
+                    this._enviro.IO.WriteLine("Join optimized for '{0}' by using pre-sorted data", DRight.Name);
+                }
+                else
+                {
+                    process.AddPreProcessor(new SortPreProcessor(DRight, comp.RightKey));
+                }
+                    
+            }
 
             // Run the process //
             Stopwatch sw = Stopwatch.StartNew();
@@ -808,8 +898,9 @@ namespace Rye.Interpreter
                 process.Execute();
             }
             sw.Stop();
+            long TrueCost = reducer.ActualCost + process.PreProcessorClicks;
 
-            this._enviro.IO.WriteLine("Join Cost: \n\tActual {0} \n\tEstimated {1}", reducer.ActualCost, Engine.Cost(DLeft, DRight, Threads, 1D, JoinImplementationType.Block_VxV));
+            this._enviro.IO.WriteLine("Join Cost: \n\tActual {0} \n\tEstimated {1}", TrueCost, Engine.Cost(DLeft, DRight, Threads, 1D, JoinImplementationType.Block_VxV));
             this._enviro.IO.WriteLine("IO Calls: {0}", reducer.IOCalls);
             this._enviro.IO.WriteLine("Join Type: {0} : {1}", Engine.BaseJoinAlgorithmType, t);
             this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);

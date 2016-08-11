@@ -138,11 +138,11 @@ namespace Rye.Interpreter
             Method node;
             if (data.Header.Affinity == HeaderType.Table)
             {
-                node = new MethodAppendToAsync(this._master, data as Table, nodes);
+                node = MethodAppendToAsync.Optimize(this._master, data as Table, nodes);
             }
             else
             {
-                node = new MethodAppendToAsync(this._master, data as Extent, nodes);
+                node = MethodAppendToAsync.Optimize(this._master, data as Extent, nodes);
             }
 
             this._master = node;

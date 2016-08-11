@@ -41,15 +41,6 @@ namespace Rye.Data
 
         public abstract Volume CreateVolume(int ThreadID, int ThreadCount);
         
-        /*
-        public virtual void Sort(Key K)
-        {
-            long clicks = this.SortC(K);
-        }
-
-        public abstract long SortC(Key K);
-        */
-
         public bool IsSortedBy(Key K)
         {
             if (K == null || this.SortBy == null)
@@ -60,6 +51,8 @@ namespace Rye.Data
         public abstract void PreSerialize();
 
         public abstract RecordWriter OpenWriter();
+
+        public abstract RecordWriter OpenUncheckedWriter(int Key);
 
         // Costs //
         public abstract long CellCount
@@ -81,7 +74,7 @@ namespace Rye.Data
         internal const long DEFAULT_MEMORY_FOOTPRINT = 65536; // = 64 mb in kb
         internal const long ESTIMATE_META_DATA = 4096; // estimate 4 kb in meta data
         
-        private List<Record> _Cache;
+        internal List<Record> _Cache;
         private Schema _Columns;
         private Header _Head;
         private Key _OrderBy;
@@ -97,7 +90,7 @@ namespace Rye.Data
         }
 
         public Extent(Schema NewColumns, Header NewHeader)
-            : this(NewColumns, NewHeader, new List<Record>(), new Key())
+            : this(NewColumns, NewHeader, new List<Record>(NewHeader == null ? (int)DEFAULT_MAX_RECORD_COUNT : (int)NewHeader.MaxRecordCount), new Key())
         {
 
         }
@@ -268,6 +261,10 @@ namespace Rye.Data
             return new SingleExtentVolume(this);
         }
 
+        /// <summary>
+        /// Adds a record to the extent; will throw an exception if the extent is full; will re-cast record elements if they violate the schema
+        /// </summary>
+        /// <param name="Data">The record to add</param>
         public void Add(Record Data)
         {
             
@@ -277,6 +274,26 @@ namespace Rye.Data
                 throw new Exception("Record passed does not match schema");
             this._Cache.Add(Data);
 
+        }
+
+        /// <summary>
+        /// Adds a record to the extent; will throw an exception if the extent is full; does not re-format the records
+        /// </summary>
+        /// <param name="Data">The record to add</param>
+        public void UncheckedAdd(Record Data)
+        {
+            if (this.IsFull)
+                throw new Exception("RecordSet is full");
+            this._Cache.Add(Data);
+        }
+
+        /// <summary>
+        /// Adds a record to the extent; does not check if the extent is full or re-format the records
+        /// </summary>
+        /// <param name="Data">The record to add</param>
+        public void UnsafeAdd(Record Data)
+        {
+            this._Cache.Add(Data);
         }
 
         public void Remove(int Index)
@@ -357,28 +374,6 @@ namespace Rye.Data
             return (int)l;
         }
 
-        /*
-        public override void Sort(Key K)
-        {
-
-            this._OrderBy = K;
-            this._Cache.Sort(new KeyedRecordComparer(K, K));
-            if (this.Header.IsMemoryOnly)
-            {
-                Kernel.RequestFlushExtent(this);
-            }
-
-        }
-
-        public override long SortC(Key K)
-        {
-            KeyedRecordComparer rc = new KeyedRecordComparer(K, K);
-            this._Cache.Sort(rc);
-            this._OrderBy = K;
-            return rc.Clicks;
-        }
-        */
-        
         public override int DiskCost
         {
             get 
@@ -413,6 +408,13 @@ namespace Rye.Data
             return new ExtentWriter(this);
         }
 
+        public override RecordWriter OpenUncheckedWriter(int Key)
+        {
+            if (Key == int.MaxValue || Key == this._Columns.GetHashCode())
+                return new UncheckedExtentWriter(this);
+            return new ExtentWriter(this);
+        }
+
         // Statics //
         public static long EstimateMaxRecords(Schema Columns, long TotalMemoryFootPrintKB)
         {
@@ -434,61 +436,6 @@ namespace Rye.Data
         }
 
         // Private classes //
-        /*
-        private sealed class SingleExtentCollection : ExtentCollection
-        {
-
-            public Extent _e;
-
-            public SingleExtentCollection(Extent Data)
-                : base()
-            {
-                this._e = Data;
-            }
-
-            public override IEnumerable<Extent> Extents
-            {
-                get 
-                {
-                    List<Extent> e = new List<Extent>();
-                    e.Add(this._e);
-                    return e;
-                }
-            }
-
-            public override long ExtentCount
-            {
-                get { return 1; }
-            }
-
-            public override long BeginRowID
-            {
-                get { return 0; }
-            }
-
-            public override void SetExtent(Extent Data)
-            {
-                // do nothing
-            }
-
-            public override Extent GetExtent(int Index)
-            {
-                if (Index != 0)
-                    throw new ArgumentOutOfRangeException(string.Format("Invalid index for a collection with only one extent: {0}", Index));
-                return this._e;
-            }
-
-            public override Schema Columns
-            {
-                get
-                {
-                    return this._e.Columns;
-                }
-            }
-
-        }
-        */
-        
         private sealed class SingleExtentVolume : Volume
         {
 
@@ -642,8 +589,7 @@ namespace Rye.Data
             this._Head = h;
             this._OrderBy = new Key();
             this._Refs = new Extent(new Schema("ID INT, COUNT INT"), t);
-            this._Refs.MaxRecords = Extent.DEFAULT_MAX_RECORD_COUNT;
-
+            
             if (Flush)
             {
                 Kernel.RequestDropTable(h.Path);
@@ -970,256 +916,6 @@ namespace Rye.Data
 
         }
 
-        // Sorts //
-        /*
-        public override long SortC(Key K)
-        {
-            return Table.SortBase(this, K);
-        }
-        */
-
-        // Sort support //
-        /*
-        internal static long SortEach(Table Data, Key OrderBy)
-        {
-
-            long Clicks = 0;
-            foreach (Header h in Data.Headers)
-            {
-
-                // Buffer record set //
-                Extent e = Kernel.RequestBufferExtent(h.Path);
-
-                // Check if it is sorted //
-                if (!Key.EqualsStrong(e.SortBy, OrderBy))
-                {
-                    Clicks += e.SortC(OrderBy);
-                }
-
-                // FlushRecordUnion //
-                Kernel.RequestFlushExtent(e);
-
-            }
-
-            return Clicks;
-
-        }
-
-        internal static long SortEach(Table Data, Key OrderBy, int[] Extents)
-        {
-
-            long Clicks = 0;
-            foreach (int idx in Extents)
-            {
-
-                // Buffer record set //
-                Extent e = Data.GetExtent(idx);
-
-                // Check if it is sorted //
-                if (!Key.EqualsStrong(e.SortBy, OrderBy))
-                {
-                    Clicks += e.SortC(OrderBy);
-                }
-
-                // FlushRecordUnion //
-                Kernel.RequestFlushExtent(e);
-
-            }
-            return Clicks;
-
-        }
-
-        internal static long SortMerge(Extent A, Extent B, Key Columns)
-        {
-
-            // Variables //
-            Extent x = new Extent(A.Columns);
-            Extent y = new Extent(B.Columns);
-            x.MaxRecords = A.MaxRecords;
-            y.MaxRecords = B.MaxRecords;
-            int CompareResult = 0;
-
-            KeyedRecordComparer rec = new KeyedRecordComparer(Columns, Columns);
-            
-            // Main record loop //
-            int ptra = 0, ptrb = 0;
-            while (ptra < A.Count && ptrb < B.Count)
-            {
-
-                // Compare results //
-                CompareResult = rec.Compare(A[ptra], B[ptrb]);
-                
-                if (CompareResult <= 0 && x.Count < A.Count)
-                {
-                    x.Add(A[ptra]);
-                    ptra++;
-                }
-                else if (CompareResult > 0 && x.Count < A.Count)
-                {
-                    x.Add(B[ptrb]);
-                    ptrb++;
-                }
-                else if (CompareResult <= 0 && x.Count >= A.Count)
-                {
-                    y.Add(A[ptra]);
-                    ptra++;
-                }
-                else if (CompareResult > 0 && x.Count >= A.Count)
-                {
-                    y.Add(B[ptrb]);
-                    ptrb++;
-                }
-
-            }
-
-            // Clean up first shard //
-            while (ptra < A.Count)
-            {
-
-                if (x.Count < A.Count)
-                    x.Add(A[ptra]);
-                else
-                    y.Add(A[ptra]);
-                ptra++;
-
-            }
-
-            // Clean up second shard //
-            while (ptrb < B.Count)
-            {
-
-                if (x.Count < A.Count)
-                    x.Add(B[ptrb]);
-                else
-                    y.Add(B[ptrb]);
-                ptrb++;
-
-            }
-
-            // Set the heaps //
-            Extent.SetCache(A, x);
-            Extent.SetCache(B, y);
-
-            return rec.Clicks;
-
-        }
-
-        internal static long SortBase(Table Data, Key OrderBy)
-        {
-
-            // Variables //
-            int ptr_FirstShard = 0;
-            int ptr_SecondShard = 0;
-            int SortCount = 0;
-            long Clicks = 0;
-            
-            // Step one: sort all shards //
-            Clicks += Table.SortEach(Data, OrderBy);
-            
-            // if only one shard, break //
-            if (Data.ExtentCount == 1) 
-                return Clicks;
-
-            // Step two: do cartesian sort n x (n - 1) //
-            while (ptr_FirstShard < Data.ExtentCount)
-            {
-
-                // Secondary loop //
-                ptr_SecondShard = ptr_FirstShard + 1;
-                while (ptr_SecondShard < Data.ExtentCount)
-                {
-
-                    // Open shards //
-                    Extent t1 = Data.GetExtent(ptr_FirstShard);
-                    Extent t2 = Data.GetExtent(ptr_SecondShard);
-
-                    // Sort merge both shards //
-                    Clicks += Table.SortMerge(t1, t2, OrderBy);
-
-                    // Close both shards //
-                    Data.SetExtent(t1);
-                    Data.SetExtent(t2);
-
-                    // Increment //
-                    ptr_SecondShard++;
-                    SortCount++;
-
-                }
-
-                // Increment //
-                ptr_FirstShard++;
-
-            }
-
-            // Tag the anthology's sort key //
-            Data._OrderBy = OrderBy;
-
-            // Flush //
-            Kernel.RequestFlushTable(Data);
-
-            // Return cost //
-            return Clicks;
-
-        }
-
-        internal static long SortBase(Table Data, Key OrderBy, int[] Extents)
-        {
-
-            // Variables //
-            int ptr_FirstShard = 0;
-            int ptr_SecondShard = 0;
-            int SortCount = 0;
-
-            // Step one: sort all shards //
-            long Clicks = Table.SortEach(Data, OrderBy);
-
-            // if only one shard, break //
-            if (Data.ExtentCount == 1) 
-                return Clicks;
-
-            // Step two: do cartesian sort n x (n - 1) //
-            while (ptr_FirstShard < Extents.Length)
-            {
-
-                // Secondary loop //
-                ptr_SecondShard = ptr_FirstShard + 1;
-                while (ptr_SecondShard < Extents.Length)
-                {
-
-                    // Open shards //
-                    Extent t1 = Data.GetExtent(Extents[ptr_FirstShard]);
-                    Extent t2 = Data.GetExtent(Extents[ptr_SecondShard]);
-
-                    // Sort merge both shards //
-                    Clicks = Table.SortMerge(t1, t2, OrderBy);
-
-                    // Close both shards //
-                    Data.SetExtent(t1);
-                    Data.SetExtent(t2);
-
-                    // Increment //
-                    ptr_SecondShard++;
-                    SortCount++;
-
-                }
-
-                // Increment //
-                ptr_FirstShard++;
-
-            }
-
-            //Tag the anthology's sort key //
-            if (Extents.Length == Data.ExtentCount)
-                Data._OrderBy = OrderBy;
-
-            // Flush //
-            Kernel.RequestFlushTable(Data);
-
-            return Clicks;
-
-        }
-        */
-        
         // Override //
         public override int GetHashCode()
         {
@@ -1257,6 +953,13 @@ namespace Rye.Data
 
         public override RecordWriter OpenWriter()
         {
+            return new TableWriter(this);
+        }
+        
+        public override RecordWriter OpenUncheckedWriter(int Key)
+        {
+            if (Key == int.MaxValue || Key == this._Columns.GetHashCode())
+                return new UncheckedTableWriter(this);
             return new TableWriter(this);
         }
 

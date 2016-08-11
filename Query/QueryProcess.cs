@@ -68,6 +68,14 @@ namespace Rye.Query
 
         }
 
+        public long PreProcessorClicks
+        {
+            get
+            {
+                return this._PreProcessorNodes.Sum((x) => { return x.Clicks; });
+            }
+        }
+
         public void Execute()
         {
 

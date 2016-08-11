@@ -187,7 +187,7 @@ method
 
 // Append table method //
 append_method
-	: K_APPEND LCURL (K_NEW)? table_name SEMI_COLON (K_RETAIN expression_or_wildcard_set SEMI_COLON) RCURL SEMI_COLON
+	: K_APPEND LCURL (K_NEW)? table_name (K_SIZE LITERAL_INT)? SEMI_COLON (K_RETAIN expression_or_wildcard_set SEMI_COLON) RCURL SEMI_COLON
 	;
 
 // Structure Methods //
@@ -257,7 +257,7 @@ variable_assign
 	| expression op=(PLUS | MINUS) matrix_expression									# MatrixAddSubLeft
 	| matrix_expression op=(PLUS | MINUS) expression									# MatrixAddSubRight
 
-	| generic_name																		# MatrixLookup
+	| generic_name LBRAC RBRAC															# MatrixLookup
 	| matrix_literal																	# MatrixLiteral
 	| K_IDENTITY LPAREN type COMMA expression RPAREN									# MatrixIdent
 

@@ -28,10 +28,10 @@ namespace Rye.Data
 
     }
 
-    public sealed class ExtentWriter : RecordWriter
+    public class ExtentWriter : RecordWriter
     {
 
-        private Extent _e;
+        protected Extent _e;
 
         public ExtentWriter(Extent Data)
         {
@@ -55,11 +55,26 @@ namespace Rye.Data
 
     }
 
-    public sealed class TableWriter : RecordWriter
+    public sealed class UncheckedExtentWriter : ExtentWriter
     {
 
-        private Table _t;
-        private Extent _e;
+        public UncheckedExtentWriter(Extent Data)
+            :base(Data)
+        {
+        }
+
+        public override void Insert(Record Data)
+        {
+            this._e.UncheckedAdd(Data);
+        }
+
+    }
+
+    public class TableWriter : RecordWriter
+    {
+
+        protected Table _t;
+        protected Extent _e;
 
         public TableWriter(Table Data)
         {
@@ -92,5 +107,19 @@ namespace Rye.Data
 
     }
 
+    public sealed class UncheckedTableWriter : TableWriter
+    {
+
+        public UncheckedTableWriter(Table Data)
+            :base(Data)
+        {
+        }
+
+        public override void Insert(Record Data)
+        {
+            this._e.UncheckedAdd(Data);
+        }
+
+    }
 
 }

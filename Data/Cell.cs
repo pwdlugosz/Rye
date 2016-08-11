@@ -2364,6 +2364,12 @@ namespace Rye.Data
             else if (C2.NULL == 1)
                 return C2;
 
+            if (C1.AFFINITY == CellAffinity.INT && C2.AFFINITY == CellAffinity.INT)
+            {
+                C1.INT = Cell.IntPower(C1.INT, C2.INT);
+                return C1;
+            }
+
             double d = Math.Pow(C1.valueDOUBLE, C2.valueDOUBLE);
             if (double.IsInfinity(d) || double.IsNaN(d))
             {
@@ -3003,6 +3009,21 @@ namespace Rye.Data
             }
 
             return ASCIIEncoding.BigEndianUnicode.GetString(to_convert);
+
+        }
+
+        internal static long IntPower(long Base, long Exp)
+        {
+
+            if (Exp == 0)
+                return 1;
+            else if (Exp == 1)
+                return Base;
+
+            if (Exp % 2 == 1)
+                return IntPower(Base, Exp / 2) * Exp;
+            else
+                return IntPower(Base, Exp / 2);
 
         }
 

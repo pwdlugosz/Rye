@@ -36,6 +36,7 @@ namespace Rye
             runner.Execute(script);
 
             // Close down the kernel space //
+            //Console.WriteLine(Kernel.Status);
             Kernel.ShutDown();
 
             sw.Stop();
@@ -49,11 +50,32 @@ namespace Rye
 
         }
 
-    
-    
-    
-    
-    
+        public static long Power1(long Base, long Exp)
+        {
+
+            long t = 1;
+            for (long l = 0; l < Exp; l++)
+            {
+                t *= Base;
+            }
+            return t;
+
+        }
+
+        public static long Power2(long Base, long Exp)
+        {
+
+            if (Exp == 0)
+                return 1;
+            else if (Exp == 1)
+                return Base;
+
+            if (Exp % 2 == 1)
+                return Power2(Base, Exp / 2) * Exp;
+            else
+                return Power2(Base, Exp / 2);
+
+        }
     
     
     

@@ -124,6 +124,8 @@ namespace Rye.Interpreter
             // Check if we need to create the table or just open it //
             if (context.append_method().K_NEW() == null)
             {
+
+                long size = (context.append_method().K_SIZE() == null ? Extent.DEFAULT_MAX_RECORD_COUNT : long.Parse(context.append_method().LITERAL_INT().GetText()));
                 DataSet t = CallData(Enviro, context.append_method().table_name());
                 if (t.Columns.Count != Nodes.Columns.Count)
                     throw new RyeCompileException("Attempting to insert {0} columns into {1}", Nodes.Columns.Count, t.Columns.Count);

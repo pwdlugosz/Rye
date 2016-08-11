@@ -22,9 +22,15 @@ namespace Rye.Data
 
         public static long Sort(Extent A, Key K)
         {
+
+            // Checks if K is a subset of A, meaning if A is sorted by 0,1,2,3 and K is 0,1 then we technically don't need to sort //
+            if (KeyComparer.IsStrongSubset(A.SortBy ?? new Key(), K))
+                return 0;
+
             KeyedRecordComparer rc = new KeyedRecordComparer(K);
             A.SortBy = K;
             return SortMaster.Sort(A, rc);
+
         }
 
         public static long Sort(Extent A, ExpressionCollection E, Register R)
@@ -354,6 +360,10 @@ namespace Rye.Data
 
         public static long Sort(Table A, Key K)
         {
+
+            // Checks if K is a subset of A, meaning if A is sorted by 0,1,2,3 and K is 0,1 then we technically don't need to sort //
+            if (KeyComparer.IsStrongSubset(A.SortBy ?? new Key(), K))
+                return 0;
             KeyedRecordComparer rc = new KeyedRecordComparer(K);
             A.SortBy = K;
             return SortMaster.Sort(A, rc);
@@ -361,8 +371,15 @@ namespace Rye.Data
 
         public static long Sort(Table A, Key K, int[] Extents)
         {
+
+            // Checks if K is a subset of A, meaning if A is sorted by 0,1,2,3 and K is 0,1 then we technically don't need to sort //
+            if (KeyComparer.IsStrongSubset(A.SortBy ?? new Key(), K))
+                return 0;
+
             KeyedRecordComparer rc = new KeyedRecordComparer(K);
+            A.SortBy = K;
             return SortMaster.Sort(A, rc, Extents);
+
         }
 
         public static long Sort(Table A, ExpressionCollection E, Register R)
@@ -393,6 +410,7 @@ namespace Rye.Data
         {
             Key k = Key.Build(A.Columns.Count);
             RecordComparer rc = new KeyedRecordComparer(k);
+            A.SortBy = k;
             return SortMaster.Sort(A, rc);
         }
 
@@ -400,6 +418,7 @@ namespace Rye.Data
         {
             Key k = Key.Build(A.Columns.Count);
             RecordComparer rc = new KeyedRecordComparer(k);
+            A.SortBy = k;
             return SortMaster.Sort(A, rc, Extents);
         }
 

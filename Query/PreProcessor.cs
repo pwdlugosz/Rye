@@ -45,14 +45,15 @@ namespace Rye.Query
     public sealed class SortPreProcessor : PreProcessor
     {
 
-        private ExpressionCollection _keys;
+        private ExpressionCollection _cols;
         private Register _memory;
         private DataSet _data;
+        private Key _key;
 
         public SortPreProcessor(DataSet Data, ExpressionCollection Key, Register Memory)
             : base()
         {
-            this._keys = Key;
+            this._cols = Key;
             this._memory = Memory;
             this._data = Data;
         }
@@ -61,36 +62,57 @@ namespace Rye.Query
             : base()
         {
             this._memory = new Register(Data.Name, Data.Columns);
-            this._keys = ExpressionCollection.Render(Data.Columns, Data.Name, this._memory, K);
+            this._cols = ExpressionCollection.Render(Data.Columns, Data.Name, this._memory, K);
             this._data = Data;
         }
 
         public override void Invoke()
         {
-            
-            // Create a record comparer //
-            RecordComparer rc = new ExpressionSortComparer(this._keys, this._memory);
-            this.State = 1;
+
 
             // Try to decompile to a key because it's faster //
-            Key k = ExpressionCollection.DecompileToKey(this._keys);
-            if (k.Count == this._keys.Count)
+            this._key = ExpressionCollection.DecompileToKey(this._cols);
+            if (this._key.Count != this._cols.Count)
             {
-                rc = new KeyedRecordComparer(k);
-                this.State = 2;
+                this._key = null;
             }
+
+            // See if we're already using a key rather than an expression //
+            if (this._key != null)
+            {
+
+                this.State = 2;
+                
+                // If already sorted, then do nothing //
+                if (KeyComparer.IsWeakSubset(this._data.SortBy ?? new Key(), this._key))
+                    return;
+                
+                if (this._data.Header.Affinity == HeaderType.Extent)
+                {
+                    this._Clicks += SortMaster.Sort(this._data as Extent, this._key);
+                }
+                else
+                {
+                    this._Clicks += SortMaster.Sort(this._data as Table, this._key);
+                }
+
+                return;
+
+            }
+
+            // Create a record comparer //
+            RecordComparer rc = new ExpressionSortComparer(this._cols, this._memory);
+            this.State = 1;
 
             // Sort //
             if (this._data.Header.Affinity == HeaderType.Extent)
             {
-                SortMaster.Sort(this._data as Extent, rc);
+                this._Clicks += SortMaster.Sort(this._data as Extent, rc);
             }
             else
             {
-                SortMaster.Sort(this._data as Table, rc);
+                this._Clicks += SortMaster.Sort(this._data as Table, rc);
             }
-
-            this._Clicks += rc.Clicks;
 
         }
 

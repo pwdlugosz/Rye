@@ -169,7 +169,70 @@ namespace Rye.Structures
 
         }
 
+        public sealed class TableMethodLibrary : ProcedureLibrary
+        {
 
+            public const string SHUFFLE = "SHUFFLE";
+            public const string REVERSE = "REVERSE";
+            public const string CLEAR = "CLEAR";
+            
+            private static string[] _BaseNames = new string[]
+            {
+                SHUFFLE,
+                REVERSE,
+                CLEAR
+            };
+
+            private Heap2<string, string> _CompressedSig;
+
+            /*
+             * Name | Description | Affinity | Can Be Null?
+             * 
+             * Affinity can be:
+             * E: expression
+             * V: vector
+             * M: matrix expression
+             * T: table (or extent)
+             * 
+             */
+
+            public TableMethodLibrary(FileStructure Caller)
+                :base(Caller)
+            {
+                this._Caller = Caller;
+                this._CompressedSig = new Heap2<string,string>();
+
+                this._CompressedSig.Allocate(TableMethodLibrary.REVERSE, "Reverses all records in the table", "DATA|The table to reverse|T|false");
+                this._CompressedSig.Allocate(TableMethodLibrary.SHUFFLE, "Randomizes records in the table", "DATA|The table to shuffle|T|false;SEED|The seed used to shuffle|E|false");
+                this._CompressedSig.Allocate(TableMethodLibrary.CLEAR, "Clears all records in the table", "DATA|The table to clear|T|false");
+                
+            }
+
+            public override Method RenderMethod(Method Parent, string Name, ParameterCollection Parameters)
+            {
+
+                throw new ArgumentException(string.Format("Method '{0}' does not exist in '{1}'", Name, this._Caller.Name));
+
+            }
+
+            public override ParameterCollectionSigniture RenderSigniture(string Name)
+            {
+
+                if (this._CompressedSig.Exists(Name))
+                    return ParameterCollectionSigniture.Parse(Name, this._CompressedSig[Name].Item1, this._CompressedSig[Name].Item2);
+                throw new ArgumentException(string.Format("Method '{0}' does not exist in '{1}'", Name, this._Caller.Name));
+
+            }
+
+            public override string[] Names
+            {
+                get { return TableMethodLibrary._BaseNames; }
+            }
+
+            // Method support //
+            
+
+        }
 
     }
 

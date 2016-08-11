@@ -84,6 +84,11 @@ namespace Rye.Data
             return (KeyAffinity)this._data[Index].INT_B;
         }
 
+        public void SetAffinity(int Index, KeyAffinity Affinity)
+        {
+            this._data[Index] = new Cell(this._data[Index].INT_A, (int)Affinity);
+        }
+
         /// <summary>
         /// Appends the key
         /// </summary>
@@ -313,5 +318,112 @@ namespace Rye.Data
 
     }
 
+    public static class KeyComparer
+    {
+
+        public static bool IsStrongSubset(Key A, Key B)
+        {
+
+            if (B.Count > A.Count)
+                return false;
+
+            for (int i = 0; i < A.Count; i++)
+            {
+                if (!(A[i] == B[i] && A.Affinity(i) == B.Affinity(i)))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+
+        }
+
+        public static bool IsWeakSubset(Key A, Key B)
+        {
+
+            if (B.Count > A.Count)
+                return false;
+
+            for (int i = 0; i < A.Count; i++)
+            {
+                if (!(A[i] == B[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+
+        }
+
+        public static bool IsStrongUnion(Key A, Key B)
+        {
+
+            for (int i = 0; i < Math.Min(A.Count, B.Count); i++)
+            {
+                if (!(A[i] == B[i] && A.Affinity(i) == B.Affinity(i)))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+
+        }
+
+        public static bool IsWeakUnion(Key A, Key B)
+        {
+
+            for (int i = 0; i < Math.Min(A.Count, B.Count); i++)
+            {
+                if (!(A[i] == B[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+
+        }
+
+        public static bool StrongEquals(Key A, Key B)
+        {
+
+            if (B.Count != A.Count)
+                return false;
+
+            for (int i = 0; i < A.Count; i++)
+            {
+                if (!(A[i] == B[i] && A.Affinity(i) == B.Affinity(i)))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+
+        }
+
+        public static bool WeakEquals(Key A, Key B)
+        {
+
+            if (B.Count != A.Count)
+                return false;
+
+            for (int i = 0; i < A.Count; i++)
+            {
+                if (!(A[i] == B[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+
+        }
+
+
+    }
 
 }
