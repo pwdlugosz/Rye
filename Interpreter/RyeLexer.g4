@@ -78,6 +78,7 @@ K_DYNAMIC : D Y N A M I C;
 K_ELSE : E L S E;
 K_END : E N D;
 K_ESCAPE : E S C A P E;
+K_EXEC : E X E C;
 K_FOR : F O R;
 K_FROM : F R O M;
 K_FULL : F U L L;
@@ -105,6 +106,7 @@ K_READ : R E A D | S E L E C T;
 K_REDUCE : R E D U C E;
 K_RETAIN : R E T A I N;
 K_RIGHT : R I G H T;
+K_SCRIPT : S C R I P T;
 K_SET : S E T;
 K_SIZE : S I Z E;
 K_SORT : S O R T;
@@ -161,6 +163,7 @@ LITERAL_STRING
 CTERM : '%;' | G O ';';
 
 // Identifier Parameter Text //
+PARAMETER : '@' IDENTIFIER;
 IDENTIFIER : [a-zA-Z_] [a-zA-Z_0-9]*;
 
 // Comments and whitespace //

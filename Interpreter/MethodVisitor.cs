@@ -288,6 +288,21 @@ namespace Rye.Interpreter
 
         }
 
+        public override Method VisitActExec(RyeParser.ActExecContext context)
+        {
+
+            Heap<Expression> parameters = new Heap<Expression>();
+            string script = this._exp.ToNode(context.exec_method().expression()).Evaluate().valueSTRING;
+
+            foreach (RyeParser.Exec_unitContext ctx in context.exec_method().exec_unit())
+            {
+                parameters.Allocate(ctx.PARAMETER().GetText(), this._exp.ToNode(ctx.expression()));
+            }
+
+            return new MethodExecScript(this._master, this._enviro, script, parameters);
+
+        }
+
         // Assign a matrix to another matrix //
         public override Method VisitActMatAssign(RyeParser.ActMatAssignContext context)
         {

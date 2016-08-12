@@ -178,11 +178,20 @@ method
 	| matrix_unit_assign																								# ActMatUnitAssign
 	| structure_method_weak																								# ActSMWeak
 	| structure_method_strict																							# ActSMStrict
-	
+	| exec_method																										# ActExec
+
 	| K_DO LCURL (method)+ RCURL SEMI_COLON																				# ActBeginEnd // Begin <...> End
 	| K_IF expression K_THEN method (K_ELSE method)?																	# ActIf // IF t == v THEN (x++) ELSE (x--)
 	| K_FOR generic_name ASSIGN expression K_TO expression method											# ActFor // For T = 0 to 10 (I++,I--)
 	| K_WHILE expression method																							# ActWhile
+	;
+
+// Execute method //
+exec_method
+	: K_EXEC LCURL K_SCRIPT ASSIGN expression SEMI_COLON (exec_unit SEMI_COLON)* RCURL SEMI_COLON
+	;
+exec_unit
+	: PARAMETER ASSIGN expression
 	;
 
 // Append table method //

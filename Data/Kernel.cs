@@ -20,8 +20,13 @@ namespace Rye.Data
         private static Dictionary<string, Extent> _ExtentCache = new Dictionary<string,Extent>(StringComparer.OrdinalIgnoreCase);
         private static Dictionary<string, Table> _TableCache = new Dictionary<string, Table>(StringComparer.OrdinalIgnoreCase);
         private static Quack<string> _PriorityCache = new Quack<string>(Quack<string>.QuackState.LIFO);
-        private static SerializationProvider _BaseProvider = new CompressedSerializationProvider();
-        //private static SerializationProvider _BaseProvider = new BasicSerializationProvider();
+
+        private static Dictionary<byte, SerializationProvider> _Providers = new Dictionary<byte, SerializationProvider>()
+        {
+            {1, new BasicSerializationProvider()},
+            {2, new CompressedSerializationProvider()},
+        };
+        private static byte _UseProvider = 2;
 
         private static string _TempDir = null;
 
@@ -100,7 +105,7 @@ namespace Rye.Data
                 return;
             }
 
-            Kernel._BaseProvider.FlushExtent(E);
+            Kernel.Flush(E);
 
         }
 
@@ -113,7 +118,7 @@ namespace Rye.Data
                 return;
             }
 
-            Kernel._BaseProvider.FlushTable(T);
+            Kernel.Flush(T);
 
         }
 
@@ -125,7 +130,7 @@ namespace Rye.Data
                 return Kernel.VirtualBufferExtent(Path);
             }
 
-            Extent e = Kernel._BaseProvider.BufferExtent(Path);
+            Extent e = Kernel.BufferExtent(Path);
 
             if (Kernel.CanExceptExtent(e))
                 Kernel.VirtualFlushExtent(e);
@@ -142,7 +147,7 @@ namespace Rye.Data
                 return Kernel.VirtualBufferTable(Path);
             }
 
-            Table t = Kernel._BaseProvider.BufferTable(Path);
+            Table t = Kernel.BufferTable(Path);
 
             if (Kernel.CanExceptTable(t))
                 Kernel.VirtualFlushTable(t);
@@ -200,11 +205,11 @@ namespace Rye.Data
 
             foreach (KeyValuePair<string, Extent> kv in Kernel._ExtentCache)
             {
-                Kernel._BaseProvider.FlushExtent(kv.Value);
+                Kernel.Flush(kv.Value);
             }
             foreach (KeyValuePair<string, Table> kv in Kernel._TableCache)
             {
-                Kernel._BaseProvider.FlushTable(kv.Value);
+                Kernel.Flush(kv.Value);
             }
 
         }
@@ -319,7 +324,7 @@ namespace Rye.Data
                 return;
 
             if (Flush)
-                Kernel._BaseProvider.FlushExtent(Kernel.VirtualBufferExtent(Path));
+                Kernel.Flush(Kernel.VirtualBufferExtent(Path));
 
             Kernel._CurrentMemory -= Kernel.VirtualBufferExtent(Path).MemCost;
 
@@ -389,7 +394,7 @@ namespace Rye.Data
                 return;
 
             if (Flush)
-                Kernel._BaseProvider.FlushTable(Kernel.VirtualBufferTable(Path));
+                Kernel.Flush(Kernel.VirtualBufferTable(Path));
 
             Kernel._CurrentMemory -= Kernel.VirtualBufferTable(Path).MemCost;
 
@@ -411,943 +416,68 @@ namespace Rye.Data
 
         #endregion
 
-        #region Version1_Serialization
+        #region DiskProcess
 
-        /*
-         * Binary serialization:
-         * Cells: affinity, nullness, data (if not null)
-         * Records: record count as int, each cell
-         * RecordSets:
-         *      -- Header
-         *      -- Columns (Header has the correct count)
-         *      -- Sort key (Header has the correct count)
-         *      -- Records (Header has the correct count)
-         * 
-         */
+        public static void Flush(Extent E)
+        {
 
-        
-        //private const int V1_HEADER_LEN = 11;
-        //private const int V1_SCHEMA_LEN = 4;
-        //private const int V1_TABLE_LEN = 2;
-        //private const byte VERSION1 = 1;
+            Kernel._Providers[Kernel._UseProvider].FlushExtent(E);
+            Kernel._DISK_WRITES++;
 
-        //private const byte STATE1 = 0;
-        //private const int VERSION_LOC = 0;
-        //private const int STATE_LOC = 1;
-        //private const int LOCATION_BEGIN = 2;
-        //private const int META_SIZE = 2;
+        }
 
-        // Version 1 Serialization - Writes //
-        //private static int WriteCellSafeVersion1(byte[] Mem, int Location, Cell C)
-        //{
+        public static void Flush(Table T)
+        {
 
-        //    // Write the affinity //
-        //    Mem[Location] = ((byte)C.AFFINITY);
-        //    Location++;
+            Kernel._Providers[Kernel._UseProvider].FlushTable(T);
+            Kernel._DISK_WRITES++;
 
-        //    // Write nullness //
-        //    Mem[Location] = C.NULL;
-        //    Location++;
+        }
 
-        //    // If we are null, then exit
-        //    // for security reasons, we do not want to write any ghost data if the cell is null //
-        //    if (C.IsNull)
-        //        return Location;
+        public static Extent BufferExtent(string Path)
+        {
 
-        //    // Bool //
-        //    if (C.AFFINITY == CellAffinity.BOOL)
-        //    {
-        //        Mem[Location] = (C.BOOL == true ? (byte)1 : (byte)0);
-        //        Location++;
-        //        return Location;
-        //    }
+            // Open a stream //
+            byte[] b = File.ReadAllBytes(Path);
 
-        //    // BLOB //
-        //    if (C.AFFINITY == CellAffinity.BLOB)
-        //    {
+            // Get the version Bytes //
+            byte version = b[SerializationProvider.VERSION_LOC];
+            byte state = b[SerializationProvider.STATE_LOC];
 
-        //        C.INT_B = C.BLOB.Length;
-        //        Mem[Location] = (C.B4);
-        //        Mem[Location + 1] = (C.B5);
-        //        Mem[Location + 2] = (C.B6);
-        //        Mem[Location + 3] = (C.B7);
-        //        Location += 4;
+            // Check the version //
+            if (!Kernel._Providers.ContainsKey(version))
+                throw new InvalidDataException(string.Format("The extent passed is encoded with a version not supported: '{0}'", version));
 
-        //        for (int i = 0; i < C.BLOB.Length; i++)
-        //        {
-        //            Mem[Location + i] = C.BLOB[i];
-        //        }
+            // Buffer Data //
+            Extent e = Kernel._Providers[version].ReadExtent(b, SerializationProvider.LOCATION_BEGIN);
+            Kernel._DISK_READS++;
 
-        //        Location += C.BLOB.Length;
-        //        return Location;
+            return e;
 
-        //    }
+        }
 
-        //    // STRING //
-        //    if (C.AFFINITY == CellAffinity.STRING)
-        //    {
+        public static Table BufferTable(string Path)
+        {
 
-        //        C.INT_B = C.STRING.Length;
-        //        Mem[Location] = (C.B4);
-        //        Mem[Location + 1] = (C.B5);
-        //        Mem[Location + 2] = (C.B6);
-        //        Mem[Location + 3] = (C.B7);
-        //        Location += 4;
+            // Open a stream //
+            byte[] b = File.ReadAllBytes(Path);
 
-        //        for (int i = 0; i < C.STRING.Length; i++)
-        //        {
-        //            byte c1 = (byte)(C.STRING[i] >> 8);
-        //            byte c2 = (byte)(C.STRING[i] & 255);
-        //            Mem[Location] = c1;
-        //            Location++;
-        //            Mem[Location] = c2;
-        //            Location++;
-        //        }
-        //        return Location;
+            // Get the version Bytes //
+            byte version = b[SerializationProvider.VERSION_LOC];
+            byte state = b[SerializationProvider.STATE_LOC];
 
-        //    }
+            // Check the version //
+            if (!Kernel._Providers.ContainsKey(version))
+                throw new InvalidDataException(string.Format("The table passed is encoded with a version not supported: '{0}'", version));
 
-        //    // Double, int, date //
-        //    Mem[Location] = C.B0;
-        //    Mem[Location + 1] = C.B1;
-        //    Mem[Location + 2] = C.B2;
-        //    Mem[Location + 3] = C.B3;
-        //    Mem[Location + 4] = C.B4;
-        //    Mem[Location + 5] = C.B5;
-        //    Mem[Location + 6] = C.B6;
-        //    Mem[Location + 7] = C.B7;
+            // Buffer Data //
+            Table t = Kernel._Providers[version].ReadTable(b, SerializationProvider.LOCATION_BEGIN);
+            Kernel._DISK_READS++;
 
-        //    return Location + 8;
+            return t;
 
-        //}
+        }
 
-        //private static int WriteRecordSafeVersion1(byte[] Mem, int Location, Record R)
-        //{
-
-        //    // Write each cell //
-        //    for (int j = 0; j < R.Count; j++)
-        //    {
-
-        //        Cell C = R[j];
-
-        //        // Write the affinity //
-        //        Mem[Location] = ((byte)C.AFFINITY);
-        //        Location++;
-
-        //        // Write nullness //
-        //        Mem[Location] = C.NULL;
-        //        Location++;
-
-        //        // If we are null, then exit
-        //        // for security reasons, we do not want to write any ghost data if the cell is null //
-        //        if (C.NULL == 0)
-        //        {
-
-        //            // Bool //
-        //            if (C.AFFINITY == CellAffinity.BOOL)
-        //            {
-        //                Mem[Location] = (C.BOOL == true ? (byte)1 : (byte)0);
-        //                Location++;
-        //            }
-
-        //            // BLOB //
-        //            else if (C.AFFINITY == CellAffinity.BLOB)
-        //            {
-
-        //                C.INT_B = C.BLOB.Length;
-        //                Mem[Location] = (C.B4);
-        //                Mem[Location + 1] = (C.B5);
-        //                Mem[Location + 2] = (C.B6);
-        //                Mem[Location + 3] = (C.B7);
-        //                Location += 4;
-
-        //                for (int i = 0; i < C.BLOB.Length; i++)
-        //                {
-        //                    Mem[Location + i] = C.BLOB[i];
-        //                }
-
-        //                Location += C.BLOB.Length;
-
-        //            }
-
-        //            // STRING //
-        //            else if (C.AFFINITY == CellAffinity.STRING)
-        //            {
-
-        //                C.INT_B = C.STRING.Length;
-        //                Mem[Location] = (C.B4);
-        //                Mem[Location + 1] = (C.B5);
-        //                Mem[Location + 2] = (C.B6);
-        //                Mem[Location + 3] = (C.B7);
-        //                Location += 4;
-
-        //                for (int i = 0; i < C.STRING.Length; i++)
-        //                {
-        //                    byte c1 = (byte)(C.STRING[i] >> 8);
-        //                    byte c2 = (byte)(C.STRING[i] & 255);
-        //                    Mem[Location] = c1;
-        //                    Location++;
-        //                    Mem[Location] = c2;
-        //                    Location++;
-        //                }
-
-        //            }
-
-        //            // Double, int, date //
-        //            else
-        //            {
-
-        //                Mem[Location] = C.B0;
-        //                Mem[Location + 1] = C.B1;
-        //                Mem[Location + 2] = C.B2;
-        //                Mem[Location + 3] = C.B3;
-        //                Mem[Location + 4] = C.B4;
-        //                Mem[Location + 5] = C.B5;
-        //                Mem[Location + 6] = C.B6;
-        //                Mem[Location + 7] = C.B7;
-        //                Location += 8;
-        //            }
-
-        //        }
-
-        //    }
-
-        //    return Location;
-
-        //}
-
-        //private static int WriteRecordsSafeVersion1(byte[] Mem, int Location, List<Record> Cache)
-        //{
-
-        //    // Do NOT write the record count; assume the reader knows what the record count is //
-        //    foreach (Record R in Cache)
-        //    {
-
-        //        // Write each cell //
-        //        for (int j = 0; j < R.Count; j++)
-        //        {
-
-        //            Cell C = R[j];
-
-        //            // Write the affinity //
-        //            Mem[Location] = ((byte)C.AFFINITY);
-        //            Location++;
-
-        //            // Write nullness //
-        //            Mem[Location] = C.NULL;
-        //            Location++;
-
-        //            // If we are null, then exit
-        //            // for security reasons, we do not want to write any ghost data if the cell is null //
-        //            if (C.NULL == 0)
-        //            {
-
-        //                // Bool //
-        //                if (C.AFFINITY == CellAffinity.BOOL)
-        //                {
-        //                    Mem[Location] = (C.BOOL == true ? (byte)1 : (byte)0);
-        //                    Location++;
-        //                }
-
-        //                // BLOB //
-        //                else if (C.AFFINITY == CellAffinity.BLOB)
-        //                {
-
-        //                    C.INT_B = C.BLOB.Length;
-        //                    Mem[Location] = (C.B4);
-        //                    Mem[Location + 1] = (C.B5);
-        //                    Mem[Location + 2] = (C.B6);
-        //                    Mem[Location + 3] = (C.B7);
-        //                    Location += 4;
-
-        //                    for (int i = 0; i < C.BLOB.Length; i++)
-        //                    {
-        //                        Mem[Location + i] = C.BLOB[i];
-        //                    }
-
-        //                    Location += C.BLOB.Length;
-
-        //                }
-
-        //                // STRING //
-        //                else if (C.AFFINITY == CellAffinity.STRING)
-        //                {
-
-        //                    C.INT_B = C.STRING.Length;
-        //                    Mem[Location] = (C.B4);
-        //                    Mem[Location + 1] = (C.B5);
-        //                    Mem[Location + 2] = (C.B6);
-        //                    Mem[Location + 3] = (C.B7);
-        //                    Location += 4;
-
-        //                    for (int i = 0; i < C.STRING.Length; i++)
-        //                    {
-        //                        byte c1 = (byte)(C.STRING[i] >> 8);
-        //                        byte c2 = (byte)(C.STRING[i] & 255);
-        //                        Mem[Location] = c1;
-        //                        Location++;
-        //                        Mem[Location] = c2;
-        //                        Location++;
-        //                    }
-
-        //                }
-
-        //                // Double, int, date //
-        //                else
-        //                {
-
-        //                    Mem[Location] = C.B0;
-        //                    Mem[Location + 1] = C.B1;
-        //                    Mem[Location + 2] = C.B2;
-        //                    Mem[Location + 3] = C.B3;
-        //                    Mem[Location + 4] = C.B4;
-        //                    Mem[Location + 5] = C.B5;
-        //                    Mem[Location + 6] = C.B6;
-        //                    Mem[Location + 7] = C.B7;
-        //                    Location += 8;
-        //                }
-
-        //            }
-
-        //        }
-
-        //    }
-
-        //    return Location;
-
-        //}
-
-        //private static int WriteExtentSafeVersion1(byte[] Mem, int Location, Extent Data)
-        //{
-
-        //    /*
-        //     * Write:
-        //     *      Header
-        //     *      Schema
-        //     *      SortKey
-        //     *      Record Collection
-        //     */
-
-        //    // Update the data //
-        //    Data.PreSerialize();
-
-        //    // Write header //
-        //    Location = Kernel.WriteRecordSafeVersion1(Mem, Location, Data.Header);
-        //    //Console.WriteLine("Header Terminator: {0}", Location);
-
-        //    // Write columns //
-        //    Location = Kernel.WriteRecordsSafeVersion1(Mem, Location, Data.Columns._Cache);
-        //    //Console.WriteLine("Schema Terminator: {0}", Location);
-
-        //    // Write sort key //
-        //    Location = Kernel.WriteRecordSafeVersion1(Mem, Location, Data.SortBy.ToRecord());
-        //    //Console.WriteLine("Keys Terminator: {0}", Location);
-
-        //    // Write cache //
-        //    Location = Kernel.WriteRecordsSafeVersion1(Mem, Location, Data.Cache);
-        //    //Console.WriteLine("Data Terminator: {0}", Location);
-
-        //    return Location;
-
-        //}
-
-        //private static int WriteTableSafeVersion1(byte[] Mem, int Location, Table Data)
-        //{
-
-        //    /*
-        //     * Write:
-        //     *      Header
-        //     *      Schema
-        //     *      SortKey
-        //     *      Record Collection
-        //     */
-
-        //    // Update the data //
-        //    //Data.PreSerialize();
-
-        //    // Write header //
-        //    Location = Kernel.WriteRecordSafeVersion1(Mem, Location, Data.Header);
-        //    //Console.WriteLine("Header Terminator: {0}", Location);
-
-        //    // Write columns //
-        //    Location = Kernel.WriteRecordsSafeVersion1(Mem, Location, Data.Columns._Cache);
-        //    //Console.WriteLine("Schema Terminator: {0}", Location);
-
-        //    // Write sort key //
-        //    Location = Kernel.WriteRecordSafeVersion1(Mem, Location, Data.SortBy.ToRecord());
-        //    //Console.WriteLine("Keys Terminator: {0}", Location);
-
-        //    // Write cache //
-        //    Location = Kernel.WriteRecordsSafeVersion1(Mem, Location, Data.ReferenceTable.Cache);
-        //    //Console.WriteLine("Data Terminator: {0}", Location);
-
-        //    return Location;
-
-        //}
-
-        //private static void FlushExtentSafeVersion1(Extent Data)
-        //{
-
-        //    // Check if attached //
-        //    if (Data.IsMemoryOnly)
-        //        throw new Exception("Extent passed is a memory only set");
-
-        //    // Update the header //
-        //    Data.PreSerialize();
-
-        //    // Estimate the size //
-        //    int size = Data.DiskCost + META_SIZE;
-
-        //    // Value stack //
-        //    byte[] memory = new byte[size];
-
-        //    // Write the meta data //
-        //    memory[VERSION_LOC] = VERSION1;
-        //    memory[STATE_LOC] = STATE1;
-
-        //    // Write the data to memory //
-        //    int location = Kernel.WriteExtentSafeVersion1(memory, LOCATION_BEGIN, Data);
-
-        //    // Create a file stream //
-        //    using (FileStream fs = File.Create(Data.Header.Path, size))
-        //    {
-        //        fs.Write(memory, 0, location);
-        //    }
-
-        //    // Increment writes //
-        //    _DISK_WRITES++;
-
-        //}
-
-        //private static void FlushTableSafeVersion1(Table Data)
-        //{
-
-        //    // Update the header //
-        //    Data.PreSerialize();
-
-        //    // Get the size //
-        //    int size = Data.DiskCost + META_SIZE;
-
-        //    // Value //
-        //    byte[] memory = new byte[size];
-
-        //    // Write the meta data //
-        //    memory[VERSION_LOC] = VERSION1;
-        //    memory[STATE_LOC] = STATE1;
-
-        //    // Create a file stream //
-        //    using (FileStream fs = File.Create(Data.Header.Path))
-        //    {
-        //        int location = Kernel.WriteTableSafeVersion1(memory, LOCATION_BEGIN, Data);
-        //        fs.Write(memory, 0, location);
-        //    }
-
-        //    // Increment writes //
-        //    _DISK_WRITES++;
-
-        //}
-
-        // Version 1 Serialization - Reads //
-        
-        //private static int ReadCellSafeVersion1(byte[] Mem, int Location, out Cell C)
-        //{
-
-        //    // Read the affinity //
-        //    CellAffinity a = (CellAffinity)Mem[Location];
-        //    Location++;
-
-        //    // Read nullness //
-        //    bool b = (Mem[Location] == 1);
-        //    Location++;
-
-        //    // If we are null, then exit
-        //    // for security reasons, we do not want to write any ghost data if the cell is null //
-        //    if (b == true)
-        //    {
-        //        C = new Cell(a);
-        //        return Location;
-        //    }
-
-        //    // Cell c //
-        //    C = new Cell(a);
-        //    C.NULL = 0;
-
-        //    if (a == CellAffinity.BOOL)
-        //    {
-        //        C.B0 = Mem[Location];
-        //        Location++;
-        //        return Location;
-        //    }
-
-        //    // BLOB //
-        //    if (a == CellAffinity.BLOB)
-        //    {
-
-        //        C.B4 = Mem[Location];
-        //        C.B5 = Mem[Location + 1];
-        //        C.B6 = Mem[Location + 2];
-        //        C.B7 = Mem[Location + 3];
-        //        Location += 4;
-        //        byte[] blob = new byte[C.INT_B];
-        //        for (int i = 0; i < blob.Length; i++)
-        //        {
-        //            blob[i] = Mem[Location];
-        //            Location++;
-        //        }
-        //        C = new Cell(blob);
-        //        return Location;
-
-        //    }
-
-        //    // STRING //
-        //    if (a == CellAffinity.STRING)
-        //    {
-
-        //        C.B4 = Mem[Location];
-        //        C.B5 = Mem[Location + 1];
-        //        C.B6 = Mem[Location + 2];
-        //        C.B7 = Mem[Location + 3];
-        //        Location += 4;
-        //        char[] chars = new char[C.INT_B];
-        //        for (int i = 0; i < C.INT_B; i++)
-        //        {
-        //            byte c1 = Mem[Location];
-        //            Location++;
-        //            byte c2 = Mem[Location];
-        //            Location++;
-        //            chars[i] = (char)(((int)c2) | (int)(c1 << 8));
-        //        }
-        //        C = new Cell(new string(chars));
-        //        return Location;
-
-        //    }
-
-        //    // Double, Ints, Dates //
-        //    C.B0 = Mem[Location];
-        //    C.B1 = Mem[Location + 1];
-        //    C.B2 = Mem[Location + 2];
-        //    C.B3 = Mem[Location + 3];
-        //    C.B4 = Mem[Location + 4];
-        //    C.B5 = Mem[Location + 5];
-        //    C.B6 = Mem[Location + 6];
-        //    C.B7 = Mem[Location + 7];
-        //    Location += 8;
-        //    return Location;
-
-        //}
-
-        //private static int ReadRecordSafeVersion1(byte[] Mem, int Location, int Length, out Record Datum)
-        //{
-
-        //    // Array //
-        //    Cell[] q = new Cell[Length];
-
-        //    // Get cells //
-        //    for (int j = 0; j < Length; j++)
-        //    {
-
-        //        Cell C;
-
-        //        // Read the affinity //
-        //        CellAffinity a = (CellAffinity)Mem[Location];
-        //        Location++;
-
-        //        // Read nullness //
-        //        bool b = (Mem[Location] == 1);
-        //        Location++;
-
-        //        // If we are null, then exit
-        //        // for security reasons, we do not want to write any ghost data if the cell is null //
-        //        if (b == true)
-        //        {
-        //            C = new Cell(a);
-        //        }
-        //        else
-        //        {
-
-        //            // Cell c //
-        //            C = new Cell(a);
-        //            C.NULL = 0;
-
-        //            // BOOL //
-        //            if (a == CellAffinity.BOOL)
-        //            {
-        //                C.B0 = Mem[Location];
-        //                Location++;
-        //            }
-
-        //            // BLOB //
-        //            else if (a == CellAffinity.BLOB)
-        //            {
-
-        //                C.B4 = Mem[Location];
-        //                C.B5 = Mem[Location + 1];
-        //                C.B6 = Mem[Location + 2];
-        //                C.B7 = Mem[Location + 3];
-        //                Location += 4;
-        //                byte[] blob = new byte[C.INT_B];
-        //                for (int i = 0; i < blob.Length; i++)
-        //                {
-        //                    blob[i] = Mem[Location];
-        //                    Location++;
-        //                }
-        //                C = new Cell(blob);
-
-        //            }
-
-        //            // STRING //
-        //            else if (a == CellAffinity.STRING)
-        //            {
-
-        //                C.B4 = Mem[Location];
-        //                C.B5 = Mem[Location + 1];
-        //                C.B6 = Mem[Location + 2];
-        //                C.B7 = Mem[Location + 3];
-        //                Location += 4;
-        //                char[] chars = new char[C.INT_B];
-        //                for (int i = 0; i < C.INT_B; i++)
-        //                {
-        //                    byte c1 = Mem[Location];
-        //                    Location++;
-        //                    byte c2 = Mem[Location];
-        //                    Location++;
-        //                    chars[i] = (char)(((int)c2) | (int)(c1 << 8));
-        //                }
-        //                C = new Cell(new string(chars));
-
-        //            }
-
-        //            // Double, Ints, Dates //
-        //            else
-        //            {
-        //                C.B0 = Mem[Location];
-        //                C.B1 = Mem[Location + 1];
-        //                C.B2 = Mem[Location + 2];
-        //                C.B3 = Mem[Location + 3];
-        //                C.B4 = Mem[Location + 4];
-        //                C.B5 = Mem[Location + 5];
-        //                C.B6 = Mem[Location + 6];
-        //                C.B7 = Mem[Location + 7];
-        //                Location += 8;
-        //            }
-
-        //        }
-
-        //        q[j] = C;
-
-        //    }
-
-        //    Datum = new Record(q);
-        //    return Location;
-
-        //}
-
-        //private static int ReadRecordsSafeVersion1(byte[] Mem, int Location, long Count, int Length, List<Record> Cache)
-        //{
-
-        //    // Loop through //
-        //    for (int k = 0; k < Count; k++)
-        //    {
-
-        //        // Array //
-        //        Cell[] q = new Cell[Length];
-
-        //        // Get cells //
-        //        for (int j = 0; j < Length; j++)
-        //        {
-
-        //            Cell C;
-
-        //            // Read the affinity //
-        //            CellAffinity a = (CellAffinity)Mem[Location];
-        //            Location++;
-
-        //            // Read nullness //
-        //            bool b = (Mem[Location] == 1);
-        //            Location++;
-
-        //            // If we are null, then exit
-        //            // for security reasons, we do not want to write any ghost data if the cell is null //
-        //            if (b == true)
-        //            {
-        //                C = new Cell(a);
-        //            }
-        //            else
-        //            {
-
-        //                // Cell c //
-        //                C = new Cell(a);
-        //                C.NULL = 0;
-
-        //                // BOOL //
-        //                if (a == CellAffinity.BOOL)
-        //                {
-        //                    C.B0 = Mem[Location];
-        //                    Location++;
-        //                }
-
-        //                // BLOB //
-        //                else if (a == CellAffinity.BLOB)
-        //                {
-
-        //                    C.B4 = Mem[Location];
-        //                    C.B5 = Mem[Location + 1];
-        //                    C.B6 = Mem[Location + 2];
-        //                    C.B7 = Mem[Location + 3];
-        //                    Location += 4;
-        //                    byte[] blob = new byte[C.INT_B];
-        //                    for (int i = 0; i < blob.Length; i++)
-        //                    {
-        //                        blob[i] = Mem[Location];
-        //                        Location++;
-        //                    }
-        //                    C = new Cell(blob);
-
-        //                }
-
-        //                // STRING //
-        //                else if (a == CellAffinity.STRING)
-        //                {
-
-        //                    C.B4 = Mem[Location];
-        //                    C.B5 = Mem[Location + 1];
-        //                    C.B6 = Mem[Location + 2];
-        //                    C.B7 = Mem[Location + 3];
-        //                    Location += 4;
-        //                    char[] chars = new char[C.INT_B];
-        //                    for (int i = 0; i < C.INT_B; i++)
-        //                    {
-        //                        byte c1 = Mem[Location];
-        //                        Location++;
-        //                        byte c2 = Mem[Location];
-        //                        Location++;
-        //                        chars[i] = (char)(((int)c2) | (int)(c1 << 8));
-        //                    }
-        //                    C = new Cell(new string(chars));
-
-        //                }
-
-        //                // Double, Ints, Dates //
-        //                else
-        //                {
-        //                    C.B0 = Mem[Location];
-        //                    C.B1 = Mem[Location + 1];
-        //                    C.B2 = Mem[Location + 2];
-        //                    C.B3 = Mem[Location + 3];
-        //                    C.B4 = Mem[Location + 4];
-        //                    C.B5 = Mem[Location + 5];
-        //                    C.B6 = Mem[Location + 6];
-        //                    C.B7 = Mem[Location + 7];
-        //                    Location += 8;
-        //                }
-
-        //            }
-
-        //            q[j] = C;
-
-        //        }
-
-        //        Cache.Add(new Record(q));
-
-        //    }
-
-        //    return Location;
-
-        //}
-
-        //private static int ReadHeadersSafeVersion1(byte[] Mem, int Location, long Count, int Length, List<Header> Cache)
-        //{
-
-        //    // Loop through //
-        //    for (int k = 0; k < Count; k++)
-        //    {
-
-        //        // Array //
-        //        Cell[] q = new Cell[Length];
-
-        //        // Get cells //
-        //        for (int j = 0; j < Length; j++)
-        //        {
-
-        //            Cell C;
-
-        //            // Read the affinity //
-        //            CellAffinity a = (CellAffinity)Mem[Location];
-        //            Location++;
-
-        //            // Read nullness //
-        //            bool b = (Mem[Location] == 1);
-        //            Location++;
-
-        //            // If we are null, then exit
-        //            // for security reasons, we do not want to write any ghost data if the cell is null //
-        //            if (b == true)
-        //            {
-        //                C = new Cell(a);
-        //            }
-        //            else
-        //            {
-
-        //                // Cell c //
-        //                C = new Cell(a);
-        //                C.NULL = 0;
-
-        //                // BOOL //
-        //                if (a == CellAffinity.BOOL)
-        //                {
-        //                    C.B0 = Mem[Location];
-        //                    Location++;
-        //                }
-
-        //                // BLOB //
-        //                else if (a == CellAffinity.BLOB)
-        //                {
-
-        //                    C.B4 = Mem[Location];
-        //                    C.B5 = Mem[Location + 1];
-        //                    C.B6 = Mem[Location + 2];
-        //                    C.B7 = Mem[Location + 3];
-        //                    Location += 4;
-        //                    byte[] blob = new byte[C.INT_B];
-        //                    for (int i = 0; i < blob.Length; i++)
-        //                    {
-        //                        blob[i] = Mem[Location];
-        //                        Location++;
-        //                    }
-        //                    C = new Cell(blob);
-
-        //                }
-
-        //                // STRING //
-        //                else if (a == CellAffinity.STRING)
-        //                {
-
-        //                    C.B4 = Mem[Location];
-        //                    C.B5 = Mem[Location + 1];
-        //                    C.B6 = Mem[Location + 2];
-        //                    C.B7 = Mem[Location + 3];
-        //                    Location += 4;
-        //                    char[] chars = new char[C.INT_B];
-        //                    for (int i = 0; i < C.INT_B; i++)
-        //                    {
-        //                        byte c1 = Mem[Location];
-        //                        Location++;
-        //                        byte c2 = Mem[Location];
-        //                        Location++;
-        //                        chars[i] = (char)(((int)c2) | (int)(c1 << 8));
-        //                    }
-        //                    C = new Cell(new string(chars));
-
-        //                }
-
-        //                // Double, Ints, Dates //
-        //                else
-        //                {
-        //                    C.B0 = Mem[Location];
-        //                    C.B1 = Mem[Location + 1];
-        //                    C.B2 = Mem[Location + 2];
-        //                    C.B3 = Mem[Location + 3];
-        //                    C.B4 = Mem[Location + 4];
-        //                    C.B5 = Mem[Location + 5];
-        //                    C.B6 = Mem[Location + 6];
-        //                    C.B7 = Mem[Location + 7];
-        //                    Location += 8;
-        //                }
-
-        //            }
-
-        //            q[j] = C;
-
-        //        }
-
-        //        Cache.Add(new Header(new Record(q)));
-
-        //    }
-
-        //    return Location;
-
-        //}
-
-        //private static Extent ReadRecordSetSafeVersion1(byte[] Mem, int Location)
-        //{
-
-        //    /*
-        //     * Read:
-        //     *      Header
-        //     *      Schema
-        //     *      SortKey
-        //     *      Record Collection
-        //     */
-
-        //    // Read header //
-        //    Record rh;
-        //    Location = ReadRecordSafeVersion1(Mem, Location, V1_HEADER_LEN, out rh);
-        //    Header h = new Header(rh);
-
-        //    // Read schema //
-        //    List<Record> s_cache = new List<Record>();
-        //    Location = Kernel.ReadRecordsSafeVersion1(Mem, Location, h.ColumnCount, V1_SCHEMA_LEN, s_cache);
-        //    Schema s = new Schema(s_cache);
-
-        //    // Read key //
-        //    Record rk;
-        //    Location = ReadRecordSafeVersion1(Mem, Location, (int)h.KeyCount, out rk);
-        //    Key k = new Key(rk);
-
-        //    // Read record cache //
-        //    List<Record> d_cache = new List<Record>();
-        //    Location = Kernel.ReadRecordsSafeVersion1(Mem, Location, (int)h.RecordCount, (int)h.ColumnCount, d_cache);
-
-        //    // Return recordset //
-        //    return new Extent(s, h, d_cache, k);
-
-        //}
-
-        //private static Table ReadTableSafeVersion1(byte[] Mem, int Location)
-        //{
-
-        //    /*
-        //     * Read:
-        //     *      Header
-        //     *      Schema
-        //     *      SortKey
-        //     *      Record Collection
-        //     */
-
-        //    // Read header //
-        //    Record rh;
-        //    Location = ReadRecordSafeVersion1(Mem, Location, 11, out rh);
-        //    Header h = new Header(rh);
-
-        //    // Read schema //
-        //    List<Record> s_cache = new List<Record>();
-        //    Location = Kernel.ReadRecordsSafeVersion1(Mem, Location, h.ColumnCount, 4, s_cache);
-        //    Schema s = new Schema(s_cache);
-
-        //    // Read key //
-        //    Record rk;
-        //    Location = ReadRecordSafeVersion1(Mem, Location, (int)h.KeyCount, out rk);
-        //    Key k = new Key(rk);
-
-        //    // Read record cache //
-        //    List<Record> d_cache = new List<Record>();
-        //    Location = Kernel.ReadRecordsSafeVersion1(Mem, Location, (int)h.RecordCount, 2, d_cache);
-
-        //    // Return recordset //
-        //    return new Table(h, s, d_cache, k);
-
-        //}
-        
-        //private static Extent BufferExtent(string FullPath)
-        //{
-        //    return Kernel._BaseProvider.BufferExtent(FullPath);
-        //}
-
-        //private static Table BufferTable(string FullPath)
-        //{
-        //    return Kernel._BaseProvider.BufferTable(FullPath);
-        //}
-        
         #endregion
 
         public static void TextDump(DataSet Data, string OutPath, char Delim, char Escape, Expressions.Filter Where, Expressions.Register Memory)
@@ -1430,8 +560,7 @@ namespace Rye.Data
         }
 
     }
-
-    internal abstract class SerializationProvider
+    public abstract class SerializationProvider
     {
 
         public const int VERSION_LOC = 0;
@@ -1709,7 +838,7 @@ namespace Rye.Data
 
     }
 
-    internal sealed class BasicSerializationProvider : SerializationProvider
+    public sealed class BasicSerializationProvider : SerializationProvider
     {
 
         public const byte VERSION1 = 1;
@@ -2424,10 +1553,10 @@ namespace Rye.Data
 
     }
 
-    internal sealed class CompressedSerializationProvider : SerializationProvider
+    public sealed class CompressedSerializationProvider : SerializationProvider
     {
 
-        public const byte VERSION2 = 1;
+        public const byte VERSION2 = 2;
         public const byte STATE1 = 0;
 
         public CompressedSerializationProvider()
@@ -2499,11 +1628,12 @@ namespace Rye.Data
                 char[] chars = new char[C.INT_B];
                 for (int i = 0; i < C.INT_B; i++)
                 {
-                    byte c1 = Mem[Location];
-                    Location++;
+                    //byte c1 = Mem[Location];
+                    //Location++;
                     byte c2 = Mem[Location];
                     Location++;
-                    chars[i] = (char)(((int)c2) | (int)(c1 << 8));
+                    //chars[i] = (char)(((int)c2) | (int)(c1 << 8));
+                    chars[i] = (char)c2;
                 }
                 C = new Cell(new string(chars));
                 return Location;
@@ -2647,11 +1777,12 @@ namespace Rye.Data
                         char[] chars = new char[C.INT_B];
                         for (int i = 0; i < C.INT_B; i++)
                         {
-                            byte c1 = Mem[Location];
-                            Location++;
+                            //byte c1 = Mem[Location];
+                            //Location++;
                             byte c2 = Mem[Location];
                             Location++;
-                            chars[i] = (char)(((int)c2) | (int)(c1 << 8));
+                            //chars[i] = (char)(((int)c2) | (int)(c1 << 8));
+                            chars[i] = (char)c2;
                         }
                         C = new Cell(new string(chars));
 
@@ -2806,11 +1937,12 @@ namespace Rye.Data
                             char[] chars = new char[C.INT_B];
                             for (int i = 0; i < C.INT_B; i++)
                             {
-                                byte c1 = Mem[Location];
-                                Location++;
+                                //byte c1 = Mem[Location];
+                                //Location++;
                                 byte c2 = Mem[Location];
                                 Location++;
-                                chars[i] = (char)(((int)c2) | (int)(c1 << 8));
+                                //chars[i] = (char)(((int)c2) | (int)(c1 << 8));
+                                chars[i] = (char)c2;
                             }
                             C = new Cell(new string(chars));
 
@@ -2969,11 +2101,12 @@ namespace Rye.Data
                             char[] chars = new char[C.INT_B];
                             for (int i = 0; i < C.INT_B; i++)
                             {
-                                byte c1 = Mem[Location];
-                                Location++;
+                                //byte c1 = Mem[Location];
+                                //Location++;
                                 byte c2 = Mem[Location];
                                 Location++;
-                                chars[i] = (char)(((int)c2) | (int)(c1 << 8));
+                                //chars[i] = (char)(((int)c2) | (int)(c1 << 8));
+                                chars[i] = (char)c2;
                             }
                             C = new Cell(new string(chars));
 
@@ -3116,10 +2249,10 @@ namespace Rye.Data
 
                 for (int i = 0; i < C.STRING.Length; i++)
                 {
-                    byte c1 = (byte)(C.STRING[i] >> 8);
+                    //byte c1 = (byte)(C.STRING[i] >> 8);
                     byte c2 = (byte)(C.STRING[i] & 255);
-                    Mem[Location] = c1;
-                    Location++;
+                    //Mem[Location] = c1;
+                    //Location++;
                     Mem[Location] = c2;
                     Location++;
                 }
@@ -3251,10 +2384,10 @@ namespace Rye.Data
 
                         for (int i = 0; i < C.STRING.Length; i++)
                         {
-                            byte c1 = (byte)(C.STRING[i] >> 8);
+                            //byte c1 = (byte)(C.STRING[i] >> 8);
                             byte c2 = (byte)(C.STRING[i] & 255);
-                            Mem[Location] = c1;
-                            Location++;
+                            //Mem[Location] = c1;
+                            //Location++;
                             Mem[Location] = c2;
                             Location++;
                         }
@@ -3409,10 +2542,10 @@ namespace Rye.Data
 
                             for (int i = 0; i < C.STRING.Length; i++)
                             {
-                                byte c1 = (byte)(C.STRING[i] >> 8);
+                                //byte c1 = (byte)(C.STRING[i] >> 8);
                                 byte c2 = (byte)(C.STRING[i] & 255);
-                                Mem[Location] = c1;
-                                Location++;
+                                //Mem[Location] = c1;
+                                //Location++;
                                 Mem[Location] = c2;
                                 Location++;
                             }

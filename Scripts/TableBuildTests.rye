@@ -1,0 +1,47 @@
+﻿
+
+CONNECT
+{
+	TEMP TO 'C:\Users\pwdlu_000\Documents\Data\TempDB';
+};
+
+
+CREATE TABLE TEMP.JOIN_TEST_A SIZE 10000
+{
+	KEY AS INT,
+	BOOL_VAL AS BOOL,
+	INT_VAL AS INT,
+	DOUBLE_VAL AS DOUBLE,
+	DATE_VAL AS DATE,
+	STRING_VAL AS STRING.64,
+	BLOB_VAL AS BLOB.32
+};
+
+FOR global.I = 1 TO 100000
+DO
+{
+
+	APPEND
+	{
+		TEMP.JOIN_TEST_A;
+		RETAIN
+			I AS KEY,
+			I % 3 == 0 AS BOOL_VAL,
+			I ^ 10 % 127 AS INT_VAL,
+			RAND(188) * 2D - 1D AS DOUBLE_VAL,
+			NOW() AS DATE_VAL,
+			'HELLO WORLD ' + (I -> STRING) AS STRING_VAL,
+			SHA1(I) AS BLOB_VAL;
+	};
+
+
+};
+
+
+
+
+
+
+
+
+

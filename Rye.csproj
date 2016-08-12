@@ -137,6 +137,7 @@
     <Compile Include="MatrixExpressions\MatrixExpressionSubtract.cs" />
     <Compile Include="MatrixExpressions\MatrixExpressionSubtractScalar.cs" />
     <Compile Include="MatrixExpressions\MatrixExpressionTranspose.cs" />
+    <Compile Include="Methods\MethodExecScript.cs" />
     <Compile Include="Methods\MethodMatrixAllAssign.cs" />
     <Compile Include="Methods\Method.cs" />
     <Compile Include="Methods\MethodAppendTo.cs" />
@@ -187,6 +188,7 @@
     <None Include="Scripts\MatrixTesting.rye" />
     <None Include="Scripts\QueryTesting.rye" />
     <None Include="Scripts\SortTesting.rye" />
+    <None Include="Scripts\TableBuildTests.rye" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Scripts\ActionTesting.rye" />

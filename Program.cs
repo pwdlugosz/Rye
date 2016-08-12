@@ -17,6 +17,9 @@ namespace Rye
 
             System.Diagnostics.Stopwatch sw = Stopwatch.StartNew();
 
+            //Console.WriteLine("Char: {0}", 'A');
+            //Console.WriteLine("Byte: {0}", (byte)'A');
+            
             // Open the file to get the script //
             string script = System.IO.File.ReadAllText(@"C:\Users\pwdlu_000\Documents\Rye\Rye\Interpreter\TestScript.rye");
             Kernel.TempDirectory = @"C:\Users\pwdlu_000\Documents\Data\TempDB";

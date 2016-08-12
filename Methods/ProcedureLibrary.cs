@@ -62,7 +62,7 @@ namespace Rye.Methods
 
             public override string[] Names
             {
-                get { throw new NotImplementedException(); }
+                get { return new string[] {""}; }
             }
 
         }
