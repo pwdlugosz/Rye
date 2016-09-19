@@ -12,32 +12,32 @@ namespace Rye.Expressions
     public sealed class ExpressionHeapRef : Expression
     {
 
-        private MemoryStructure _Heap;
+        private Heap<Cell> _Heap;
         private int _Pointer;
         private CellAffinity _ReturnType;
 
-        public ExpressionHeapRef(Expression Parent, MemoryStructure Heap, int DirectRef, CellAffinity ReturnType)
+        public ExpressionHeapRef(Expression Parent, Heap<Cell> Heap, int DirectRef, CellAffinity ReturnType)
             : base(Parent, ExpressionAffinity.Heap)
         {
             this._Pointer = DirectRef;
             this._Heap = Heap;
             this._ReturnType = ReturnType;
-            this._name = Heap.Scalars.Name(DirectRef);
+            this._name = Heap.Name(DirectRef);
         }
 
-        public ExpressionHeapRef(Expression Parent, MemoryStructure Heap, int DirectRef)
-            : this(Parent, Heap, DirectRef, Heap.Scalars[DirectRef].AFFINITY)
+        public ExpressionHeapRef(Expression Parent, Heap<Cell> Heap, int DirectRef)
+            : this(Parent, Heap, DirectRef, Heap[DirectRef].AFFINITY)
         {
         }
 
-        public ExpressionHeapRef(Expression Parent, MemoryStructure Heap, string Name)
-            : this(Parent, Heap, Heap.Scalars.GetPointer(Name), Heap.Scalars[Name].Affinity)
+        public ExpressionHeapRef(Expression Parent, Heap<Cell> Heap, string Name)
+            : this(Parent, Heap, Heap.GetPointer(Name), Heap[Name].Affinity)
         {
         }
 
         public override Cell Evaluate()
         {
-            return this._Heap.Scalars[this._Pointer];
+            return this._Heap[this._Pointer];
         }
 
         public override CellAffinity ReturnAffinity()
@@ -47,43 +47,32 @@ namespace Rye.Expressions
 
         public override string ToString()
         {
-            return this.Affinity.ToString() + " : " + this._Heap.Scalars[this._Pointer].ToString();
+            return this.Affinity.ToString() + " : " + this._Heap[this._Pointer].ToString();
         }
 
         public override int GetHashCode()
         {
-            return this._Heap.Scalars[this._Pointer].GetHashCode() ^ Expression.HashCode(this._Cache);
+            return this._Heap[this._Pointer].GetHashCode() ^ Expression.HashCode(this._Cache);
         }
 
         public override string Unparse(Schema S)
         {
-            return this._Heap.Scalars[this._Pointer].ToString();
+            return this._Heap[this._Pointer].ToString();
         }
 
         public override Expression CloneOfMe()
         {
-            return new ExpressionHeapRef(this.ParentNode, this.HeapRef, this._Pointer, this._ReturnType);
+            return new ExpressionHeapRef(this.ParentNode, this._Heap, this._Pointer);
         }
 
         public override int DataSize()
         {
-            return this._Heap.Scalars[this._Pointer].DataCost;
-        }
-
-        public MemoryStructure HeapRef
-        {
-            get { return this._Heap; }
+            return this._Heap[this._Pointer].DataCost;
         }
 
         public int Pointer
         {
             get { return this._Pointer; }
-        }
-
-        public MemoryStructure Heap
-        {
-            get { return this._Heap; }
-            set { this._Heap = value; }
         }
 
     }

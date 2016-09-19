@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Rye.Data;
+using Rye.Structures;
 
 namespace Rye.Expressions
 {
@@ -82,35 +83,35 @@ namespace Rye.Expressions
         // Functions //
         public static Expression Add(Expression Left, Expression Right)
         {
-            Expression t = new ExpressionResult(Left.ParentNode, SystemFunctionLibrary.LookUp(SystemFunctionLibrary.OP_ADD));
+            Expression t = new ExpressionResult(Left.ParentNode, new CellBinPlus());
             t.AddChildren(Left, Right);
             return t;
         }
 
         public static Expression Subtract(Expression Left, Expression Right)
         {
-            Expression t = new ExpressionResult(Left.ParentNode, SystemFunctionLibrary.LookUp(SystemFunctionLibrary.OP_SUB));
+            Expression t = new ExpressionResult(Left.ParentNode, new CellBinMinus());
             t.AddChildren(Left, Right);
             return t;
         }
 
         public static Expression Multiply(Expression Left, Expression Right)
         {
-            Expression t = new ExpressionResult(Left.ParentNode, SystemFunctionLibrary.LookUp(SystemFunctionLibrary.OP_MUL));
+            Expression t = new ExpressionResult(Left.ParentNode, new CellBinMult());
             t.AddChildren(Left, Right);
             return t;
         }
 
         public static Expression Divide(Expression Left, Expression Right)
         {
-            Expression t = new ExpressionResult(Left.ParentNode, SystemFunctionLibrary.LookUp(SystemFunctionLibrary.OP_DIV));
+            Expression t = new ExpressionResult(Left.ParentNode, new CellBinDiv());
             t.AddChildren(Left, Right);
             return t;
         }
 
         public static Expression Modulo(Expression Left, Expression Right)
         {
-            Expression t = new ExpressionResult(Left.ParentNode, SystemFunctionLibrary.LookUp(SystemFunctionLibrary.OP_MOD));
+            Expression t = new ExpressionResult(Left.ParentNode, new CellBinMod());
             t.AddChildren(Left, Right);
             return t;
         }
@@ -134,7 +135,7 @@ namespace Rye.Expressions
         public static Expression LinkAnd(Expression Left, Expression Right)
         {
 
-            ExpressionResult node = new ExpressionResult(null, SystemFunctionLibrary.LookUp(SystemFunctionLibrary.FUNC_AND));
+            ExpressionResult node = new ExpressionResult(null, new CellFuncFVAND());
             node.AddChildNode(Left);
             node.AddChildNode(Right);
             return node;

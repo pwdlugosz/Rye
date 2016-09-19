@@ -19,8 +19,8 @@ namespace Rye.Query
         private bool _PassBack = false;
         private long _Clicks;
 
-        public DeleteProcessNode(int ThreadID, Table Source, Volume Data, Filter Where, Register MemoryLocation)
-            : base(ThreadID)
+        public DeleteProcessNode(int ThreadID, Session Session, Table Source, Volume Data, Filter Where, Register MemoryLocation)
+            : base(ThreadID, Session)
         {
 
             this._Where = Where;
@@ -83,8 +83,8 @@ namespace Rye.Query
 
         private long _Clicks = 0;
 
-        public DeleteProcessConsolidation()
-            : base()
+        public DeleteProcessConsolidation(Session Session)
+            : base(Session)
         {
         }
 

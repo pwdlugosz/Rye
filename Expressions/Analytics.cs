@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Rye.Data;
+using Rye.Libraries;
 
 namespace Rye.Expressions
 {
@@ -413,23 +414,23 @@ namespace Rye.Expressions
         public static bool IsEqNode(Expression Node)
         {
             if (!Node.IsResult) return false;
-            if ((Node as ExpressionResult).InnerFunction.NameSig == SystemFunctionLibrary.LookUp("==").NameSig) return true;
+            if ((Node as ExpressionResult).InnerFunction.NameSig == BaseFunctionLibrary.TOKEN_BOOL_EQ) return true;
             return false;
         }
 
         public static bool IsAndNode(Expression Node)
         {
             if (!Node.IsResult) return false;
-            if ((Node as ExpressionResult).InnerFunction.NameSig == SystemFunctionLibrary.LookUp("and").NameSig) return true;
+            if ((Node as ExpressionResult).InnerFunction.NameSig == BaseFunctionLibrary.FUNC_AND) return true;
             return false;
         }
 
-        public static bool IsOrXorIfCaseNode(Expression Node)
+        public static bool IsOrXorIfNode(Expression Node)
         {
 
             if (!Node.IsResult) return false;
             string t = (Node as ExpressionResult).InnerFunction.NameSig;
-            string[] s = { SystemFunctionLibrary.LookUp("or").NameSig, SystemFunctionLibrary.LookUp("xor").NameSig, SystemFunctionLibrary.LookUp("if").NameSig };
+            string[] s = { BaseFunctionLibrary.FUNC_OR, BaseFunctionLibrary.FUNC_XOR, BaseFunctionLibrary.SPECIAL_IF };
             return s.Contains(t);
 
         }

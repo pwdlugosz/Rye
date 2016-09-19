@@ -31,7 +31,7 @@ namespace Rye.Interpreter
     {
 
         public RyeParseException(string Message, params object[] Args)
-            : base(string.Format(Message, Args))
+            : base(Message)
         {
         }
 

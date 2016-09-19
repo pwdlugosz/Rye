@@ -20,6 +20,7 @@ namespace Rye.Data
         public const int OFFSET_NULL = 2;
         public const int OFFSET_SIZE = 3;
         public const int RECORD_LEN = 4;
+        public const int MAX_COLUMNS = 1024;
 
         /* Sizing variables:
          * -- Represent the maxium size of the data on disk, not in memory
@@ -338,6 +339,10 @@ namespace Rye.Data
             // Check if exists //
             if (this.Contains(Name))
                 throw new Exception("Column already exists: " + Name);
+
+            // Check for capacity //
+            if (this.Count >= MAX_COLUMNS)
+                throw new Exception("Schema cannot accept any more columns");
 
             // Get the size //
             Size = FixSize(Affinity, Size);

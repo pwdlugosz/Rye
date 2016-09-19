@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
 using Rye.Data;
+using Rye.Libraries;
 
 namespace Rye.Expressions
 {
@@ -144,7 +145,7 @@ namespace Rye.Expressions
     {
 
         public CellUniPlus()
-            : base(SystemFunctionLibrary.UNI_PLUS, "+")
+            : base(BaseFunctionLibrary.UNI_PLUS, "+")
         {
         }
 
@@ -159,7 +160,7 @@ namespace Rye.Expressions
     {
 
         public CellUniMinus()
-            : base(SystemFunctionLibrary.UNI_MINUS, "-")
+            : base(BaseFunctionLibrary.UNI_MINUS, "-")
         { 
         }
 
@@ -174,7 +175,7 @@ namespace Rye.Expressions
     {
 
         public CellUniNot()
-            : base(SystemFunctionLibrary.UNI_NOT, "!")
+            : base(BaseFunctionLibrary.UNI_NOT, "!")
         {
         }
 
@@ -189,7 +190,7 @@ namespace Rye.Expressions
     {
 
         public CellUniAutoInc()
-            : base(SystemFunctionLibrary.UNI_AUTO_INC, "++")
+            : base(BaseFunctionLibrary.UNI_AUTO_INC, "++")
         {
         }
 
@@ -204,7 +205,7 @@ namespace Rye.Expressions
     {
 
         public CellUniAutoDec()
-            : base(SystemFunctionLibrary.UNI_AUTO_DEC, "--")
+            : base(BaseFunctionLibrary.UNI_AUTO_DEC, "--")
         {
         }
 
@@ -255,7 +256,7 @@ namespace Rye.Expressions
     {
 
         public CellBinPlus()
-            : base(SystemFunctionLibrary.OP_ADD, "+")
+            : base(BaseFunctionLibrary.OP_ADD, "+")
         {
         }
 
@@ -270,7 +271,7 @@ namespace Rye.Expressions
     {
 
         public CellBinMinus()
-            : base(SystemFunctionLibrary.OP_SUB, "-")
+            : base(BaseFunctionLibrary.OP_SUB, "-")
         {
         }
 
@@ -285,7 +286,7 @@ namespace Rye.Expressions
     {
 
         public CellBinMult()
-            : base(SystemFunctionLibrary.OP_MUL, "*")
+            : base(BaseFunctionLibrary.OP_MUL, "*")
         {
         }
 
@@ -300,7 +301,7 @@ namespace Rye.Expressions
     {
 
         public CellBinDiv()
-            : base(SystemFunctionLibrary.OP_DIV, "/")
+            : base(BaseFunctionLibrary.OP_DIV, "/")
         {
         }
 
@@ -315,7 +316,7 @@ namespace Rye.Expressions
     {
 
         public CellBinDiv2()
-            : base(SystemFunctionLibrary.OP_DIV2, "/?")
+            : base(BaseFunctionLibrary.OP_DIV2, "/?")
         {
         }
 
@@ -330,7 +331,7 @@ namespace Rye.Expressions
     {
 
         public CellBinMod()
-            : base(SystemFunctionLibrary.OP_MOD, "%")
+            : base(BaseFunctionLibrary.OP_MOD, "%")
         {
         }
 
@@ -386,7 +387,7 @@ namespace Rye.Expressions
     {
 
         public CellBoolEQ()
-            : base(SystemFunctionLibrary.BOOL_EQ, "==")
+            : base(BaseFunctionLibrary.BOOL_EQ, "==")
         {
         }
 
@@ -401,7 +402,7 @@ namespace Rye.Expressions
     {
 
         public CellBoolNEQ()
-            : base(SystemFunctionLibrary.BOOL_NEQ, "!=")
+            : base(BaseFunctionLibrary.BOOL_NEQ, "!=")
         {
         }
 
@@ -416,7 +417,7 @@ namespace Rye.Expressions
     {
 
         public CellBoolLT()
-            : base(SystemFunctionLibrary.BOOL_LT, "<")
+            : base(BaseFunctionLibrary.BOOL_LT, "<")
         {
         }
 
@@ -431,7 +432,7 @@ namespace Rye.Expressions
     {
 
         public CellBoolLTE()
-            : base(SystemFunctionLibrary.BOOL_LTE, "<=")
+            : base(BaseFunctionLibrary.BOOL_LTE, "<=")
         {
         }
 
@@ -446,7 +447,7 @@ namespace Rye.Expressions
     {
 
         public CellBoolGT()
-            : base(SystemFunctionLibrary.BOOL_GT, ">")
+            : base(BaseFunctionLibrary.BOOL_GT, ">")
         {
         }
 
@@ -461,7 +462,7 @@ namespace Rye.Expressions
     {
 
         public CellBoolGTE()
-            : base(SystemFunctionLibrary.BOOL_GTE, ">=")
+            : base(BaseFunctionLibrary.BOOL_GTE, ">=")
         {
         }
 
@@ -516,7 +517,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKYear()
-            : base(SystemFunctionLibrary.FUNC_YEAR, 1, CellAffinity.INT)
+            : base(BaseFunctionLibrary.FUNC_YEAR, 1, CellAffinity.INT)
         {
         }
 
@@ -531,7 +532,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKMonth()
-            : base(SystemFunctionLibrary.FUNC_MONTH, 1, CellAffinity.INT)
+            : base(BaseFunctionLibrary.FUNC_MONTH, 1, CellAffinity.INT)
         {
         }
 
@@ -546,7 +547,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKDay()
-            : base(SystemFunctionLibrary.FUNC_DAY, 1, CellAffinity.INT)
+            : base(BaseFunctionLibrary.FUNC_DAY, 1, CellAffinity.INT)
         {
         }
 
@@ -561,7 +562,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKHour()
-            : base(SystemFunctionLibrary.FUNC_HOUR, 1, CellAffinity.INT)
+            : base(BaseFunctionLibrary.FUNC_HOUR, 1, CellAffinity.INT)
         {
         }
 
@@ -576,7 +577,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKMinute()
-            : base(SystemFunctionLibrary.FUNC_MINUTE, 1, CellAffinity.INT)
+            : base(BaseFunctionLibrary.FUNC_MINUTE, 1, CellAffinity.INT)
         {
         }
 
@@ -591,7 +592,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKSecond()
-            : base(SystemFunctionLibrary.FUNC_SECOND, 1, CellAffinity.INT)
+            : base(BaseFunctionLibrary.FUNC_SECOND, 1, CellAffinity.INT)
         {
         }
 
@@ -606,7 +607,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKMillisecond()
-            : base(SystemFunctionLibrary.FUNC_MILLISECOND, 1, CellAffinity.INT)
+            : base(BaseFunctionLibrary.FUNC_MILLISECOND, 1, CellAffinity.INT)
         {
         }
 
@@ -621,7 +622,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKTicks()
-            : base(SystemFunctionLibrary.FUNC_TIMESPAN, 1, CellAffinity.STRING)
+            : base(BaseFunctionLibrary.FUNC_TIMESPAN, 1, CellAffinity.STRING)
         {
         }
 
@@ -638,7 +639,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKSubstring()
-            : base(SystemFunctionLibrary.FUNC_SUBSTR, 3, CellAffinity.STRING)
+            : base(BaseFunctionLibrary.FUNC_SUBSTR, 3, CellAffinity.STRING)
         {
         }
 
@@ -653,7 +654,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKLeft()
-            : base(SystemFunctionLibrary.FUNC_SLEFT, 2, CellAffinity.STRING)
+            : base(BaseFunctionLibrary.FUNC_SLEFT, 2, CellAffinity.STRING)
         {
         }
 
@@ -673,7 +674,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKRight()
-            : base(SystemFunctionLibrary.FUNC_SRIGHT, 2, CellAffinity.STRING)
+            : base(BaseFunctionLibrary.FUNC_SRIGHT, 2, CellAffinity.STRING)
         {
         }
 
@@ -693,7 +694,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKReplace()
-            : base(SystemFunctionLibrary.FUNC_REPLACE, 3, CellAffinity.STRING)
+            : base(BaseFunctionLibrary.FUNC_REPLACE, 3, CellAffinity.STRING)
         {
         }
 
@@ -713,7 +714,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKPosition()
-            : base(SystemFunctionLibrary.FUNC_POSITION, 3, CellAffinity.INT)
+            : base(BaseFunctionLibrary.FUNC_POSITION, 3, CellAffinity.INT)
         {
         }
 
@@ -733,7 +734,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKLength()
-            : base(SystemFunctionLibrary.FUNC_LENGTH, 1, CellAffinity.INT)
+            : base(BaseFunctionLibrary.FUNC_LENGTH, 1, CellAffinity.INT)
         {
         }
 
@@ -753,7 +754,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKTrim()
-            : base(SystemFunctionLibrary.FUNC_TRIM, 1, CellAffinity.INT)
+            : base(BaseFunctionLibrary.FUNC_TRIM, 1, CellAffinity.INT)
         {
         }
 
@@ -779,7 +780,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKIsNull()
-            : base(SystemFunctionLibrary.FUNC_IS_NULL, 1, CellAffinity.BOOL)
+            : base(BaseFunctionLibrary.FUNC_IS_NULL, 1, CellAffinity.BOOL)
         {
         }
 
@@ -794,7 +795,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKIsNotNull()
-            : base(SystemFunctionLibrary.FUNC_IS_NOT_NULL, 1, CellAffinity.BOOL)
+            : base(BaseFunctionLibrary.FUNC_IS_NOT_NULL, 1, CellAffinity.BOOL)
         {
         }
 
@@ -809,7 +810,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKTypeOf()
-            : base(SystemFunctionLibrary.FUNC_TYPEOF, 1, CellAffinity.INT)
+            : base(BaseFunctionLibrary.FUNC_TYPEOF, 1, CellAffinity.INT)
         {
         }
 
@@ -824,7 +825,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKSTypeOf()
-            : base(SystemFunctionLibrary.FUNC_STYPEOF, 1, CellAffinity.STRING)
+            : base(BaseFunctionLibrary.FUNC_STYPEOF, 1, CellAffinity.STRING)
         {
         }
 
@@ -844,7 +845,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKRound()
-            : base(SystemFunctionLibrary.FUNC_ROUND, 2, CellAffinity.DOUBLE)
+            : base(BaseFunctionLibrary.FUNC_ROUND, 2, CellAffinity.DOUBLE)
         {
         }
 
@@ -862,7 +863,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKToUTF16()
-            : base(SystemFunctionLibrary.FUNC_TO_UTF16, 1, CellAffinity.STRING)
+            : base(BaseFunctionLibrary.FUNC_TO_UTF16, 1, CellAffinity.STRING)
         {
         }
 
@@ -890,7 +891,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKToUTF8()
-            : base(SystemFunctionLibrary.FUNC_TO_UTF8, 1, CellAffinity.STRING)
+            : base(BaseFunctionLibrary.FUNC_TO_UTF8, 1, CellAffinity.STRING)
         {
         }
 
@@ -918,7 +919,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKToHEX()
-            : base(SystemFunctionLibrary.FUNC_TO_HEX, 1, CellAffinity.STRING)
+            : base(BaseFunctionLibrary.FUNC_TO_HEX, 1, CellAffinity.STRING)
         {
         }
 
@@ -946,7 +947,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKFromUTF16()
-            : base(SystemFunctionLibrary.FUNC_FROM_UTF16, 1, CellAffinity.BLOB)
+            : base(BaseFunctionLibrary.FUNC_FROM_UTF16, 1, CellAffinity.BLOB)
         {
         }
 
@@ -974,7 +975,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKFromUTF8()
-            : base(SystemFunctionLibrary.FUNC_FROM_UTF8, 1, CellAffinity.BLOB)
+            : base(BaseFunctionLibrary.FUNC_FROM_UTF8, 1, CellAffinity.BLOB)
         {
         }
 
@@ -1002,7 +1003,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKFromHEX()
-            : base(SystemFunctionLibrary.FUNC_FROM_HEX, 1, CellAffinity.BLOB)
+            : base(BaseFunctionLibrary.FUNC_FROM_HEX, 1, CellAffinity.BLOB)
         {
         }
 
@@ -1029,7 +1030,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKNormal()
-            : base(SystemFunctionLibrary.FUNC_NDIST, 1, CellAffinity.DOUBLE)
+            : base(BaseFunctionLibrary.FUNC_NDIST, 1, CellAffinity.DOUBLE)
         {
         }
 
@@ -1051,7 +1052,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKThreadID()
-            : base(SystemFunctionLibrary.FUNC_THREAD_ID, 0, CellAffinity.INT)
+            : base(BaseFunctionLibrary.FUNC_THREAD_ID, 0, CellAffinity.INT)
         {
         }
 
@@ -1066,7 +1067,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKIsPrime()
-            : base(SystemFunctionLibrary.FUNC_ISPRIME, 1, CellAffinity.BOOL)
+            : base(BaseFunctionLibrary.FUNC_ISPRIME, 1, CellAffinity.BOOL)
         {
         }
 
@@ -1085,7 +1086,7 @@ namespace Rye.Expressions
             if (((n + 1) % 6 != 0) && ((n - 1) % 6 != 0))
                 return Cell.FALSE;
 
-            for (long i = 6; i <= (long)Math.Sqrt(n) + 1; i++)
+            for (long i = 2; i <= (long)Math.Sqrt(n) + 1; i++)
                 if (n % i == 0)
                     return Cell.FALSE;
             return Cell.TRUE;
@@ -1134,7 +1135,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVLog()
-            : base(SystemFunctionLibrary.FUNC_LOG, 1)
+            : base(BaseFunctionLibrary.FUNC_LOG, 1)
         {
         }
 
@@ -1149,7 +1150,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVExp()
-            : base(SystemFunctionLibrary.FUNC_EXP, 1)
+            : base(BaseFunctionLibrary.FUNC_EXP, 1)
         {
         }
 
@@ -1164,7 +1165,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVPower()
-            : base(SystemFunctionLibrary.FUNC_POWER, 2)
+            : base(BaseFunctionLibrary.FUNC_POWER, 2)
         {
         }
 
@@ -1179,7 +1180,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVSin()
-            : base(SystemFunctionLibrary.FUNC_SIN, 1)
+            : base(BaseFunctionLibrary.FUNC_SIN, 1)
         {
         }
 
@@ -1194,7 +1195,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVCos()
-            : base(SystemFunctionLibrary.FUNC_COS, 1)
+            : base(BaseFunctionLibrary.FUNC_COS, 1)
         {
         }
 
@@ -1209,7 +1210,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVTan()
-            : base(SystemFunctionLibrary.FUNC_TAN, 1)
+            : base(BaseFunctionLibrary.FUNC_TAN, 1)
         {
         }
 
@@ -1224,7 +1225,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVSinh()
-            : base(SystemFunctionLibrary.FUNC_SINH, 1)
+            : base(BaseFunctionLibrary.FUNC_SINH, 1)
         {
         }
 
@@ -1239,7 +1240,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVCosh()
-            : base(SystemFunctionLibrary.FUNC_COSH, 1)
+            : base(BaseFunctionLibrary.FUNC_COSH, 1)
         {
         }
 
@@ -1254,7 +1255,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVTanh()
-            : base(SystemFunctionLibrary.FUNC_TANH, 1)
+            : base(BaseFunctionLibrary.FUNC_TANH, 1)
         {
         }
 
@@ -1269,7 +1270,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVLogit()
-            : base(SystemFunctionLibrary.FUNC_LOGIT, 1)
+            : base(BaseFunctionLibrary.FUNC_LOGIT, 1)
         {
         }
 
@@ -1298,7 +1299,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVIfNull()
-            : base(SystemFunctionLibrary.FUNC_IF_NULL, 2)
+            : base(BaseFunctionLibrary.FUNC_IF_NULL, 2)
         {
         }
 
@@ -1318,7 +1319,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVAND()
-            : base(SystemFunctionLibrary.FUNC_AND, 2)
+            : base(BaseFunctionLibrary.FUNC_AND, 2)
         {
         }
 
@@ -1333,7 +1334,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVOR()
-            : base(SystemFunctionLibrary.FUNC_OR, 2)
+            : base(BaseFunctionLibrary.FUNC_OR, 2)
         {
         }
 
@@ -1348,7 +1349,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVXOR()
-            : base(SystemFunctionLibrary.FUNC_XOR, 2)
+            : base(BaseFunctionLibrary.FUNC_XOR, 2)
         {
         }
 
@@ -1363,7 +1364,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVSMax()
-            : base(SystemFunctionLibrary.FUNC_SMAX, -1)
+            : base(BaseFunctionLibrary.FUNC_SMAX, -1)
         {
         }
 
@@ -1378,13 +1379,43 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVSMin()
-            : base(SystemFunctionLibrary.FUNC_SMIN, -1)
+            : base(BaseFunctionLibrary.FUNC_SMIN, -1)
         {
         }
 
         public override Cell Evaluate(params Cell[] Data)
         {
             return Cell.Min(Data);
+        }
+
+    }
+
+    public sealed class CellFuncFVAbs : CellFuncFixedVariable
+    {
+
+        public CellFuncFVAbs()
+            : base(BaseFunctionLibrary.FUNC_ABS, 1)
+        {
+        }
+
+        public override Cell Evaluate(params Cell[] Data)
+        {
+            return Cell.Abs(Data[0]);
+        }
+
+    }
+
+    public sealed class CellFuncFVSign : CellFuncFixedVariable
+    {
+
+        public CellFuncFVSign()
+            : base(BaseFunctionLibrary.FUNC_SIGN, 1)
+        {
+        }
+
+        public override Cell Evaluate(params Cell[] Data)
+        {
+            return Cell.Sign(Data[0]);
         }
 
     }
@@ -1443,7 +1474,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncCHMD5()
-            : base(SystemFunctionLibrary.HASH_MD5, new MD5CryptoServiceProvider())
+            : base(BaseFunctionLibrary.HASH_MD5, new MD5CryptoServiceProvider())
         {
         }
 
@@ -1458,7 +1489,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncCHSHA1()
-            : base(SystemFunctionLibrary.HASH_SHA1, new SHA1CryptoServiceProvider())
+            : base(BaseFunctionLibrary.HASH_SHA1, new SHA1CryptoServiceProvider())
         {
         }
 
@@ -1473,7 +1504,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncCHSHA256()
-            : base(SystemFunctionLibrary.HASH_SHA256, new SHA256CryptoServiceProvider())
+            : base(BaseFunctionLibrary.HASH_SHA256, new SHA256CryptoServiceProvider())
         {
         }
 
@@ -1488,7 +1519,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncBASH()
-            : base(SystemFunctionLibrary.HASH_BASH, -1, CellAffinity.BLOB)
+            : base(BaseFunctionLibrary.HASH_BASH, -1, CellAffinity.BLOB)
         {
         }
 
@@ -1519,7 +1550,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncLASH()
-            : base(SystemFunctionLibrary.HASH_LASH, -1, CellAffinity.INT)
+            : base(BaseFunctionLibrary.HASH_LASH, -1, CellAffinity.INT)
         {
         }
 
@@ -1553,7 +1584,7 @@ namespace Rye.Expressions
     {
 
         public CellDateBuild()
-            : base(SystemFunctionLibrary.SPECIAL_DATE_BUILD, -1, CellAffinity.DATE_TIME)
+            : base(BaseFunctionLibrary.SPECIAL_DATE_BUILD, -1, CellAffinity.DATE_TIME)
         {
         }
 
@@ -1599,7 +1630,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncIf()
-            : base(SystemFunctionLibrary.SPECIAL_IF, 3, false)
+            : base(BaseFunctionLibrary.SPECIAL_IF, 3, false)
         {
         }
 
@@ -1665,7 +1696,7 @@ namespace Rye.Expressions
         private CellAffinity _Re
         
         public CellFuncCase(List<Expression> Whens, List<Expression> Thens, Expression ELSE)
-            : base(SystemFunctionLibrary.SPECIAL_CASE, -1, null, CellFunction.FuncHierStandard(), null)
+            : base(BaseFunctionLibrary.SPECIAL_CASE, -1, null, CellFunction.FuncHierStandard(), null)
         {
 
             if (Thens.Count != Whens.Count)
@@ -1735,7 +1766,7 @@ namespace Rye.Expressions
         private Random _r = null;
         
         public CellRandom()
-            : base(SystemFunctionLibrary.MUTABLE_RAND, -1, true)
+            : base(BaseFunctionLibrary.MUTABLE_RAND, -1, true)
         {
             this.IsVolatile = true;
         }
@@ -1802,7 +1833,7 @@ namespace Rye.Expressions
         private Random _r = null;
 
         public CellRandomInt()
-            : base(SystemFunctionLibrary.MUTABLE_RANDINT, -1, true)
+            : base(BaseFunctionLibrary.MUTABLE_RANDINT, -1, true)
         {
             this.IsVolatile = true;
         }
@@ -1855,7 +1886,7 @@ namespace Rye.Expressions
         /// <summary>
         /// Record: 0 = sum weights, 1 = sum data, 2 = sum data squared
         /// </summary>
-        /// <param name="Table"></param>
+        /// <param name="ShartTable"></param>
         /// <param name="WEIGHT"></param>
         /// <returns></returns>
         internal static Record Univariate(IEnumerable<Cell> Data, IEnumerable<Cell> Weight)
@@ -1863,7 +1894,7 @@ namespace Rye.Expressions
 
             // If the counts are different, then throw an exceptions //
             if (Data.Count() != Weight.Count())
-                throw new Exception(string.Format("WEIGHT and Table have different lengths {0} : {1}", Weight.Count(), Data.Count()));
+                throw new Exception(string.Format("WEIGHT and ShartTable have different lengths {0} : {1}", Weight.Count(), Data.Count()));
 
             // Define variables //
             Cell w, x;
@@ -1895,7 +1926,7 @@ namespace Rye.Expressions
 
             // If the counts are different, then throw an exceptions //
             if (XData.Count() != Weight.Count() || YData.Count() != Weight.Count())
-                throw new Exception(string.Format("WEIGHT and Table have different lengths {0} : {1} : {2}", Weight.Count(), XData.Count(), YData.Count()));
+                throw new Exception(string.Format("WEIGHT and ShartTable have different lengths {0} : {1} : {2}", Weight.Count(), XData.Count(), YData.Count()));
 
             // Define variables //
             Cell x, y, w;
@@ -2106,7 +2137,7 @@ namespace Rye.Expressions
     {
 
         public CellMSum()
-            : base(SystemFunctionLibrary.MUTABLE_MSUM)
+            : base(BaseFunctionLibrary.MUTABLE_MSUM)
         {
         }
 
@@ -2121,7 +2152,7 @@ namespace Rye.Expressions
     {
 
         public CellMAvg()
-            : base(SystemFunctionLibrary.MUTABLE_MAVG)
+            : base(BaseFunctionLibrary.MUTABLE_MAVG)
         {
         }
 
@@ -2136,7 +2167,7 @@ namespace Rye.Expressions
     {
 
         public CellMVar()
-            : base(SystemFunctionLibrary.MUTABLE_MVAR)
+            : base(BaseFunctionLibrary.MUTABLE_MVAR)
         {
         }
 
@@ -2151,7 +2182,7 @@ namespace Rye.Expressions
     {
 
         public CellMStdev()
-            : base(SystemFunctionLibrary.MUTABLE_MSTDEV)
+            : base(BaseFunctionLibrary.MUTABLE_MSTDEV)
         {
         }
 
@@ -2166,7 +2197,7 @@ namespace Rye.Expressions
     {
 
         public CellMCovar()
-            : base(SystemFunctionLibrary.MUTABLE_MCOVAR)
+            : base(BaseFunctionLibrary.MUTABLE_MCOVAR)
         {
         }
 
@@ -2181,7 +2212,7 @@ namespace Rye.Expressions
     {
 
         public CellMCorr()
-            : base(SystemFunctionLibrary.MUTABLE_MCORR)
+            : base(BaseFunctionLibrary.MUTABLE_MCORR)
         {
         }
 
@@ -2196,7 +2227,7 @@ namespace Rye.Expressions
     {
 
         public CellMIntercept()
-            : base(SystemFunctionLibrary.MUTABLE_MINTERCEPT)
+            : base(BaseFunctionLibrary.MUTABLE_MINTERCEPT)
         {
         }
 
@@ -2211,7 +2242,7 @@ namespace Rye.Expressions
     {
 
         public CellMSlope()
-            : base(SystemFunctionLibrary.MUTABLE_MSLOPE)
+            : base(BaseFunctionLibrary.MUTABLE_MSLOPE)
         {
         }
 
@@ -2232,7 +2263,7 @@ namespace Rye.Expressions
     {
 
         public CellGUID()
-            : base(SystemFunctionLibrary.VOLATILE_GUID, 0, true)
+            : base(BaseFunctionLibrary.VOLATILE_GUID, 0, true)
         {
         }
 
@@ -2262,7 +2293,7 @@ namespace Rye.Expressions
     {
 
         public CellTicks()
-            : base(SystemFunctionLibrary.VOLATILE_TICKS, 0, true)
+            : base(BaseFunctionLibrary.VOLATILE_TICKS, 0, true)
         {
         }
 
@@ -2287,7 +2318,7 @@ namespace Rye.Expressions
     {
 
         public CellNow()
-            : base(SystemFunctionLibrary.VOLATILE_NOW, 0, true)
+            : base(BaseFunctionLibrary.VOLATILE_NOW, 0, true)
         {
         }
 
@@ -2317,7 +2348,7 @@ namespace Rye.Expressions
     {
 
         public AndMany()
-            : base(SystemFunctionLibrary.FUNC_AND_MANY, -1, false)
+            : base(BaseFunctionLibrary.FUNC_AND_MANY, -1, false)
         {
         }
 
@@ -2363,7 +2394,7 @@ namespace Rye.Expressions
     {
 
         public OrMany()
-            : base(SystemFunctionLibrary.FUNC_OR_MANY, -1, false)
+            : base(BaseFunctionLibrary.FUNC_OR_MANY, -1, false)
         {
         }
 
@@ -2409,7 +2440,7 @@ namespace Rye.Expressions
     {
 
         public AddMany()
-            : base(SystemFunctionLibrary.FUNC_ADD_MANY, -1, false)
+            : base(BaseFunctionLibrary.FUNC_ADD_MANY, -1, false)
         {
         }
 
@@ -2452,7 +2483,7 @@ namespace Rye.Expressions
     {
 
         public ProductMany()
-            : base(SystemFunctionLibrary.FUNC_PRODUCT_MANY, -1, false)
+            : base(BaseFunctionLibrary.FUNC_PRODUCT_MANY, -1, false)
         {
         }
 
@@ -2492,640 +2523,5 @@ namespace Rye.Expressions
     }
 
     #endregion
-
-    // Static Classes //
-
-    /*
-    public static class SystemFunctionLibrary
-    {
-
-        public const string UNI_PLUS = "uniplus";
-        public const string UNI_MINUS = "uniminus";
-        public const string UNI_NOT = "uninot";
-        public const string UNI_AUTO_INC = "autoinc";
-        public const string UNI_AUTO_DEC = "autodec";
-
-        public const string OP_ADD = "add";
-        public const string OP_SUB = "subract";
-        public const string OP_MUL = "multiply";
-        public const string OP_DIV = "divide";
-        public const string OP_DIV2 = "divide2";
-        public const string OP_MOD = "modulo";
-
-        public const string BOOL_EQ = "equals";
-        public const string BOOL_NEQ = "notequals";
-        public const string BOOL_LT = "lessthan";
-        public const string BOOL_LTE = "lessthanorequalto";
-        public const string BOOL_GT = "greaterthan";
-        public const string BOOL_GTE = "greaterthanorequalto";
-        
-        public const string FUNC_YEAR = "year";
-        public const string FUNC_MONTH = "month";
-        public const string FUNC_DAY = "day";
-        public const string FUNC_HOUR = "hour";
-        public const string FUNC_MINUTE = "minute";
-        public const string FUNC_SECOND = "second";
-        public const string FUNC_MILLISECOND = "millisecond";
-        public const string FUNC_TIMESPAN = "timespan";
-        public const string FUNC_SUBSTR = "substr";
-        public const string FUNC_SLEFT = "sleft";
-        public const string FUNC_SRIGHT = "sright";
-        public const string FUNC_REPLACE = "replace";
-        public const string FUNC_POSITION = "position";
-        public const string FUNC_LENGTH = "length";
-        public const string FUNC_IS_NULL = "isnull";
-        public const string FUNC_IS_NOT_NULL = "isnotnull";
-        public const string FUNC_TYPEOF = "typeof";
-        public const string FUNC_STYPEOF = "stypeof";
-        public const string FUNC_ROUND = "round";
-        public const string FUNC_TO_UTF16 = "toutf16";
-        public const string FUNC_TO_UTF8 = "toutf8";
-        public const string FUNC_TO_HEX = "tohex";
-        public const string FUNC_FROM_UTF16 = "fromutf16";
-        public const string FUNC_FROM_UTF8 = "fromutf8";
-        public const string FUNC_FROM_HEX = "fromhex";
-        public const string FUNC_NDIST = "ndist";
-        public const string FUNC_THREAD_ID = "threadid";
-        public const string FUNC_ISPRIME = "isprime";
-        
-        // Differentiable Functions //
-        public const string FUNC_LOG = "log";
-        public const string FUNC_EXP = "exp";
-        public const string FUNC_POWER = "power";
-        public const string FUNC_SIN = "sin";
-        public const string FUNC_COS = "cos";
-        public const string FUNC_TAN = "tan";
-        public const string FUNC_SINH = "sinh";
-        public const string FUNC_COSH = "cosh";
-        public const string FUNC_TANH = "tanh";
-        public const string FUNC_LOGIT = "logit";
-        public const string FUNC_SMAX = "smax";
-        public const string FUNC_SMIN = "smin";
-
-        public const string FUNC_IF_NULL = "ifnull";
-        public const string FUNC_AND = "and";
-        public const string FUNC_OR = "or";
-        public const string FUNC_XOR = "xor";
-
-        public const string HASH_MD5 = "md5";
-        public const string HASH_SHA1 = "sha1";
-        public const string HASH_SHA256 = "sha256";
-
-        public const string MUTABLE_RAND = "rand";
-        public const string MUTABLE_RANDINT = "randint";
-
-        
-        public const string MUTABLE_MAVG = "mavg";
-        public const string MUTABLE_MVAR = "mvar";
-        public const string MUTABLE_MSTDEV = "mstdev";
-        public const string MUTABLE_MCOVAR = "mcovar";
-        public const string MUTABLE_MCORR = "mcorr";
-        public const string MUTABLE_MINTERCEPT = "mintercept";
-        public const string MUTABLE_MSLOPE = "mslope";
-        public const string MUTABLE_MSUM = "msum";
-        public const string MUTABLE_KEY_CHANGE = "key_change";
-        
-
-        public const string VOLATILE_GUID = "guid";
-        public const string VOLATILE_NOW = "now";
-        public const string VOLATILE_TICKS = "ticks";
-
-        public const string FUNC_AND_MANY = "andmany";
-        public const string FUNC_OR_MANY = "ormany";
-        public const string FUNC_ADD_MANY = "addmany";
-        public const string FUNC_PRODUCT_MANY =  "productmany";
-
-        public const string TOKEN_UNI_PLUS = "u+";
-        public const string TOKEN_UNI_MINUS = "u-";
-        public const string TOKEN_UNI_NOT = "!";
-        public const string TOKEN_UNI_AUTO_INC = "++";
-        public const string TOKEN_UNI_AUTO_DEC = "--";
-
-        public const string TOKEN_OP_ADD = "+";
-        public const string TOKEN_OP_SUB = "-";
-        public const string TOKEN_OP_MUL = "*";
-        public const string TOKEN_OP_DIV = "/";
-        public const string TOKEN_OP_DIV2 = "/?";
-        public const string TOKEN_OP_MOD = "%";
-
-        public const string TOKEN_BOOL_EQ = "==";
-        public const string TOKEN_BOOL_NEQ = "!=";
-        public const string TOKEN_BOOL_LT = "<";
-        public const string TOKEN_BOOL_LTE = "<=";
-        public const string TOKEN_BOOL_GT = ">";
-        public const string TOKEN_BOOL_GTE = ">=";
-        public const string TOKEN_FUNC_IF_NULL = "??";
-
-        public const string SPECIAL_IF = "if";
-        public const string SPECIAL_DATE_BUILD = "date_build";
-
-    }
-
-    public static class CellFunctionFactory
-    {
-
-        private static Dictionary<string, Func<CellFunction>> FUNCTION_TABLE = new Dictionary<string, Func<CellFunction>>(StringComparer.OrdinalIgnoreCase)
-        {
-
-            { SystemFunctionLibrary.TOKEN_UNI_PLUS, () => { return new CellUniPlus();}},
-            { SystemFunctionLibrary.UNI_PLUS, () => { return new CellUniPlus();}},
-            { SystemFunctionLibrary.TOKEN_UNI_MINUS, () => { return new CellUniMinus();}},
-            { SystemFunctionLibrary.UNI_MINUS, () => { return new CellUniMinus();}},
-            { SystemFunctionLibrary.TOKEN_UNI_NOT, () => { return new CellUniNot();}},
-            { SystemFunctionLibrary.UNI_NOT, () => { return new CellUniNot();}},
-            { SystemFunctionLibrary.TOKEN_UNI_AUTO_INC, () => { return new CellUniAutoInc();}},
-            { SystemFunctionLibrary.UNI_AUTO_INC, () => { return new CellUniAutoInc();}},
-            { SystemFunctionLibrary.TOKEN_UNI_AUTO_DEC, () => { return new CellUniAutoDec();}},
-            { SystemFunctionLibrary.UNI_AUTO_DEC, () => { return new CellUniAutoDec();}},
-
-            { SystemFunctionLibrary.TOKEN_OP_ADD, () => { return new CellBinPlus();}},
-            { SystemFunctionLibrary.OP_ADD, () => { return new CellBinPlus();}},
-            { SystemFunctionLibrary.TOKEN_OP_SUB, () => { return new CellBinMinus();}},
-            { SystemFunctionLibrary.OP_SUB, () => { return new CellBinMinus();}},
-            { SystemFunctionLibrary.TOKEN_OP_MUL, () => { return new CellBinMult();}},
-            { SystemFunctionLibrary.OP_MUL, () => { return new CellBinMult();}},
-            { SystemFunctionLibrary.TOKEN_OP_DIV, () => { return new CellBinDiv();}},
-            { SystemFunctionLibrary.OP_DIV, () => { return new CellBinDiv();}},
-            { SystemFunctionLibrary.TOKEN_OP_DIV2, () => { return new CellBinDiv2();}},
-            { SystemFunctionLibrary.OP_DIV2, () => { return new CellBinDiv2();}},
-            { SystemFunctionLibrary.TOKEN_OP_MOD, () => { return new CellBinMod();}},
-            { SystemFunctionLibrary.OP_MOD, () => { return new CellBinMod();}},
-            
-            { SystemFunctionLibrary.TOKEN_BOOL_EQ, () => { return new CellBoolEQ();}},
-            { SystemFunctionLibrary.BOOL_EQ, () => { return new CellBoolEQ();}},
-            { SystemFunctionLibrary.TOKEN_BOOL_NEQ, () => { return new CellBoolNEQ();}},
-            { SystemFunctionLibrary.BOOL_NEQ, () => { return new CellBoolNEQ();}},
-            { SystemFunctionLibrary.TOKEN_BOOL_LT, () => { return new CellBoolLT();}},
-            { SystemFunctionLibrary.BOOL_LT, () => { return new CellBoolLT();}},
-            { SystemFunctionLibrary.TOKEN_BOOL_LTE, () => { return new CellBoolLTE();}},
-            { SystemFunctionLibrary.BOOL_LTE, () => { return new CellBoolLTE();}},
-            { SystemFunctionLibrary.TOKEN_BOOL_GT, () => { return new CellBoolGT();}},
-            { SystemFunctionLibrary.BOOL_GT, () => { return new CellBoolGT();}},
-            { SystemFunctionLibrary.TOKEN_BOOL_GTE, () => { return new CellBoolGTE();}},
-            { SystemFunctionLibrary.BOOL_GTE, () => { return new CellBoolGTE();}},
-
-            { SystemFunctionLibrary.FUNC_AND, () => { return new CellFuncFVAND();}},
-            { SystemFunctionLibrary.FUNC_OR, () => { return new CellFuncFVOR();}},
-            { SystemFunctionLibrary.FUNC_XOR, () => { return new CellFuncFVXOR();}},
-            
-            { SystemFunctionLibrary.FUNC_YEAR, () => { return new CellFuncFKYear();}},
-            { SystemFunctionLibrary.FUNC_MONTH, () => { return new CellFuncFKMonth();}},
-            { SystemFunctionLibrary.FUNC_DAY, () => { return new CellFuncFKDay();}},
-            { SystemFunctionLibrary.FUNC_HOUR, () => { return new CellFuncFKHour();}},
-            { SystemFunctionLibrary.FUNC_MINUTE, () => { return new CellFuncFKMinute();}},
-            { SystemFunctionLibrary.FUNC_SECOND, () => { return new CellFuncFKSecond();}},
-            { SystemFunctionLibrary.FUNC_MILLISECOND, () => { return new CellFuncFKMillisecond();}},
-            { SystemFunctionLibrary.FUNC_TIMESPAN, () => { return new CellFuncFKTicks();}},
-            
-            { SystemFunctionLibrary.FUNC_SUBSTR, () => { return new CellFuncFKSubstring();}},
-            { SystemFunctionLibrary.FUNC_SLEFT, () => { return new CellFuncFKLeft();}},
-            { SystemFunctionLibrary.FUNC_SRIGHT, () => { return new CellFuncFKRight();}},
-            { SystemFunctionLibrary.FUNC_REPLACE, () => { return new CellFuncFKReplace();}},
-            { SystemFunctionLibrary.FUNC_POSITION, () => { return new CellFuncFKPosition();}},
-            { SystemFunctionLibrary.FUNC_LENGTH, () => { return new CellFuncFKLength();}},
-            { SystemFunctionLibrary.FUNC_IS_NULL, () => { return new CellFuncFKIsNull();}},
-            { SystemFunctionLibrary.FUNC_IS_NOT_NULL, () => { return new CellFuncFKIsNotNull();}},
-            { SystemFunctionLibrary.FUNC_TYPEOF, () => { return new CellFuncFKTypeOf();}},
-            { SystemFunctionLibrary.FUNC_STYPEOF, () => { return new CellFuncFKSTypeOf();}},
-            { SystemFunctionLibrary.FUNC_ROUND, () => { return new CellFuncFKRound();}},
-            
-            { SystemFunctionLibrary.FUNC_TO_UTF16, () => { return new CellFuncFKToUTF16();}},
-            { SystemFunctionLibrary.FUNC_TO_UTF8, () => { return new CellFuncFKToUTF8();}},
-            { SystemFunctionLibrary.FUNC_TO_HEX, () => { return new CellFuncFKToHEX();}},
-            { SystemFunctionLibrary.FUNC_FROM_UTF16, () => { return new CellFuncFKFromUTF16();}},
-            { SystemFunctionLibrary.FUNC_FROM_UTF8, () => { return new CellFuncFKFromUTF8();}},
-            { SystemFunctionLibrary.FUNC_FROM_HEX, () => { return new CellFuncFKFromHEX();}},
-            { SystemFunctionLibrary.FUNC_NDIST, () => { return new CellFuncFKNormal();}},
-            { SystemFunctionLibrary.FUNC_THREAD_ID, () => { return new CellFuncFKThreadID();}},
-            { SystemFunctionLibrary.FUNC_ISPRIME, () => { return new CellFuncFKIsPrime();}},
-
-            { SystemFunctionLibrary.FUNC_LOG, () => { return new CellFuncFVLog();}},
-            { SystemFunctionLibrary.FUNC_EXP, () => { return new CellFuncFVExp();}},
-            { SystemFunctionLibrary.FUNC_POWER, () => { return new CellFuncFVPower();}},
-            { SystemFunctionLibrary.FUNC_SIN, () => { return new CellFuncFVSin();}},
-            { SystemFunctionLibrary.FUNC_COS, () => { return new CellFuncFVCos();}},
-            { SystemFunctionLibrary.FUNC_TAN, () => { return new CellFuncFVTan();}},
-            { SystemFunctionLibrary.FUNC_SINH, () => { return new CellFuncFVSinh();}},
-            { SystemFunctionLibrary.FUNC_COSH, () => { return new CellFuncFVCosh();}},
-            { SystemFunctionLibrary.FUNC_TANH, () => { return new CellFuncFVTanh();}},
-            { SystemFunctionLibrary.FUNC_LOGIT, () => { return new CellFuncFVLogit();}},
-            { SystemFunctionLibrary.TOKEN_FUNC_IF_NULL, () => { return new CellFuncFVIfNull();}},
-            { SystemFunctionLibrary.FUNC_IF_NULL, () => { return new CellFuncFVIfNull();}},
-            { SystemFunctionLibrary.FUNC_SMIN, () => { return new CellFuncFVSMin();}},
-            { SystemFunctionLibrary.FUNC_SMAX, () => { return new CellFuncFVSMax();}},
-            
-            { SystemFunctionLibrary.SPECIAL_IF, () => { return new CellFuncIf();}},
-            { SystemFunctionLibrary.SPECIAL_DATE_BUILD, () => { return new CellDateBuild();}},
-            
-            { SystemFunctionLibrary.HASH_MD5, () => { return new CellFuncCHMD5();}},
-            { SystemFunctionLibrary.HASH_SHA1, () => { return new CellFuncCHSHA1();}},
-            { SystemFunctionLibrary.HASH_SHA256, () => { return new CellFuncCHSHA256();}},
-            
-            { SystemFunctionLibrary.MUTABLE_RAND, () => { return new CellRandom();}},
-            { SystemFunctionLibrary.MUTABLE_RANDINT, () => { return new CellRandomInt();}},
-            
-            { SystemFunctionLibrary.VOLATILE_GUID, () => { return new CellGUID();}},
-            { SystemFunctionLibrary.VOLATILE_TICKS, () => { return new CellTicks();}},
-            { SystemFunctionLibrary.VOLATILE_NOW, () => { return new CellNow();}},
-
-            { SystemFunctionLibrary.FUNC_ADD_MANY, () => { return new AddMany();}},
-            { SystemFunctionLibrary.FUNC_PRODUCT_MANY, () => { return new ProductMany();}},
-            { SystemFunctionLibrary.FUNC_AND_MANY, () => { return new AndMany();}},
-            { SystemFunctionLibrary.FUNC_OR_MANY, () => { return new OrMany();}},
-
-
-        };
-
-        public static bool Exists(string FunctionName)
-        {
-            return FUNCTION_TABLE.ContainsKey(FunctionName);
-        }
-
-        public static CellFunction LookUp(string FunctionName)
-        {
-            return FUNCTION_TABLE[FunctionName].Invoke(); 
-        }
-
-        public static string PrintString()
-        {
-            StringBuilder sb = new StringBuilder();
-            foreach (KeyValuePair<string, Func<CellFunction>> kv in FUNCTION_TABLE)
-                sb.AppendLine(kv.Key);
-            return sb.ToString();
-        }
-
-    }
-    */
-    
-    public sealed class SystemFunctionLibrary : FunctionLibrary
-    {
-
-        private static SystemFunctionLibrary _base = new SystemFunctionLibrary();
-
-        #region FUNCTION_NAMES
-
-        public const string UNI_PLUS = "uniplus";
-        public const string UNI_MINUS = "uniminus";
-        public const string UNI_NOT = "uninot";
-        public const string UNI_AUTO_INC = "autoinc";
-        public const string UNI_AUTO_DEC = "autodec";
-
-        public const string OP_ADD = "add";
-        public const string OP_SUB = "subract";
-        public const string OP_MUL = "multiply";
-        public const string OP_DIV = "divide";
-        public const string OP_DIV2 = "divide2";
-        public const string OP_MOD = "modulo";
-
-        public const string BOOL_EQ = "equals";
-        public const string BOOL_NEQ = "notequals";
-        public const string BOOL_LT = "lessthan";
-        public const string BOOL_LTE = "lessthanorequalto";
-        public const string BOOL_GT = "greaterthan";
-        public const string BOOL_GTE = "greaterthanorequalto";
-
-        public const string FUNC_YEAR = "year";
-        public const string FUNC_MONTH = "month";
-        public const string FUNC_DAY = "day";
-        public const string FUNC_HOUR = "hour";
-        public const string FUNC_MINUTE = "minute";
-        public const string FUNC_SECOND = "second";
-        public const string FUNC_MILLISECOND = "millisecond";
-        public const string FUNC_TIMESPAN = "timespan";
-        public const string FUNC_SUBSTR = "substr";
-        public const string FUNC_SLEFT = "sleft";
-        public const string FUNC_SRIGHT = "sright";
-        public const string FUNC_REPLACE = "replace";
-        public const string FUNC_POSITION = "position";
-        public const string FUNC_LENGTH = "length";
-        public const string FUNC_TRIM = "trim";
-        public const string FUNC_IS_NULL = "isnull";
-        public const string FUNC_IS_NOT_NULL = "isnotnull";
-        public const string FUNC_TYPEOF = "typeof";
-        public const string FUNC_STYPEOF = "stypeof";
-        public const string FUNC_ROUND = "round";
-        public const string FUNC_TO_UTF16 = "toutf16";
-        public const string FUNC_TO_UTF8 = "toutf8";
-        public const string FUNC_TO_HEX = "tohex";
-        public const string FUNC_FROM_UTF16 = "fromutf16";
-        public const string FUNC_FROM_UTF8 = "fromutf8";
-        public const string FUNC_FROM_HEX = "fromhex";
-        public const string FUNC_NDIST = "ndist";
-        public const string FUNC_THREAD_ID = "threadid";
-        public const string FUNC_ISPRIME = "isprime";
-
-        public const string FUNC_LOG = "log";
-        public const string FUNC_EXP = "exp";
-        public const string FUNC_POWER = "power";
-        public const string FUNC_SIN = "sin";
-        public const string FUNC_COS = "cos";
-        public const string FUNC_TAN = "tan";
-        public const string FUNC_SINH = "sinh";
-        public const string FUNC_COSH = "cosh";
-        public const string FUNC_TANH = "tanh";
-        public const string FUNC_LOGIT = "logit";
-        public const string FUNC_SMAX = "smax";
-        public const string FUNC_SMIN = "smin";
-
-        public const string FUNC_IF_NULL = "ifnull";
-        public const string FUNC_AND = "and";
-        public const string FUNC_OR = "or";
-        public const string FUNC_XOR = "xor";
-
-        public const string HASH_MD5 = "md5";
-        public const string HASH_SHA1 = "sha1";
-        public const string HASH_SHA256 = "sha256";
-        public const string HASH_BASH = "bash";
-        public const string HASH_LASH = "lash";
-
-        public const string MUTABLE_RAND = "rand";
-        public const string MUTABLE_RANDINT = "randint";
-
-        public const string VOLATILE_GUID = "guid";
-        public const string VOLATILE_NOW = "now";
-        public const string VOLATILE_TICKS = "ticks";
-
-        public const string FUNC_AND_MANY = "andmany";
-        public const string FUNC_OR_MANY = "ormany";
-        public const string FUNC_ADD_MANY = "addmany";
-        public const string FUNC_PRODUCT_MANY = "productmany";
-
-        public const string TOKEN_UNI_PLUS = "u+";
-        public const string TOKEN_UNI_MINUS = "u-";
-        public const string TOKEN_UNI_NOT = "!";
-        public const string TOKEN_UNI_AUTO_INC = "++";
-        public const string TOKEN_UNI_AUTO_DEC = "--";
-
-        public const string TOKEN_OP_ADD = "+";
-        public const string TOKEN_OP_SUB = "-";
-        public const string TOKEN_OP_MUL = "*";
-        public const string TOKEN_OP_DIV = "/";
-        public const string TOKEN_OP_DIV2 = "/?";
-        public const string TOKEN_OP_MOD = "%";
-
-        public const string TOKEN_BOOL_EQ = "==";
-        public const string TOKEN_BOOL_NEQ = "!=";
-        public const string TOKEN_BOOL_LT = "<";
-        public const string TOKEN_BOOL_LTE = "<=";
-        public const string TOKEN_BOOL_GT = ">";
-        public const string TOKEN_BOOL_GTE = ">=";
-        public const string TOKEN_FUNC_IF_NULL = "??";
-
-        public const string SPECIAL_IF = "if";
-        public const string SPECIAL_DATE_BUILD = "date_build";
-
-        #endregion
-
-        #region NAME_ARRAY
-
-        private static string[] _BaseNames = 
-        {
-
-            UNI_PLUS,
-            UNI_MINUS,
-            UNI_NOT,
-            UNI_AUTO_INC,
-            UNI_AUTO_DEC,
-
-            OP_ADD,
-            OP_SUB,
-            OP_MUL,
-            OP_DIV,
-            OP_DIV2,
-            OP_MOD,
-
-            BOOL_EQ,
-            BOOL_NEQ,
-            BOOL_LT,
-            BOOL_LTE,
-            BOOL_GT,
-            BOOL_GTE,
-
-            FUNC_YEAR,
-            FUNC_MONTH,
-            FUNC_DAY,
-            FUNC_HOUR,
-            FUNC_MINUTE,
-            FUNC_SECOND,
-            FUNC_MILLISECOND,
-            FUNC_TIMESPAN,
-            FUNC_SUBSTR,
-            FUNC_SLEFT,
-            FUNC_SRIGHT,
-            FUNC_REPLACE,
-            FUNC_POSITION,
-            FUNC_LENGTH,
-            FUNC_TRIM,
-            FUNC_IS_NULL,
-            FUNC_IS_NOT_NULL,
-            FUNC_TYPEOF,
-            FUNC_STYPEOF,
-            FUNC_ROUND,
-            FUNC_TO_UTF16,
-            FUNC_TO_UTF8,
-            FUNC_TO_HEX,
-            FUNC_FROM_UTF16,
-            FUNC_FROM_UTF8,
-            FUNC_FROM_HEX,
-            FUNC_NDIST,
-            FUNC_THREAD_ID,
-            FUNC_ISPRIME,
-
-            FUNC_LOG,
-            FUNC_EXP,
-            FUNC_POWER,
-            FUNC_SIN,
-            FUNC_COS,
-            FUNC_TAN,
-            FUNC_SINH,
-            FUNC_COSH,
-            FUNC_TANH,
-            FUNC_LOGIT,
-            FUNC_SMAX,
-            FUNC_SMIN,
-
-            FUNC_IF_NULL,
-            FUNC_AND,
-            FUNC_OR,
-            FUNC_XOR,
-
-            HASH_MD5,
-            HASH_SHA1,
-            HASH_SHA256,
-            HASH_BASH,
-            HASH_LASH,
-
-            MUTABLE_RAND,
-            MUTABLE_RANDINT,
-
-            VOLATILE_GUID,
-            VOLATILE_NOW,
-            VOLATILE_TICKS,
-
-            FUNC_AND_MANY,
-            FUNC_OR_MANY,
-            FUNC_ADD_MANY,
-            FUNC_PRODUCT_MANY,
-
-            TOKEN_UNI_PLUS,
-            TOKEN_UNI_MINUS,
-            TOKEN_UNI_NOT,
-            TOKEN_UNI_AUTO_INC,
-            TOKEN_UNI_AUTO_DEC,
-
-            TOKEN_OP_ADD,
-            TOKEN_OP_SUB,
-            TOKEN_OP_MUL,
-            TOKEN_OP_DIV,
-            TOKEN_OP_DIV2,
-            TOKEN_OP_MOD,
-
-            TOKEN_BOOL_EQ,
-            TOKEN_BOOL_NEQ,
-            TOKEN_BOOL_LT,
-            TOKEN_BOOL_LTE,
-            TOKEN_BOOL_GT,
-            TOKEN_BOOL_GTE,
-            TOKEN_FUNC_IF_NULL,
-
-            SPECIAL_IF,
-            SPECIAL_DATE_BUILD
-
-        };
-
-        #endregion
-
-        public override CellFunction RenderFunction(string Name)
-        {
-            
-            switch (Name.ToLower())
-            {
-
-                case TOKEN_UNI_PLUS: return new CellUniPlus();
-                case UNI_PLUS: return new CellUniPlus();
-                case TOKEN_UNI_MINUS: return new CellUniMinus();
-                case UNI_MINUS: return new CellUniMinus();
-                case TOKEN_UNI_NOT: return new CellUniNot();
-                case UNI_NOT: return new CellUniNot();
-                case TOKEN_UNI_AUTO_INC: return new CellUniAutoInc();
-                case UNI_AUTO_INC: return new CellUniAutoInc();
-                case TOKEN_UNI_AUTO_DEC: return new CellUniAutoDec();
-                case UNI_AUTO_DEC: return new CellUniAutoDec();
-
-                case TOKEN_OP_ADD: return new CellBinPlus();
-                case OP_ADD: return new CellBinPlus();
-                case TOKEN_OP_SUB: return new CellBinMinus();
-                case OP_SUB: return new CellBinMinus();
-                case TOKEN_OP_MUL: return new CellBinMult();
-                case OP_MUL: return new CellBinMult();
-                case TOKEN_OP_DIV: return new CellBinDiv();
-                case OP_DIV: return new CellBinDiv();
-                case TOKEN_OP_DIV2: return new CellBinDiv2();
-                case OP_DIV2: return new CellBinDiv2();
-                case TOKEN_OP_MOD: return new CellBinMod();
-                case OP_MOD: return new CellBinMod();
-
-                case TOKEN_BOOL_EQ: return new CellBoolEQ();
-                case BOOL_EQ: return new CellBoolEQ();
-                case TOKEN_BOOL_NEQ: return new CellBoolNEQ();
-                case BOOL_NEQ: return new CellBoolNEQ();
-                case TOKEN_BOOL_LT: return new CellBoolLT();
-                case BOOL_LT: return new CellBoolLT();
-                case TOKEN_BOOL_LTE: return new CellBoolLTE();
-                case BOOL_LTE: return new CellBoolLTE();
-                case TOKEN_BOOL_GT: return new CellBoolGT();
-                case BOOL_GT: return new CellBoolGT();
-                case TOKEN_BOOL_GTE: return new CellBoolGTE();
-                case BOOL_GTE: return new CellBoolGTE();
-
-                case FUNC_AND: return new CellFuncFVAND();
-                case FUNC_OR: return new CellFuncFVOR();
-                case FUNC_XOR: return new CellFuncFVXOR();
-
-                case FUNC_YEAR: return new CellFuncFKYear();
-                case FUNC_MONTH: return new CellFuncFKMonth();
-                case FUNC_DAY: return new CellFuncFKDay();
-                case FUNC_HOUR: return new CellFuncFKHour();
-                case FUNC_MINUTE: return new CellFuncFKMinute();
-                case FUNC_SECOND: return new CellFuncFKSecond();
-                case FUNC_MILLISECOND: return new CellFuncFKMillisecond();
-                case FUNC_TIMESPAN: return new CellFuncFKTicks();
-
-                case FUNC_SUBSTR: return new CellFuncFKSubstring();
-                case FUNC_SLEFT: return new CellFuncFKLeft();
-                case FUNC_SRIGHT: return new CellFuncFKRight();
-                case FUNC_REPLACE: return new CellFuncFKReplace();
-                case FUNC_POSITION: return new CellFuncFKPosition();
-                case FUNC_LENGTH: return new CellFuncFKLength();
-                case FUNC_TRIM: return new CellFuncFKTrim();
-                case FUNC_IS_NULL: return new CellFuncFKIsNull();
-                case FUNC_IS_NOT_NULL: return new CellFuncFKIsNotNull();
-                case FUNC_TYPEOF: return new CellFuncFKTypeOf();
-                case FUNC_STYPEOF: return new CellFuncFKSTypeOf();
-                case FUNC_ROUND: return new CellFuncFKRound();
-
-                case FUNC_TO_UTF16: return new CellFuncFKToUTF16();
-                case FUNC_TO_UTF8: return new CellFuncFKToUTF8();
-                case FUNC_TO_HEX: return new CellFuncFKToHEX();
-                case FUNC_FROM_UTF16: return new CellFuncFKFromUTF16();
-                case FUNC_FROM_UTF8: return new CellFuncFKFromUTF8();
-                case FUNC_FROM_HEX: return new CellFuncFKFromHEX();
-                case FUNC_NDIST: return new CellFuncFKNormal();
-                case FUNC_THREAD_ID: return new CellFuncFKThreadID();
-                case FUNC_ISPRIME: return new CellFuncFKIsPrime();
-
-                case FUNC_LOG: return new CellFuncFVLog();
-                case FUNC_EXP: return new CellFuncFVExp();
-                case FUNC_POWER: return new CellFuncFVPower();
-                case FUNC_SIN: return new CellFuncFVSin();
-                case FUNC_COS: return new CellFuncFVCos();
-                case FUNC_TAN: return new CellFuncFVTan();
-                case FUNC_SINH: return new CellFuncFVSinh();
-                case FUNC_COSH: return new CellFuncFVCosh();
-                case FUNC_TANH: return new CellFuncFVTanh();
-                case FUNC_LOGIT: return new CellFuncFVLogit();
-                case TOKEN_FUNC_IF_NULL: return new CellFuncFVIfNull();
-                case FUNC_IF_NULL: return new CellFuncFVIfNull();
-                case FUNC_SMIN: return new CellFuncFVSMin();
-                case FUNC_SMAX: return new CellFuncFVSMax();
-
-                case SPECIAL_IF: return new CellFuncIf();
-                case SPECIAL_DATE_BUILD: return new CellDateBuild();
-
-                case HASH_MD5: return new CellFuncCHMD5();
-                case HASH_SHA1: return new CellFuncCHSHA1();
-                case HASH_SHA256: return new CellFuncCHSHA256();
-                case HASH_BASH: return new CellFuncBASH();
-                case HASH_LASH: return new CellFuncLASH();
-
-                case MUTABLE_RAND: return new CellRandom();
-                case MUTABLE_RANDINT: return new CellRandomInt();
-
-                case VOLATILE_GUID: return new CellGUID();
-                case VOLATILE_TICKS: return new CellTicks();
-                case VOLATILE_NOW: return new CellNow();
-
-                case FUNC_ADD_MANY: return new AddMany();
-                case FUNC_PRODUCT_MANY: return new ProductMany();
-                case FUNC_AND_MANY: return new AndMany();
-                case FUNC_OR_MANY: return new OrMany();
-
-            }
-
-            throw new ArgumentException(string.Format("System function '{0}' does not exist", Name));
-
-        }
-
-        public override string[] Names
-        {
-            get { return SystemFunctionLibrary._BaseNames; }
-        }
-
-        public static CellFunction LookUp(string Name)
-        {
-            return _base.RenderFunction(Name);
-        }
-
-    }
 
 }

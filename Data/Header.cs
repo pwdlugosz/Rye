@@ -24,19 +24,18 @@ namespace Rye.Data
         public const int OFFSET_RECORD_COUNT = 5;
         public const int OFFSET_TIME_STAMP = 6;
         public const int OFFSET_KEY_COUNT = 7;
-        public const int OFFSET_MAX_RECORDS = 8;
+        public const int OFFSET_PAGE_SIZE = 8;
         public const int OFFSET_BIG_RECORD_COUNT = 9;
         public const int OFFSET_TYPE = 10;
-
+        
         public const int RECORD_LEN = 11;
 
         private const char DOT = '.';
-        internal const string DEFAULT_EXTENSION = "ryedat";
-        private const char TYPE_E = 'E';
-        private const char TYPE_T = 'T';
+        internal const string V1_EXTENSION = "ryedatv1";
         
         // Constructor //
-        public Header(string NewDirectory, string NewName, long NewID, long ColumnCount, long RecordCount, long KeyCount, long NewMaxCount, long NewExtentCount, HeaderType NewType)
+        public Header(string NewDirectory, string NewName, long NewID, long ColumnCount, long RecordCount, long KeyCount, 
+            long NewExtentCount, HeaderType NewType, long PageSize, string Extension)
             : base(RECORD_LEN)
         {
 
@@ -54,15 +53,15 @@ namespace Rye.Data
             this[OFFSET_NAME] = new Cell(NewName);
             this[OFFSET_ID] = new Cell(NewID);
             this[OFFSET_DIRECTORY] = (NewDirectory == null ? Cell.NULL_STRING : new Cell(NewDirectory));
-            this[OFFSET_EXTENSION] = new Cell(DEFAULT_EXTENSION);
             this[OFFSET_COLUMN_COUNT] = new Cell(ColumnCount);
             this[OFFSET_RECORD_COUNT] = new Cell(RecordCount);
             this[OFFSET_TIME_STAMP] = new Cell(DateTime.Now);
             this[OFFSET_KEY_COUNT] = new Cell(KeyCount);
-            this[OFFSET_MAX_RECORDS] = new Cell(NewMaxCount);
             this[OFFSET_BIG_RECORD_COUNT] = new Cell(NewExtentCount);
             this[OFFSET_TYPE] = new Cell((long)NewType);
-
+            this[OFFSET_EXTENSION] = new Cell(Extension);
+            this[OFFSET_PAGE_SIZE] = new Cell(PageSize);
+            
         }
 
         public Header(Record R)
@@ -77,7 +76,7 @@ namespace Rye.Data
         {
             get
             {
-                return this.Directory + this.Name + DOT + (this.Affinity == HeaderType.Extent ? TYPE_E : TYPE_T) + this.ID.ToString() + DOT + this.Extension;
+                return this.Directory + this.Name + DOT + this.Extension;
             }
         }
 
@@ -123,7 +122,7 @@ namespace Rye.Data
             {
                 return this[OFFSET_EXTENSION].valueSTRING;
             }
-            set
+            private set
             {
                 this[OFFSET_EXTENSION] = new Cell(value);
             }
@@ -181,18 +180,6 @@ namespace Rye.Data
             }
         }
 
-        public long MaxRecordCount
-        {
-            get
-            {
-                return this[OFFSET_MAX_RECORDS].INT;
-            }
-            set
-            {
-                this[OFFSET_MAX_RECORDS] = new Cell(value);
-            }
-        }
-
         public HeaderType Affinity
         {
             get { return (HeaderType)this._data[OFFSET_TYPE].INT; }
@@ -209,6 +196,23 @@ namespace Rye.Data
         public bool IsMemoryOnly
         {
             get { return this._data[OFFSET_DIRECTORY].IsNull; }
+        }
+
+        public long PageSize
+        {
+            get
+            {
+                return this[OFFSET_PAGE_SIZE].INT;
+            }
+            set
+            {
+                this[OFFSET_PAGE_SIZE] = new Cell(value);
+            }
+        }
+
+        public string LookUpKey
+        {
+            get { return this.Path + this.ID.ToString(); }
         }
 
         // Methods //
@@ -229,27 +233,35 @@ namespace Rye.Data
             sb.AppendLine("Records: " + this.RecordCount.ToString());
             sb.AppendLine("Keys: " + this.KeyCount.ToString());
             sb.AppendLine("Timestamp: " + this.TimeStamp.ToString());
-            sb.AppendLine("Type: Extent");
+            sb.AppendLine("Type: Shard");
             return sb.ToString();
         }
 
         public bool IsMemberOf(Header H)
         {
             
-            if (this.Affinity != HeaderType.Table)
+            if (this.Affinity != HeaderType.Extent)
                 return false;
-            if (H.Affinity != HeaderType.Extent)
-                return false;
-
+            
             // Check both the directory, name and extension match; don't care about ID or type //
             return (string.Compare(this.Directory, H.Directory, true) == 0) && (string.Compare(this.Name, H.Name, true) == 0) && (string.Compare(this.Extension, H.Extension) == 0);
 
         }
 
-        // Statics //
-        public static string FilePath(string Dir, string Name, HeaderType Affinity)
+        public Header CreateChild(long ID)
         {
-            Header h = new Header(Dir.Trim(), Name, 0, 0, 0, 0, 0, 0, Affinity);
+
+            if (this.Affinity == HeaderType.Extent)
+                throw new ArgumentException("Cannot create a child form a child");
+
+            return new Header(this.Directory, this.Name, ID, this.ColumnCount, 0, 0, 0, HeaderType.Extent, this.PageSize, this.Extension);
+
+        }
+
+        // Statics //
+        public static string FilePath(string Dir, string Name, string Extension)
+        {
+            Header h = new Header(Dir.Trim(), Name, 0, 0, 0, 0, 0, HeaderType.Table, 0, Extension);
             return h.Path;
         }
 
@@ -259,19 +271,26 @@ namespace Rye.Data
             return g.ToString().Replace("-", "");
         }
 
-        public static Header NewExtentHeader(string Dir, string Name, long ID, int ColumnCount, long MaxCount)
+        public static Header NewTableHeader(string Dir, string Name, Schema Columns, long PageSize, string Extension)
         {
-            return new Header(Dir, Name, ID, (long)ColumnCount, 0, 0, MaxCount, 1, HeaderType.Extent);
+            return new Header(Dir, Name, 0, (long)Columns.Count, 0, 0, 0, HeaderType.Table, PageSize, Extension);
         }
 
-        public static Header NewMemoryOnlyExtentHeader(string Name, int ColumnCount, long MaxCount)
+        public static Header NewPageHeader(string Dir, string Name, long ID, Schema Columns, long PageSize, string Extension)
         {
-            return new Header(null, Name, 0, ColumnCount, 0, 0, MaxCount, 0, HeaderType.Extent);
+            return new Header(Dir, Name, 0, (long)Columns.Count, 0, 0, 0, HeaderType.Extent, PageSize, Extension);
         }
 
-        public static Header NewTableHeader(string Dir, string Name, int ColumnCount, long MaxCount)
+        public static Header NewMemoryOnlyExtentHeader(string Name, int ColumnCount, long PageSize)
         {
-            return new Header(Dir, Name, 0, (long)ColumnCount, 0, 0, (long)MaxCount, 0, HeaderType.Table);
+            return new Header(null, Name, 0, ColumnCount, 0, 0, 0, HeaderType.Extent, PageSize, "???");
+        }
+
+        public static string GetExtension(int Version)
+        {
+            if (Version == 1)
+                return V1_EXTENSION;
+            throw new KeyNotFoundException("Version " + Version.ToString() + " does not exist");
         }
 
     }

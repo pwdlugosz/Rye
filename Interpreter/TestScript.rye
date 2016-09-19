@@ -1,27 +1,57 @@
 ﻿
+// CREATE THE RYE PROJECTS FOLDER //
 
+IF (!FILE.EXISTS(FILE.MYDOC() + '\Rye Projects\')) THEN
+DO
+{
+	FILE.MAKE(FILE.MYDOC() + '\Rye Projects\');
+};
+
+// CREATE THE TEMP DATABASE //
+IF (!FILE.EXISTS(FILE.MYDOC() + '\Rye Projects\Temp\')) THEN
+DO
+{
+	FILE.MAKE(FILE.MYDOC() + '\Rye Projects\Temp\');
+};
+
+// CONNECT TO THE TEMP DATABASE //
 CONNECT
 {
-	TEMP TO 'C:\Users\pwdlu_000\Documents\Data\TempDB';
+	TEMP TO FILE.MYDOC() + '\Rye Projects\Temp\';
 };
 
-DECLARE
+// CREATE THE SCRIPTS FOLDER //
+IF (!FILE.EXISTS(FILE.MYDOC() + '\Rye Projects\Scripts\')) THEN
+DO
 {
-	GLOBAL.S_VAL AS STRING = "PRINT '@MESSAGE';";
+	FILE.MAKE(FILE.MYDOC() + '\Rye Projects\Scripts\');
 };
 
-EXEC
+// CREATE THE FLAT FILES FOLDER //
+IF (!FILE.EXISTS(FILE.MYDOC() + '\Rye Projects\Flat Files\')) THEN
+DO
 {
-	SCRIPT = GLOBAL.S_VAL;
-	@MESSAGE = 'HELLO WORLD!!!' + ' ' + (NOW() -> STRING);
+	FILE.MAKE(FILE.MYDOC() + '\Rye Projects\Flat Files\');
 };
 
+// CREATE THE Main.rye FILE //
+FILE.WRITE_ALL_TEXT
+{
 
+	PATH = FILE.MYDOC() + '\Rye Projects\Scripts\Main.rye';
+	TEXT = 
+	"
 
+		// CONNECT TO THE TEMP DATABASE //
+		CONNECT
+		{
+			TEMP TO 'FILE.MYDOC() + '\Rye Projects\Temp\';
+		};
+		
+		// PRINT //
+		PRINT 'HELLO WORLD!!!';
 
+	";
 
-
-
-
-
+};
 

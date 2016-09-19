@@ -57,40 +57,40 @@ namespace Rye.Data
 
         // Metadata elements //
         /// <summary>
-        /// The cell affinity, offset 0
+        /// The cell affinity, offset 9
         /// </summary>
-        [System.Runtime.InteropServices.FieldOffset(0)]
+        [System.Runtime.InteropServices.FieldOffset(9)]
         internal CellAffinity AFFINITY;
 
         /// <summary>
-        /// The null byte indicator, offset 1
+        /// The null byte indicator, offset 10
         /// </summary>
-        [System.Runtime.InteropServices.FieldOffset(1)]
+        [System.Runtime.InteropServices.FieldOffset(10)]
         internal byte NULL;
 
         // Data variables //
         /// <summary>
-        /// The .Net bool value, offset 2
+        /// The .Net bool value, offset 0
         /// </summary>
-        [System.Runtime.InteropServices.FieldOffset(2)]
+        [System.Runtime.InteropServices.FieldOffset(0)]
         internal bool BOOL;
 
         /// <summary>
-        /// The .Net long value, offset 2
+        /// The .Net long value, offset 0
         /// </summary>
-        [System.Runtime.InteropServices.FieldOffset(2)]
+        [System.Runtime.InteropServices.FieldOffset(0)]
         internal long INT;
 
         /// <summary>
-        /// The .Net double value, offset 2
+        /// The .Net double value, offset 0
         /// </summary>
-        [System.Runtime.InteropServices.FieldOffset(2)]
+        [System.Runtime.InteropServices.FieldOffset(0)]
         internal double DOUBLE;
 
         /// <summary>
-        /// The .Net DateTime variable, offset 2
+        /// The .Net DateTime variable, offset 0
         /// </summary>
-        [System.Runtime.InteropServices.FieldOffset(2)]
+        [System.Runtime.InteropServices.FieldOffset(0)]
         internal DateTime DATE_TIME;
 
         /// <summary>
@@ -107,45 +107,57 @@ namespace Rye.Data
 
         // Extended elements //
         /// <summary>
-        /// The .Net integer value at offset 2
+        /// The .Net integer value at offset 0
         /// </summary>
-        [System.Runtime.InteropServices.FieldOffset(2)]
+        [System.Runtime.InteropServices.FieldOffset(0)]
         internal int INT_A;
 
         /// <summary>
-        /// The .Net integer value at offset 6
+        /// The .Net integer value at offset 4
         /// </summary>
-        [System.Runtime.InteropServices.FieldOffset(6)]
+        [System.Runtime.InteropServices.FieldOffset(4)]
         internal int INT_B;
 
         /// <summary>
-        /// The .Net ulong value at offset 12
+        /// The .Net float value at offset 0
         /// </summary>
-        [System.Runtime.InteropServices.FieldOffset(2)]
+        [System.Runtime.InteropServices.FieldOffset(0)]
+        internal float FLOAT_A;
+
+        /// <summary>
+        /// The .Net float value at offset 4
+        /// </summary>
+        [System.Runtime.InteropServices.FieldOffset(4)]
+        internal float FLOAT_B;
+
+        /// <summary>
+        /// The .Net ulong value at offset 0
+        /// </summary>
+        [System.Runtime.InteropServices.FieldOffset(0)]
         internal ulong ULONG;
 
-        [System.Runtime.InteropServices.FieldOffset(2)]
+        [System.Runtime.InteropServices.FieldOffset(0)]
         internal byte B0;
 
-        [System.Runtime.InteropServices.FieldOffset(3)]
+        [System.Runtime.InteropServices.FieldOffset(1)]
         internal byte B1;
 
-        [System.Runtime.InteropServices.FieldOffset(4)]
+        [System.Runtime.InteropServices.FieldOffset(2)]
         internal byte B2;
 
-        [System.Runtime.InteropServices.FieldOffset(5)]
+        [System.Runtime.InteropServices.FieldOffset(3)]
         internal byte B3;
 
-        [System.Runtime.InteropServices.FieldOffset(6)]
+        [System.Runtime.InteropServices.FieldOffset(4)]
         internal byte B4;
 
-        [System.Runtime.InteropServices.FieldOffset(7)]
+        [System.Runtime.InteropServices.FieldOffset(5)]
         internal byte B5;
 
-        [System.Runtime.InteropServices.FieldOffset(8)]
+        [System.Runtime.InteropServices.FieldOffset(6)]
         internal byte B6;
 
-        [System.Runtime.InteropServices.FieldOffset(9)]
+        [System.Runtime.InteropServices.FieldOffset(7)]
         internal byte B7;
 
         #endregion
@@ -549,6 +561,30 @@ namespace Rye.Data
             }
         }
 
+        /// <summary>
+        /// Gets the value of the cell as an object
+        /// </summary>
+        public object valueObject
+        {
+
+            get
+            {
+                switch(this.AFFINITY)
+                {
+                    case CellAffinity.BOOL: return this.BOOL;
+                    case CellAffinity.INT: return this.INT;
+                    case CellAffinity.DOUBLE: return this.DOUBLE;
+                    case CellAffinity.DATE_TIME: return this.DATE_TIME;
+                    case CellAffinity.STRING: return this.STRING;
+                    case CellAffinity.BLOB: return this.BLOB;
+                    
+                }
+
+                return NULL_INT;
+            }
+
+        }
+
         #endregion
 
         #region Overrides
@@ -816,13 +852,22 @@ namespace Rye.Data
             // Set value //
             switch (NewAffinity)
             {
-                case CellAffinity.BOOL: return new Cell((bool)Value);
-                case CellAffinity.INT: return new Cell((int)Value);
-                case CellAffinity.DOUBLE: return new Cell(Convert.ToDouble(Value));
-                case CellAffinity.DATE_TIME: return new Cell((DateTime)Value);
-                case CellAffinity.STRING: return new Cell(Value.ToString());
-                case CellAffinity.BLOB: return new Cell((byte[])Value);
-                default: return new Cell(CellAffinity.INT);
+
+                case CellAffinity.BOOL: 
+                    return new Cell((bool)Value);
+                case CellAffinity.INT: 
+                    return new Cell(Convert.ToInt64(Value));
+                case CellAffinity.DOUBLE: 
+                    return new Cell(Convert.ToDouble(Value));
+                case CellAffinity.DATE_TIME: 
+                    return new Cell((DateTime)Value);
+                case CellAffinity.STRING: 
+                    return new Cell(Value.ToString());
+                case CellAffinity.BLOB: 
+                    return new Cell((byte[])Value);
+                default: 
+                    return new Cell(CellAffinity.INT);
+
             }
 
         }
@@ -3012,6 +3057,12 @@ namespace Rye.Data
 
         }
 
+        /// <summary>
+        /// Performs an optimized integer power
+        /// </summary>
+        /// <param name="Base">The base value</param>
+        /// <param name="Exp">The exponent</param>
+        /// <returns>Another integer: Base ^ Exp</returns>
         internal static long IntPower(long Base, long Exp)
         {
 

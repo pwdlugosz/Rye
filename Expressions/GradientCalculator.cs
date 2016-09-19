@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Rye.Data;
+using Rye.Libraries;
 
 namespace Rye.Expressions
 {
@@ -52,61 +53,61 @@ namespace Rye.Expressions
             switch (name_sig)
             {
 
-                case SystemFunctionLibrary.UNI_PLUS:
+                case BaseFunctionLibrary.UNI_PLUS:
                     t = GradientOfUniPlus(Node, X);
                     break;
-                case SystemFunctionLibrary.UNI_MINUS:
+                case BaseFunctionLibrary.UNI_MINUS:
                     t = GradientOfUniMinus(Node, X);
                     break;
 
-                case SystemFunctionLibrary.OP_ADD:
+                case BaseFunctionLibrary.OP_ADD:
                     t = GradientOfAdd(Node, X);
                     break;
-                case SystemFunctionLibrary.OP_SUB:
+                case BaseFunctionLibrary.OP_SUB:
                     t = GradientOfSubtract(Node, X);
                     break;
-                case SystemFunctionLibrary.OP_MUL:
+                case BaseFunctionLibrary.OP_MUL:
                     t = GradientOfMultiply(Node, X);
                     break;
-                case SystemFunctionLibrary.OP_DIV:
+                case BaseFunctionLibrary.OP_DIV:
                     t = GradientOfDivide(Node, X);
                     break;
 
-                case SystemFunctionLibrary.FUNC_LOG:
+                case BaseFunctionLibrary.FUNC_LOG:
                     t = GradientOfLog(Node, X);
                     break;
-                case SystemFunctionLibrary.FUNC_EXP:
+                case BaseFunctionLibrary.FUNC_EXP:
                     t = GradientOfExp(Node, X);
                     break;
-                case SystemFunctionLibrary.FUNC_POWER:
+                case BaseFunctionLibrary.FUNC_POWER:
                     t = GradientOfPowerLower(Node, X);
                     break;
 
-                case SystemFunctionLibrary.FUNC_SIN:
+                case BaseFunctionLibrary.FUNC_SIN:
                     t = GradientOfSin(Node, X);
                     break;
-                case SystemFunctionLibrary.FUNC_COS:
+                case BaseFunctionLibrary.FUNC_COS:
                     t = GradientOfCos(Node, X);
                     break;
-                case SystemFunctionLibrary.FUNC_TAN:
+                case BaseFunctionLibrary.FUNC_TAN:
                     t = GradientOfTan(Node, X);
                     break;
 
-                case SystemFunctionLibrary.FUNC_SINH:
+                case BaseFunctionLibrary.FUNC_SINH:
                     t = GradientOfSinh(Node, X);
                     break;
-                case SystemFunctionLibrary.FUNC_COSH:
+                case BaseFunctionLibrary.FUNC_COSH:
                     t = GradientOfCosh(Node, X);
                     break;
-                case SystemFunctionLibrary.FUNC_TANH:
+                case BaseFunctionLibrary.FUNC_TANH:
                     t = GradientOfTanh(Node, X);
                     break;
 
-                case SystemFunctionLibrary.FUNC_LOGIT:
+                case BaseFunctionLibrary.FUNC_LOGIT:
                     t = GradientOfLogit(Node, X);
                     break;
 
-                case SystemFunctionLibrary.FUNC_NDIST:
+                case BaseFunctionLibrary.FUNC_NDIST:
                     t = GradientOfNDIST(Node, X);
                     break;
                 

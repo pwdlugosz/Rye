@@ -12,25 +12,37 @@ namespace Rye
 {
     class Program
     {
+
         static void Main(string[] args)
+        {
+
+            Program.DebugRun(args);
+            //Program.ReleaseRun(args);
+            string z = Console.ReadLine();
+
+        }
+
+        public static void DebugRun(string[] args)
         {
 
             System.Diagnostics.Stopwatch sw = Stopwatch.StartNew();
 
-            //Console.WriteLine("Char: {0}", 'A');
-            //Console.WriteLine("Byte: {0}", (byte)'A');
-            
             // Open the file to get the script //
-            string script = System.IO.File.ReadAllText(@"C:\Users\pwdlu_000\Documents\Rye\Rye\Interpreter\TestScript.rye");
-            Kernel.TempDirectory = @"C:\Users\pwdlu_000\Documents\Data\TempDB";
+            string script = System.IO.File.ReadAllText(System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\Rye\Rye\Interpreter\TestScript.rye");
+            Kernel k = new Kernel(@"C:\Users\pwdlu_000\Documents\Data\TempDB");
 
-            // Render a Workspace
-            Workspace enviro = new Workspace();
-            enviro.AllowAsync = true;
+            // Render a Session
+            Session enviro = new Session(k, new CommandLineCommunicator(), true);
 
-            // Add in the structures //
-            enviro.Structures.Allocate(Structures.FileStructure.STRUCT_NAME, new Structures.FileStructure());
-            enviro.Structures.Allocate(Structures.TableStructure.STRUCT_NAME, new Structures.TableStructure(enviro));
+            // Add in the method library //
+            enviro.SetMethodLibrary(new Libraries.FileMethodLibrary(enviro));
+            enviro.SetMethodLibrary(new Libraries.TableMethodLibrary(enviro));
+            enviro.SetMethodLibrary(new Libraries.MSOfficeLibrary(enviro));
+
+            // Add the function libraries //
+            enviro.SetFunctionLibrary(new Libraries.FileFunctionLibrary(enviro));
+            enviro.SetFunctionLibrary(new Libraries.TableFunctionLibrary(enviro));
+            enviro.SetFunctionLibrary(new Libraries.FinanceFunctionLibrary(enviro));
 
             // Create a script process //
             RyeScriptProcessor runner = new RyeScriptProcessor(enviro);
@@ -39,48 +51,59 @@ namespace Rye
             runner.Execute(script);
 
             // Close down the kernel space //
-            //Console.WriteLine(Kernel.Status);
-            Kernel.ShutDown();
+            enviro.Kernel.ShutDown();
 
             sw.Stop();
             Console.WriteLine("::::::::::::::::::::::::::::::::: Complete :::::::::::::::::::::::::::::::::");
             Console.WriteLine("Run Time: {0}", sw.Elapsed);
-            Console.WriteLine("Virtual Reads: {0}", Kernel.VirtualReads);
-            Console.WriteLine("Virtual Writes: {0}", Kernel.VirtualWrites);
-            Console.WriteLine("Hard Reads: {0}", Kernel.DiskReads);
-            Console.WriteLine("Hard Writes: {0}", Kernel.DiskWrites);
-            string z = Console.ReadLine();
-
+            Console.WriteLine("Virtual Reads: {0}", enviro.Kernel.VirtualReads);
+            Console.WriteLine("Virtual Writes: {0}", enviro.Kernel.VirtualWrites);
+            Console.WriteLine("Hard Reads: {0}", enviro.Kernel.DiskReads);
+            Console.WriteLine("Hard Writes: {0}", enviro.Kernel.DiskWrites);
+            
         }
 
-        public static long Power1(long Base, long Exp)
+        public static void ReleaseRun(string[] args)
         {
 
-            long t = 1;
-            for (long l = 0; l < Exp; l++)
-            {
-                t *= Base;
-            }
-            return t;
+            System.Diagnostics.Stopwatch sw = Stopwatch.StartNew();
+            
+            // Open the file to get the script //
+            string script = System.IO.File.ReadAllText(args[0]);
+            Kernel k = new Kernel(System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"Rye Projects\Temp\");
+            
+            // Render a Session
+            Session enviro = new Session(k, new CommandLineCommunicator(), true);
+            
+            // Add in the method library //
+            enviro.SetMethodLibrary(new Libraries.FileMethodLibrary(enviro));
+            enviro.SetMethodLibrary(new Libraries.TableMethodLibrary(enviro));
+            enviro.SetMethodLibrary(new Libraries.MSOfficeLibrary(enviro));
 
+            // Add the function libraries //
+            enviro.SetFunctionLibrary(new Libraries.FileFunctionLibrary(enviro));
+            enviro.SetFunctionLibrary(new Libraries.TableFunctionLibrary(enviro));
+            enviro.SetFunctionLibrary(new Libraries.FinanceFunctionLibrary(enviro));
+            
+            // Create a script process //
+            RyeScriptProcessor runner = new RyeScriptProcessor(enviro);
+            
+            // Run the script //
+             runner.Execute(script);
+            
+            // Close down the kernel space //
+            enviro.Kernel.ShutDown();
+            
+            sw.Stop();
+            Console.WriteLine("::::::::::::::::::::::::::::::::: Complete :::::::::::::::::::::::::::::::::");
+            Console.WriteLine("Run Time: {0}", sw.Elapsed);
+            Console.WriteLine("Virtual Reads: {0}", enviro.Kernel.VirtualReads);
+            Console.WriteLine("Virtual Writes: {0}", enviro.Kernel.VirtualWrites);
+            Console.WriteLine("Hard Reads: {0}", enviro.Kernel.DiskReads);
+            Console.WriteLine("Hard Writes: {0}", enviro.Kernel.DiskWrites);
+            
         }
 
-        public static long Power2(long Base, long Exp)
-        {
-
-            if (Exp == 0)
-                return 1;
-            else if (Exp == 1)
-                return Base;
-
-            if (Exp % 2 == 1)
-                return Power2(Base, Exp / 2) * Exp;
-            else
-                return Power2(Base, Exp / 2);
-
-        }
-    
-    
-    
     }
+
 }

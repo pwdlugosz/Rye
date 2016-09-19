@@ -8,8 +8,10 @@ using Rye.Expressions;
 namespace Rye.Data
 {
     
-    public abstract class DataSet
+    public abstract class TabularData
     {
+
+        public const long DEFAULT_PAGE_SIZE = 1024 * 1024 * 16;
 
         // Properties //
         public abstract Schema Columns { get; }
@@ -24,10 +26,6 @@ namespace Rye.Data
             }
         }
 
-        public abstract long MaxRecords { get; set; }
-
-        public abstract string Name { get; }
-
         public abstract IEnumerable<Record> Records { get; }
 
         public abstract long ExtentCount { get; }
@@ -35,6 +33,11 @@ namespace Rye.Data
         public abstract long RecordCount { get; }
 
         public abstract Header Header { get; set; }
+
+        public abstract string InfoString
+        {
+            get;
+        }
 
         // Methods //
         public abstract Volume CreateVolume();
@@ -67,52 +70,46 @@ namespace Rye.Data
     
     }
 
-    public sealed class Extent : DataSet
+    public sealed class Extent : TabularData
     {
 
-        internal const long DEFAULT_MAX_RECORD_COUNT = 10000000;
-        internal const long DEFAULT_MEMORY_FOOTPRINT = 65536; // = 64 mb in kb
         internal const long ESTIMATE_META_DATA = 4096; // estimate 4 kb in meta data
         
         internal List<Record> _Cache;
         private Schema _Columns;
         private Header _Head;
         private Key _OrderBy;
+        private long _MaxRecords = 0;
         
         // Constructor //
         public Extent(Schema NewColumns, Header NewHeader, List<Record> NewCache, Key NewOrderBy)
         {
+
             this._Columns = NewColumns;
             this._Cache = NewCache;
             this._OrderBy = NewOrderBy;
             this._Head = NewHeader;
-            
+            this._MaxRecords = NewHeader.PageSize / NewColumns.RecordDiskCost;
+
         }
 
         public Extent(Schema NewColumns, Header NewHeader)
-            : this(NewColumns, NewHeader, new List<Record>(NewHeader == null ? (int)DEFAULT_MAX_RECORD_COUNT : (int)NewHeader.MaxRecordCount), new Key())
+            : this(NewColumns, NewHeader, new List<Record>(), new Key())
         {
 
         }
 
         public Extent(Schema NewColumns)
-            : this(NewColumns, Header.NewMemoryOnlyExtentHeader("EXTENT", NewColumns.Count, EstimateMaxRecords(NewColumns)))
+            : this(NewColumns, Header.NewMemoryOnlyExtentHeader("EXTENT", NewColumns.Count, DEFAULT_PAGE_SIZE))
         {
         }
         
-        public Extent(string Directory, string Name, Schema S, long MaxRecords)
-            : this(S)
-        {
-            this.MaxRecords = MaxRecords;
-            Header h = Header.NewExtentHeader(Directory, Name, 0, S.Count, EstimateMaxRecords(S));
-        }
-
-        public Extent(string Directory, string Name, Schema S)
-            : this(Directory, Name, S, EstimateMaxRecords(S))
+        public Extent(string Directory, string Name, Schema S, long PageSize, string Extension)
+            : this(S, Header.NewPageHeader(Directory, Name, 0, S, PageSize, Extension))
         {
         }
 
-        // DataSet Override Properties //
+        // TabularData Override Properties //
         public override Schema Columns
         {
             get
@@ -130,26 +127,6 @@ namespace Rye.Data
             set
             {
                 this._OrderBy = value;
-            }
-        }
-
-        public override long MaxRecords
-        {
-            get
-            {
-                return this._Head.MaxRecordCount;
-            }
-            set
-            {
-                this._Head.MaxRecordCount = value;
-            }
-        }
-
-        public override string Name
-        {
-            get 
-            {
-                return this.Header.Name;
             }
         }
 
@@ -192,7 +169,7 @@ namespace Rye.Data
         {
             get
             {
-                return this.Count == this.MaxRecords;
+                return this.Count == this._MaxRecords;
             }
         }
         
@@ -224,14 +201,6 @@ namespace Rye.Data
             }
         }
 
-        public long ID
-        {
-            get
-            {
-                return this.Header.ID;
-            }
-        }
-
         public List<Record> Cache
         {
             get
@@ -248,6 +217,31 @@ namespace Rye.Data
         public Extent EmptyClone()
         {
             return new Extent(this._Columns, this._Head, new List<Record>(), this._OrderBy);
+        }
+
+        public long MaxRecordEstimate
+        {
+            get { return this._Head.PageSize / this._Columns.RecordDiskCost; }
+        }
+
+        public override string InfoString
+        {
+            get 
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.Append(string.Format("Name: {0}", this.Header.Name));
+                sb.Append(string.Format("Page Size: {0}", this.Header.PageSize));
+                sb.Append(string.Format("Record Count: {0}", this.Header.RecordCount));
+                sb.Append(string.Format("Disk Location: {0}", this.Header.IsMemoryOnly ? "<Memory>" : this.Header.Path));
+                sb.Append(string.Format("Directory: {0}", this.Header.IsMemoryOnly ? "<Memory>" : this.Header.Directory));
+                sb.Append("Columns:");
+                for (int i = 0; i < this.Columns.Count; i++)
+                {
+                    sb.Append(string.Format("{0} : {1} : {2}", this.Columns.ColumnName(i), this.Columns.ColumnAffinity(i), this.Columns.ColumnSize(i)));
+                }
+                return sb.ToString();
+
+            }
         }
 
         // Methods //
@@ -285,6 +279,7 @@ namespace Rye.Data
             if (this.IsFull)
                 throw new Exception("RecordSet is full");
             this._Cache.Add(Data);
+
         }
 
         /// <summary>
@@ -294,6 +289,7 @@ namespace Rye.Data
         public void UnsafeAdd(Record Data)
         {
             this._Cache.Add(Data);
+
         }
 
         public void Remove(int Index)
@@ -416,16 +412,6 @@ namespace Rye.Data
         }
 
         // Statics //
-        public static long EstimateMaxRecords(Schema Columns, long TotalMemoryFootPrintKB)
-        {
-            return (TotalMemoryFootPrintKB * 1024 - ESTIMATE_META_DATA) / Columns.RecordMemCost;
-        }
-
-        public static long EstimateMaxRecords(Schema Columns)
-        {
-            return EstimateMaxRecords(Columns, DEFAULT_MEMORY_FOOTPRINT);
-        }
-
         public static void SetCache(Extent DataToSet, Extent DataToImport)
         {
 
@@ -468,7 +454,7 @@ namespace Rye.Data
                 long l = SortMaster.Sort(this._E, K);
             }
 
-            public override DataSet Parent
+            public override TabularData Parent
             {
                 get
                 {
@@ -552,12 +538,12 @@ namespace Rye.Data
 
     }
 
-    public class Table : DataSet
+    public class Table : TabularData
     {
 
-        internal const long DEFAULT_MAX_SIZE = 1000000;
         protected const int OFFSET_ID = 0;
         protected const int OFFSET_COUNT = 1;
+        public const int RECORD_LEN = 2;
 
         //protected List<Header> _Cache;
         protected Extent _Refs; // The move to virtual headers is designed to reduce the memory footprint and make IO faster
@@ -565,53 +551,43 @@ namespace Rye.Data
         protected Header _Head;
         protected Key _OrderBy;
         protected object _lock = new object();
+        protected Kernel _IO;
 
         // Constructors //
-        public Table(Header H, Schema S, List<Record> R, Key SortedKeySet)
+        public Table(Kernel K, Header H, Schema S, List<Record> R, Key SortedKeySet)
         {
 
-            Header t = Rye.Data.Header.NewMemoryOnlyExtentHeader(H.Name, S.Count, Extent.DEFAULT_MAX_RECORD_COUNT);
+            Header t = Rye.Data.Header.NewMemoryOnlyExtentHeader(H.Name, S.Count, Extent.DEFAULT_PAGE_SIZE);
 
             this._Columns = S;
             this._Head = H;
             this._OrderBy = SortedKeySet;
             this._Refs = new Extent(new Schema("ID INT, COUNT INT"), t, R, SortedKeySet);
+            this._IO = K;
 
         }
 
-        protected Table(string Directory, string Name, Schema S, long MaxRecords, bool Flush)
+        protected Table(Kernel IO, Header Location, Schema Columns, bool Flush)
         {
 
-            Header h = Data.Header.NewTableHeader(Directory, Name, S.Count, MaxRecords);
-            Header t = Rye.Data.Header.NewMemoryOnlyExtentHeader(Name, S.Count, Extent.DEFAULT_MAX_RECORD_COUNT);
+            Header t = Rye.Data.Header.NewMemoryOnlyExtentHeader(Location.Name, 2, TabularData.DEFAULT_PAGE_SIZE);
 
-            this._Columns = S;
-            this._Head = h;
+            this._Columns = Columns;
+            this._Head = Location;
             this._OrderBy = new Key();
             this._Refs = new Extent(new Schema("ID INT, COUNT INT"), t);
-            
+            this._IO = IO;
+
             if (Flush)
             {
-                Kernel.RequestDropTable(h.Path);
-                Kernel.RequestFlushTable(this);
+                this._IO.RequestDropTable(Location.Path);
+                this._IO.RequestFlushTable(this);
             }
 
         }
 
-        /// <summary>
-        /// Creates a table, dropping a table of the same name if it exists, and flushes the table to disk
-        /// </summary>
-        /// <param name="Directory"></param>
-        /// <param name="Name"></param>
-        /// <param name="S"></param>
-        /// <param name="MaxRecords"></param>
-        public Table(string Directory, string Name, Schema S, long MaxRecords)
-            : this(Directory, Name, S, MaxRecords, true)
-        {
-        }
-
-        public Table(string Directory, string Name, Schema S)
-            : this(Directory, Name, S, DEFAULT_MAX_SIZE)
+        public Table(Kernel IO, Header Location, Schema Columns)
+            : this(IO, Location, Columns, true)
         {
         }
 
@@ -668,25 +644,6 @@ namespace Rye.Data
             }
         }
 
-        public override long MaxRecords
-        {
-            get
-            {
-                return this._Head.MaxRecordCount;
-            }
-            set
-            {
-                if (value < 0) 
-                    this.Header.MaxRecordCount = -value;
-                this.Header.MaxRecordCount = value;
-            }
-        }
-
-        public override string Name
-        {
-            get { return this.Header.Name; }
-        }
-
         public override IEnumerable<Record> Records
         {
             get 
@@ -705,6 +662,12 @@ namespace Rye.Data
             get { return (double)this._Head.RecordCount / (double)this._Head.RecordCount; }
         }
 
+        public Kernel IO
+        {
+            get { return this._IO; }
+            set { this._IO = value; }
+        }
+
         // Volumes //
         public override Volume CreateVolume()
         {
@@ -717,15 +680,27 @@ namespace Rye.Data
         }
 
         // IO Methods //
+        public void RequestFlushMe()
+        {
+            this._IO.RequestFlushTable(this);
+        }
+
         public virtual Header RenderHeader(int Index)
         {
             long id = this._Refs[Index][OFFSET_ID].INT;
-            return new Header(this.Header.Directory, this.Header.Name, id, this.Columns.Count, 0, 0, this.MaxRecords, 0, HeaderType.Extent);
+            Header h = this.Header.CreateChild(id);
+            h.RecordCount = this.GetRecordCount((long)Index);
+            return h;
         }
 
         public virtual Extent ReferenceTable
         {
             get { return this._Refs; }
+        }
+
+        public long GetRecordCount(long ID)
+        {
+            return this._Refs[(int)ID][(int)OFFSET_COUNT].valueINT;
         }
 
         /* ## Thread Safe ##*/
@@ -770,10 +745,10 @@ namespace Rye.Data
                     throw new ArgumentException(string.Format("Attempting to pop chunk {0} but this table only has {1} extents", Index, this.ExtentCount));
 
                 // Get the header //
-                Header h = this.RenderHeader(Index);
+                //Header h = this.RenderHeader(Index);
 
                 // Buffer //
-                return Kernel.RequestBufferExtent(h.Path);
+                return this._IO.RequestBufferExtent(this, Index);
 
             }
 
@@ -787,7 +762,7 @@ namespace Rye.Data
         ///     -- It must have the same name as the parent
         ///     -- It must have an ID present in the parent
         /// </summary>
-        /// <param name="DataSet"></param>
+        /// <param name="TabularData"></param>
         public virtual void SetExtent(Extent Data)
         {
 
@@ -796,21 +771,21 @@ namespace Rye.Data
 
                 // Check a few things: the table is attached, columns match, name matches, and the ID exists in the current table //
                 if (Data.IsMemoryOnly)
-                    throw new ArgumentException("The Extent passed is not attached; use the 'AddExtent' method to add a disjoint Extent");
+                    throw new ArgumentException("The Shard passed is not attached; use the 'AddExtent' method to add a disjoint Shard");
                 if (Data.Columns.GetHashCode() != this.Columns.GetHashCode())
-                    throw new ArgumentException("The schema passed for the current record set does not match the Table");
+                    throw new ArgumentException("The schema passed for the current record set does not match the ShartTable");
                 if (Data.Header.Name != this.Header.Name)
-                    throw new ArgumentException("The 'name' of this Extent does not match the parent; use the 'AddExtent' method to add a disjoint Extent");
+                    throw new ArgumentException("The 'name' of this Shard does not match the parent; use the 'AddExtent' method to add a disjoint Shard");
                 if (this.Header.ID >= this.ExtentCount)
-                    throw new ArgumentException("The ID of this Extent does not match the parent; use the 'AddExtent' method to add a disjoint Extent");
+                    throw new ArgumentException("The ID of this Shard does not match the parent; use the 'AddExtent' method to add a disjoint Shard");
                 if (this._Refs[(int)Data.Header.ID][OFFSET_ID].INT != (int)Data.Header.ID)
-                    throw new ArgumentException("The ID of this Extent does not match the parent; use the 'AddExtent' method to add a disjoint Extent");
+                    throw new ArgumentException("The ID of this Shard does not match the parent; use the 'AddExtent' method to add a disjoint Shard");
 
                 // Get the current record count //
-                this.UpdateRefRercord(Data.ID, Data.RecordCount);
+                this.UpdateRefRercord(Data.Header.ID, Data.RecordCount);
 
                 // Flush //
-                Kernel.RequestFlushExtent(Data);
+                this._IO.RequestFlushExtent(Data);
 
             }
 
@@ -829,18 +804,19 @@ namespace Rye.Data
 
                 // Check that the schema match and that the data set is not too big //
                 if (Data.Columns.GetHashCode() != this.Columns.GetHashCode())
-                    throw new Exception("The schema passed for the current record set does not match the Table");
-                if (Data.Count > this.MaxRecords)
+                    throw new Exception("The schema passed for the current record set does not match the ShartTable");
+                if (Data.Header.PageSize != this.Header.PageSize)
                     throw new Exception("The data set passed is too large");
 
                 // Need to create a new header //
                 long id = this._Refs.Count;
-                Header h = new Header(this.Header.Directory, this.Header.Name, id, (long)Data.Columns.Count, Data.RecordCount, this._OrderBy.Count, this.MaxRecords, 0, HeaderType.Extent);
+                Header h = this.Header.CreateChild(id);
+                //Header h = new Header(this.Header.Directory, this.Header.Name, id, (long)Data.Columns.Count, Data.RecordCount, this._OrderBy.Count, this.MaxRecords, 0, HeaderType.Shard);
                 Data.Header = h;
 
                 // Accumulate and dump //
                 this.AddRefRecord(id, Data.Count);
-                Kernel.RequestFlushExtent(Data);
+                this._IO.RequestFlushExtent(Data);
 
             }
 
@@ -858,7 +834,7 @@ namespace Rye.Data
             {
 
                 long id = this.ExtentCount;
-                Header h = Data.Header.NewExtentHeader(this.Header.Directory, this.Header.Name, id, this.Columns.Count, this.MaxRecords);
+                Header h = this.Header.CreateChild(id);
                 
                 Extent e = new Extent(this.Columns, h);
 
@@ -866,7 +842,7 @@ namespace Rye.Data
                 this.AddRefRecord(id, 0);
 
                 // Dump //
-                Kernel.RequestFlushExtent(e);
+                this._IO.RequestFlushExtent(e);
 
                 // Return //
                 return e;
@@ -912,7 +888,7 @@ namespace Rye.Data
             if (Data.Count == 0)
                 return;
             this.AddExtent(Data);
-            Kernel.RequestFlushTable(this);
+            this._IO.RequestFlushTable(this);
 
         }
 
@@ -963,41 +939,44 @@ namespace Rye.Data
             return new TableWriter(this);
         }
 
-        public string Debug()
+        public override string InfoString
         {
 
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine(string.Format("Name: {0}", this.Name));
-            sb.AppendLine(string.Format("Directory: {0}", this.Header.Directory));
-            sb.AppendLine(string.Format("Value Cost: {0}", this.MemCost));
-            sb.AppendLine(string.Format("Disk Cost: {0}", this.DiskCost));
-            sb.AppendLine(string.Format("Record Count: {0}", this.RecordCount));
-            sb.AppendLine(string.Format("Extent Count: {0}", this.ExtentCount));
-            sb.AppendLine(string.Format("Columns:"));
-            for (int i = 0; i < this.Columns.Count; i++)
+            get
             {
-                sb.AppendLine(string.Format("\t{0} : {1} : {2} : {3}", this.Columns.ColumnName(i), this.Columns.ColumnAffinity(i), this.Columns.ColumnSize(i), this.Columns.ColumnNull(i)));
-            }
-            sb.AppendLine(string.Format("Extent Map:"));
-            for (int i = 0; i < this._Refs.Count; i++)
-            {
-                sb.AppendLine(string.Format("\t{0} : {1} ", this._Refs[i][0], this._Refs[i][1]));
-            }
-            sb.AppendLine(string.Format("Header Map:"));
-            for (int i = 0; i < this._Refs.Count; i++)
-            {
-                sb.AppendLine(this.RenderHeader(i).Path);
-            }
-            if (this.IsSorted)
-            {
-                sb.AppendLine(string.Format("Sorted By: {0}", this.SortBy.ToString()));
-            }
-            else
-            {
-                sb.AppendLine("Not Sorted");
-            }
 
-            return sb.ToString();
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine(string.Format("Name: {0}", this.Header.Name));
+                sb.AppendLine(string.Format("Page Size: {0}", this.Header.PageSize));
+                sb.AppendLine(string.Format("Path: {0}", this.Header.Path));
+                sb.AppendLine(string.Format("Memory Cost: {0}", this.MemCost));
+                sb.AppendLine(string.Format("Disk Cost: {0}", this.DiskCost));
+                sb.AppendLine(string.Format("Record Count: {0}", this.RecordCount));
+                sb.AppendLine(string.Format("Extent Count: {0}", this.ExtentCount));
+
+                sb.AppendLine(string.Format("Columns:"));
+                for (int i = 0; i < this.Columns.Count; i++)
+                {
+                    sb.AppendLine(string.Format("\t{0} : {1} : {2}", this.Columns.ColumnName(i), this.Columns.ColumnAffinity(i), this.Columns.ColumnSize(i)));
+                }
+
+                sb.AppendLine(string.Format("Extent Map:"));
+                for (int i = 0; i < this._Refs.Count; i++)
+                {
+                    sb.AppendLine(string.Format("\t{0} : {1} ", this._Refs[i][0], this._Refs[i][1]));
+                }
+
+                if (this.IsSorted)
+                {
+                    sb.AppendLine(string.Format("Sorted By: {0}", this.SortBy.ToString()));
+                }
+                else
+                {
+                    sb.AppendLine("Not Sorted");
+                }
+
+                return sb.ToString();
+            }
 
         }
 
@@ -1029,7 +1008,7 @@ namespace Rye.Data
 
                 get
                 {
-                    return Kernel.RequestBufferExtent(this._t.RenderHeader(this._idx).Path);
+                    return this._t.GetExtent(this._idx);
                 }
 
             }
@@ -1039,7 +1018,7 @@ namespace Rye.Data
 
                 get
                 {
-                    return Kernel.RequestBufferExtent(this._t.RenderHeader(this._idx).Path);
+                    return this._t.GetExtent(this._idx);
                 }
 
             }
@@ -1144,7 +1123,7 @@ namespace Rye.Data
 
                 get
                 {
-                    return Kernel.RequestBufferExtent(this._t.RenderHeader(this._ExtentIDs[this._idx]).Path);
+                    return this._t.GetExtent(this._ExtentIDs[this._idx]);
                 }
 
             }
@@ -1154,7 +1133,7 @@ namespace Rye.Data
 
                 get
                 {
-                    return Kernel.RequestBufferExtent(this._t.RenderHeader(this._ExtentIDs[this._idx]).Path);
+                    return this._t.GetExtent(this._ExtentIDs[this._idx]);
                 }
 
             }
@@ -1707,7 +1686,7 @@ namespace Rye.Data
             {
 
                 if (Index >= this.ExtentCount)
-                    throw new ArgumentOutOfRangeException("Extent index is out of range");
+                    throw new ArgumentOutOfRangeException("Shard index is out of range");
                 int idx = this._base.ExtentIDs[Index];
                 return this._source.GetExtent(idx);
 
@@ -1807,7 +1786,7 @@ namespace Rye.Data
                 }
             }
 
-            public override DataSet Parent
+            public override TabularData Parent
             {
                 get
                 {
@@ -2118,7 +2097,7 @@ namespace Rye.Data
                     this._Memory = MemoryLocation;
                     this._ExtentIDs = ExtentIDs;
 
-                    // Check if the Extent is empty, if it is then point the current record to 1 so we immediately force the reader to be at the end of the data //
+                    // Check if the Shard is empty, if it is then point the current record to 1 so we immediately force the reader to be at the end of the data //
                     if (this._Data.Count == 0)
                     {
                         this._ptrRecord++;
@@ -2218,6 +2197,22 @@ namespace Rye.Data
 
         }
 
+        public static Table CreateTable(Kernel IO, string Dir, string Name, Schema Columns, long PageSize)
+        {
+
+            Header h = Header.NewTableHeader(Dir, Name, Columns, PageSize, IO.DefaultExtension);
+            return new Table(IO, h, Columns, true);
+
+        }
+
+        public static Table CreateTable(Kernel IO, string Dir, string Name, Schema Columns)
+        {
+
+            Header h = Header.NewTableHeader(Dir, Name, Columns, IO.DefaultPageSize, IO.DefaultExtension);
+            return new Table(IO, h, Columns, true);
+
+        }
+
     }
 
     public abstract class ExtentCollection 
@@ -2255,7 +2250,7 @@ namespace Rye.Data
 
         public abstract Key SortKey { get; }
 
-        public abstract DataSet Parent { get; }
+        public abstract TabularData Parent { get; }
 
         public int ThreadID
         {
@@ -2322,7 +2317,7 @@ namespace Rye.Data
 		    this._Where = Where;
             this._Memory = MemoryLocation;
             
-            // Check if the Extent is empty, if it is then point the current record to 1 so we immediately force the reader to be at the end of the data //
+            // Check if the Shard is empty, if it is then point the current record to 1 so we immediately force the reader to be at the end of the data //
             if (From.Count == 0)
             {
                 this._ptrRecord++;

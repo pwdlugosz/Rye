@@ -16,14 +16,17 @@ namespace Rye.Methods
     public sealed class MethodFor : Method
     {
 
-        private long _Current;
+        private Cell _Current;
         private Expression _Begin;
         private Expression _End;
+        private Expression _Step;
         private int _ptrControll;
+        private Heap<Cell> _Heap;
 
-        public MethodFor(Method Parent, Expression Begin, Expression End, MemoryStructure Heap, int CellPointer)
+        public MethodFor(Method Parent, Expression Begin, Expression End, Expression Step, Heap<Cell> Heap, int CellPointer)
             : base(Parent)
         {
+
             if (Begin.IsVolatile)
                 throw new ArgumentException("The 'Begin' variable cannot be volatible in a for-loop");
             if (End.IsVolatile)
@@ -32,6 +35,7 @@ namespace Rye.Methods
             this._Begin = Begin;
             this._End = End;
             this._Heap = Heap;
+            this._Step = Step;
             this._ptrControll = CellPointer;
 
         }
@@ -51,16 +55,15 @@ namespace Rye.Methods
         public override void Invoke()
         {
 
-            long Begin = this._Begin.Evaluate().valueINT;
-            long End = this._End.Evaluate().valueINT;
-            Cell c = new Cell(Begin);
-            for (this._Current = Begin; this._Current <= End; this._Current++)
+            Cell Begin = this._Begin.Evaluate();
+            Cell End = this._End.Evaluate();
+            Cell Step = this._Step.Evaluate();
+            for (this._Current = Begin; this._Current <= End; this._Current += Step)
             {
 
                 // Assign the controll variable //
-                this._Heap.Scalars[this._ptrControll] = c;
-                c++;
-
+                this._Heap[this._ptrControll] = this._Current;
+                
                 // Invoke children //
                 foreach (Method node in this._Children)
                 {
@@ -93,7 +96,7 @@ namespace Rye.Methods
 
         public override Method CloneOfMe()
         {
-            MethodFor node = new MethodFor(this.Parent, this._Begin, this._End, this._Heap, this._ptrControll);
+            MethodFor node = new MethodFor(this.Parent, this._Begin, this._End, this._Step, this._Heap, this._ptrControll);
             foreach (Method t in this._Children)
                 node.AddChild(t.CloneOfMe());
             return node;

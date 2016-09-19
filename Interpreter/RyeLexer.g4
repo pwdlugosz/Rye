@@ -78,7 +78,7 @@ K_DYNAMIC : D Y N A M I C;
 K_ELSE : E L S E;
 K_END : E N D;
 K_ESCAPE : E S C A P E;
-K_EXEC : E X E C;
+K_EXEC : E X E C | E X E C U T E;
 K_FOR : F O R;
 K_FROM : F R O M;
 K_FULL : F U L L;

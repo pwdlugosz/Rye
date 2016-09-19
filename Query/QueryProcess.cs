@@ -19,12 +19,13 @@ namespace Rye.Query
     public abstract class QueryNode
     {
 
-        
         protected int _ThreadID;
+        protected Session _Session;
         
-        public QueryNode(int ThreadID)
+        public QueryNode(int ThreadID, Session Session)
         {
             this._ThreadID = ThreadID;
+            this._Session = Session;
         }
 
         public virtual void BeginInvoke()
@@ -42,8 +43,11 @@ namespace Rye.Query
     public abstract class QueryConsolidation<Q> where Q : QueryNode
     {
 
-        public QueryConsolidation()
+        protected Session _Session;
+
+        public QueryConsolidation(Session Session)
         {
+            this._Session = Session;
         }
 
         public abstract void Consolidate(List<Q> Nodes);
@@ -172,44 +176,5 @@ namespace Rye.Query
         }
 
     }
-
-    //public sealed class PartitionedStream
-    //{
-
-    //    private DataSet _Source;
-    //    private int _ThreadID;
-    //    private int _ThreadCount;
-    //    private IEnumerator<Extent> _extents;
-    //    private bool _EndOfStream = false;
-
-    //    public PartitionedStream(DataSet Source, int ThreadCount, int ThreadID)
-    //    {
-
-    //        this._Source = Source;
-    //        this._ThreadCount = ThreadCount;
-    //        this._ThreadID = ThreadID;
-    //        this._extents = Source.ThreadedExtents(ThreadID, ThreadCount).GetEnumerator();
-
-    //    }
-
-    //    public void Advance()
-    //    {
-    //        this._EndOfStream = !this._extents.MoveNext();
-    //    }
-
-    //    public bool EndOfStream
-    //    {
-    //        get { return this._EndOfStream; }
-    //    }
-
-    //    public Extent Current
-    //    {
-    //        get 
-    //        { 
-    //            return this._extents.Current; 
-    //        }
-    //    }
-
-    //}
 
 }

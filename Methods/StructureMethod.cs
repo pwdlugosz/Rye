@@ -113,7 +113,7 @@ namespace Rye.Methods
 
         private Heap<ExpressionCollection> _vCache;
         private Heap<Expression> _eCache;
-        private Heap<DataSet> _tCache;
+        private Heap<TabularData> _tCache;
         private Heap<MatrixExpression> _mCache;
         private Heap2<ParameterAffinity, bool> _MetaData; // ParameterAffinty = object type, bool == is null variable, to help quickly figure out if something is null
 
@@ -121,7 +121,7 @@ namespace Rye.Methods
         {
             this._vCache = new Heap<ExpressionCollection>();
             this._eCache = new Heap<Expression>();
-            this._tCache = new Heap<DataSet>();
+            this._tCache = new Heap<TabularData>();
             this._mCache = new Heap<MatrixExpression>();
             this._MetaData = new Heap2<ParameterAffinity, bool>();
         }
@@ -137,7 +137,7 @@ namespace Rye.Methods
             get { return this._vCache; }
         }
 
-        public Heap<DataSet> Tables
+        public Heap<TabularData> Tables
         {
             get { return this._tCache; }
         }
@@ -194,7 +194,7 @@ namespace Rye.Methods
             this._MetaData.Allocate(Name, new Tuple<ParameterAffinity, bool>(ParameterAffinity.Expression, Value == null ? true : false));
         }
 
-        public void Add(string Name, DataSet Value)
+        public void Add(string Name, TabularData Value)
         {
             if (this.Exists(Name))
                 throw new ArgumentException(string.Format("Value '{0}' already exists", Name));
@@ -240,6 +240,8 @@ namespace Rye.Methods
 
     public sealed class ParameterCollectionSigniture
     {
+
+        public const string ZERO_PARAMETER = "ZERO";
 
         private Heap3<string, ParameterAffinity, bool> _BaseMap;
         private string _MethodName;
@@ -317,6 +319,10 @@ namespace Rye.Methods
         public void AddElement(string Text)
         {
 
+            // Handle an empty element //
+            if (Text == ZERO_PARAMETER)
+                return;
+
             // Expects: Name|Description|Affinty|Bool
             string[] t = Text.Split('|');
             if (t.Length != 4)
@@ -374,18 +380,23 @@ namespace Rye.Methods
         public static ParameterCollectionSigniture Parse(string Name, string Description, string Text)
         {
 
-            string[] text = Text.Split(';');
             ParameterCollectionSigniture sig = new ParameterCollectionSigniture(Name, Description);
-            foreach (string t in text)
+            if (Text != null)
             {
-                sig.AddElement(t);
+                string[] text = Text.Split(';');
+                foreach (string t in text)
+                {
+                    sig.AddElement(t);
+                }
             }
+
             return sig;
 
         }
 
     }
 
+    /*
     public abstract class StructureMethod : Method
     {
 
@@ -467,6 +478,70 @@ namespace Rye.Methods
         public override Method CloneOfMe()
         {
             return new DynamicStructureMethod(this._Parent, this._Heap, this.Name, this.Parameters, this.CanBeAsync, this._BeginInvoke, this._Invoke, this._EndInvoke);
+        }
+
+    }
+    */
+
+    public sealed class LibraryMethod : Method
+    {
+
+        private Action<ParameterCollection> _BeginInvoke;
+        private Action<ParameterCollection> _Invoke;
+        private Action<ParameterCollection> _EndInvoke;
+        private bool _CanBeAsync = false;
+        private ParameterCollection _Parameters;
+        private string _Name;
+
+        public LibraryMethod(Method Parent, string Name, ParameterCollection Parameters, bool CanBeAsync, 
+            Action<ParameterCollection> Initial, Action<ParameterCollection> Main, Action<ParameterCollection> Finish)
+            :base(Parent)
+        {
+
+            this._CanBeAsync = CanBeAsync;
+            this._Parameters = Parameters;
+            this._Name = Name;
+
+            this._BeginInvoke = Initial;
+            this._Invoke = Main;
+            this._EndInvoke = Finish;
+
+        }
+
+        public LibraryMethod(Method Parent, string Name, ParameterCollection Parameters, bool CanBeAsync,
+            Action<ParameterCollection> Main)
+            : this(Parent, Name, Parameters, CanBeAsync, (x) => { }, Main, (x) => { })
+        {
+        }
+     
+        public override void BeginInvoke()
+        {
+            if (this._BeginInvoke != null)
+                this._BeginInvoke(this._Parameters);
+        }
+
+        public override void Invoke()
+        {
+            this._Invoke(this._Parameters);
+        }
+
+        public override void EndInvoke()
+        {
+            if (this._EndInvoke != null)
+                this._EndInvoke(this._Parameters);
+        }
+
+        public override Method CloneOfMe()
+        {
+            return new LibraryMethod(this._Parent, this._Name, this._Parameters, this.CanBeAsync, this._BeginInvoke, this._Invoke, this._EndInvoke);
+        }
+
+        public override bool CanBeAsync
+        {
+            get
+            {
+                return this._CanBeAsync;
+            }
         }
 
     }

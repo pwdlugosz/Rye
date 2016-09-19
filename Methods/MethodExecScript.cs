@@ -18,7 +18,7 @@ namespace Rye.Methods
         private string _Script;
         private RyeScriptProcessor _engine;
 
-        public MethodExecScript(Method Parent, Workspace Enviro, string Script, Heap<Expression> Parameters)
+        public MethodExecScript(Method Parent, Session Enviro, string Script, Heap<Expression> Parameters)
             :base(Parent)
         {
 

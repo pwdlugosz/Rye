@@ -28,6 +28,8 @@ command
 	| command_debug
 	;
 
+// Loads //
+
 // Debug //
 command_debug
 	: DEBUG_DUMP table_name COMMA expression SEMI_COLON;
@@ -59,17 +61,17 @@ command_declare
 	: K_DECLARE LCURL ((unit_declare_scalar | unit_declare_matrix | unit_declare_lambda) SEMI_COLON)+ RCURL SEMI_COLON
 	;
 unit_declare_scalar 
-	: generic_name K_AS type (ASSIGN expression)?
+	: IDENTIFIER K_AS type (ASSIGN expression)?
 	;
 unit_declare_matrix 
-	: generic_name LBRAC (expression (COMMA expression)?)? RBRAC K_AS type (ASSIGN matrix_expression)?
+	: IDENTIFIER LBRAC (expression (COMMA expression)?)? RBRAC K_AS type (ASSIGN matrix_expression)?
 	;
 unit_declare_lambda
 	: lambda_name LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN K_AS K_LAMBDA ASSIGN expression			// GLOBAL.SQUARE(X,Y) AS LAMBDA = X^2 + Y^2;
 	| lambda_name K_AS K_LAMBDA ASSIGN K_GRADIENT K_OF lambda_name K_OVER IDENTIFIER						// LAMBDA GLOBAL.RATE AS GRADIENT GLOBAL.SQUARE OVER X; WHICH WOULD YEILD 2X
 	;
 lambda_name
-	: IDENTIFIER DOT IDENTIFIER
+	: IDENTIFIER
 	;
 // ------------------------------------------ Sort ------------------------------------------ //
 command_sort
@@ -136,12 +138,15 @@ command_join
 		(join_type SEMI_COLON)?
 		(K_HINT expression SEMI_COLON)?
 	RCURL SEMI_COLON
-	(K_ON LCURL (join_on_unit SEMI_COLON)+ RCURL SEMI_COLON)?
+	join_predicate?
 	append_method
 	;
 
 join_type
 	: K_INNER | K_LEFT | K_RIGHT | K_ANTI K_INNER | K_ANTI K_LEFT | K_ANTI K_RIGHT | K_FULL | K_CROSS
+	;
+join_predicate
+	: (K_ON LCURL (join_on_unit SEMI_COLON)+ RCURL SEMI_COLON)
 	;
 join_on_unit
 	: IDENTIFIER DOT IDENTIFIER (EQ | ASSIGN | K_TO) IDENTIFIER DOT IDENTIFIER
@@ -182,7 +187,7 @@ method
 
 	| K_DO LCURL (method)+ RCURL SEMI_COLON																				# ActBeginEnd // Begin <...> End
 	| K_IF expression K_THEN method (K_ELSE method)?																	# ActIf // IF t == v THEN (x++) ELSE (x--)
-	| K_FOR generic_name ASSIGN expression K_TO expression method											# ActFor // For T = 0 to 10 (I++,I--)
+	| K_FOR generic_name ASSIGN expression K_TO expression (K_BY expression)? method									# ActFor // For T = 0 to 10 (I++,I--)
 	| K_WHILE expression method																							# ActWhile
 	;
 
@@ -204,7 +209,7 @@ structure_method_weak
 	: IDENTIFIER DOT IDENTIFIER (method_param (COMMA method_param)*)? SEMI_COLON
 	;
 structure_method_strict
-	: IDENTIFIER DOT IDENTIFIER LCURL method_param_named+ RCURL SEMI_COLON
+	: IDENTIFIER DOT IDENTIFIER LCURL method_param_named* RCURL SEMI_COLON
 	;
 method_param_named
 	: IDENTIFIER ASSIGN method_param SEMI_COLON

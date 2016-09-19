@@ -17,33 +17,27 @@ namespace Rye.Query
     {
 
         private Volume _data;
-        private List<Header> _FlushedExtents;
         private KeyValueSet _CurrentGrouper;
         private ExpressionCollection _By;
         private AggregateCollection _Over;
         private Filter _Where;
         private Register _MemoryLocation;
         private long _clicks = 0;
+        private Table _Sink;
 
-        public AggregateHashTableProcessNode(int ThreadID, Volume Data, ExpressionCollection Keys, AggregateCollection Values, Filter Where, Register Memory)
-            : base(ThreadID)
+        public AggregateHashTableProcessNode(int ThreadID, Session Session, Volume Data, ExpressionCollection Keys, AggregateCollection Values, 
+            Filter Where, Register Memory, Table Sink)
+            : base(ThreadID, Session)
         {
 
             this._data = Data;
-            this._FlushedExtents = new List<Header>();
             this._CurrentGrouper = new KeyValueSet(Keys, Values);
             this._By = Keys;
             this._Over = Values;
             this._Where = Where;
             this._MemoryLocation = Memory;
-        }
+            this._Sink = Sink;
 
-        public List<Header> Headers
-        {
-            get
-            {
-                return this._FlushedExtents;
-            }
         }
 
         public override void Invoke()
@@ -72,8 +66,7 @@ namespace Rye.Query
                             // (1) convert to a record set
                             // (2) dump it, but save the header
                             // (3) build a new KeyValueSet
-                            Header TempHeader = KeyValueSet.Save(Kernel.TempDirectory, this._CurrentGrouper);
-                            this._FlushedExtents.Add(TempHeader);
+                            KeyValueSet.Save(this._Sink, this._CurrentGrouper);
                             this._clicks += this._CurrentGrouper.BaseComparer.Clicks;
                             this._CurrentGrouper = new KeyValueSet(this._By, this._Over);
 
@@ -90,15 +83,14 @@ namespace Rye.Query
             }
 
             this._clicks += this._CurrentGrouper.BaseComparer.Clicks;
-                       
+
         }
 
         public override void EndInvoke()
         {
             
             // Here, we need to take our current grouper and flush it, then add to the collection of flushed groupers //
-            Header TempHeader = KeyValueSet.Save(Kernel.TempDirectory, this._CurrentGrouper);
-            this._FlushedExtents.Add(TempHeader);
+            KeyValueSet.Save(this._Sink, this._CurrentGrouper);
             this._CurrentGrouper = null;
 
         }
@@ -106,6 +98,12 @@ namespace Rye.Query
         public long Clicks
         {
             get { return this._clicks; }
+        }
+
+        public Table Sink
+        {
+            get { return this._Sink; }
+            set { this._Sink = value; }
         }
 
     }
@@ -127,58 +125,52 @@ namespace Rye.Query
          * 
          * */
 
-        private List<Header> _RawHeaders;
+        private List<long> _IDs;
         private RecordWriter _output;
         private ExpressionCollection _By;
         private AggregateCollection _Over;
         private Register _MemoryLocation;
         private ExpressionCollection _Select;
         private long _Clicks = 0;
+        private Table _Sink;
 
-        public AggregateHashTableConsolidationProcess(ExpressionCollection Keys, AggregateCollection Values, RecordWriter Output, ExpressionCollection Select, Register Memory)
-            : base()
+        public AggregateHashTableConsolidationProcess(Session Session, ExpressionCollection Keys, AggregateCollection Values, RecordWriter Output, 
+            ExpressionCollection Select, Register Memory, Table Sink)
+            : base(Session)
         {
 
-            this._RawHeaders = new List<Header>();
             this._output = Output;
             this._By = Keys;
             this._Over = Values;
             this._Select = Select;
             this._MemoryLocation = Memory;
+            this._Sink = Sink;
 
         }
 
         public override void Consolidate(List<AggregateHashTableProcessNode> Nodes)
         {
             
-            // Combine all headers //
-            this._RawHeaders.Clear();
-            foreach (AggregateHashTableProcessNode q in Nodes)
-            {
-                this._RawHeaders.AddRange(q.Headers);
-                this._Clicks += q.Clicks;
-            }
-
             // Go through an merge groupers accross all headers //
-            for (int i = 0; i < this._RawHeaders.Count; i++)
+            for (int i = 0; i < this._Sink.ExtentCount; i++)
             {
 
                 // Open the left table //
-                KeyValueSet x = KeyValueSet.Open(this._RawHeaders[i], this._By, this._Over);
+                KeyValueSet x = KeyValueSet.Open(this._Sink, i, this._By, this._Over);
 
                 // Cross match each grouper //
-                for (int j = i + 1; j < this._RawHeaders.Count; j++)
+                for (int j = i + 1; j < this._Sink.ExtentCount; j++)
                 {
 
                     // Get the right side of the comparison //
-                    KeyValueSet y = KeyValueSet.Open(this._RawHeaders[j], this._By, this._Over);
+                    KeyValueSet y = KeyValueSet.Open(this._Sink, j, this._By, this._Over);
 
                     // Update x; entry R is in x and y, R in x will be updated while R in y will be removed; if R is not in both, nothing happens
                     if (y.Count != 0)
                         KeyValueSet.Union(x, y);
 
-                    // Dump the header //
-                    KeyValueSet.Save(this._RawHeaders[j], y);
+                    // Dump the table //
+                    KeyValueSet.Resave(this._Sink, y);
 
                 }
 
@@ -187,11 +179,8 @@ namespace Rye.Query
 
             }
 
-            // Burn all the row headers //
-            for (int i = 0; i < this._RawHeaders.Count; i++)
-            {
-                Kernel.RequestDropTable(this._RawHeaders[i].Path);
-            }
+            // Drop the table //
+            this._Session.Kernel.RequestDropTable(this._Sink.Header.Path);
 
             // Close the stream //
             this._output.Close();
@@ -214,8 +203,9 @@ namespace Rye.Query
         private ExpressionCollection _Maps;
         private AggregateCollection _Reducers;
         private Dictionary<Record, CompoundRecord> _cache = new Dictionary<Record, CompoundRecord>();
-        private long _Capacity = Extent.DEFAULT_MAX_RECORD_COUNT;
+        private long _Capacity = 0;
         private RecordComparer _BaseComparer;
+        private long _SinkID;
 
         // Constructor //
         public KeyValueSet(ExpressionCollection Fields, AggregateCollection Aggregates)
@@ -224,6 +214,7 @@ namespace Rye.Query
             this._Reducers = Aggregates;
             this._BaseComparer = new RecordComparer();
             this._cache = new Dictionary<Record, CompoundRecord>(this._BaseComparer);
+            this._Capacity = Extent.DEFAULT_PAGE_SIZE / Schema.Join(Fields.Columns, Aggregates.GetInterimSchema).RecordDiskCost;
         }
 
         // Properties //
@@ -246,6 +237,11 @@ namespace Rye.Query
         {
             get { return this._Capacity; }
             set { this._Capacity = value; }
+        }
+
+        public long SinkID
+        {
+            get { return this._SinkID; }
         }
 
         public ExpressionCollection BaseMappers
@@ -440,28 +436,61 @@ namespace Rye.Query
 
         }
 
-        public static Header Save(string Dir, KeyValueSet Data)
+        public static void Save(Table Sink, KeyValueSet Data)
         {
+
+            // Create the extent //
             Extent e = Data.ToInterim();
-            Header h = Header.NewExtentHeader(Dir, Header.TempName(), 0, e.Columns.Count, e.MaxRecords);
-            e.Header = h;
-            Kernel.RequestFlushExtent(e);
-            return h;
+
+            // Dump the extent //
+            Sink.AddExtent(e);
+
+            // Get the id of the saved extent //
+            Data._SinkID = e.Header.ID;
+
         }
 
-        public static void Save(Header H, KeyValueSet Data)
+        public static void Resave(Table Sink, KeyValueSet Data)
         {
+
+            // Create the extent //
             Extent e = Data.ToInterim();
-            e.Header = H;
-            Kernel.RequestFlushExtent(e);
+
+            // Load the header //
+            e.Header = Sink.RenderHeader((int)Data.SinkID);
+
+            // Dump the extent //
+            Sink.SetExtent(e);
+
         }
 
-        public static KeyValueSet Open(Header h, ExpressionCollection Fields, AggregateCollection Aggregates)
+        public static KeyValueSet Open(Table Sink, long ID, ExpressionCollection Fields, AggregateCollection Aggregates)
         {
-            Extent e = Kernel.RequestBufferExtent(h.Path);
+            
+            // Build the extent //
+            Extent e = Sink.GetExtent((int)ID);
+            
+            // Build the KVS //
             KeyValueSet kvs = new KeyValueSet(Fields, Aggregates);
+
+            // Import the interim data //
             kvs.FromInterim(e);
+
+            // Return //
             return kvs;
+
+        }
+
+        public static Table DataSink(Session Session, ExpressionCollection Fields, AggregateCollection Aggregates)
+        {
+
+            // Build the schema //
+            Schema s = Schema.Join(Fields.Columns, Aggregates.GetInterimSchema);
+
+            // Create the table //
+            Table t = Table.CreateTable(Session.Kernel, Session.Kernel.TempDirectory, Header.TempName(), s);
+            return t;
+
         }
 
     }
@@ -489,9 +518,9 @@ namespace Rye.Query
         private Record _WorkingKey;
         private CompoundRecord _WorkingValue;
 
-        public AggregateOrderedProcessNode(int ThreadID, Volume Data, ExpressionCollection Keys, AggregateCollection Values, Filter Where, Register Memory, 
+        public AggregateOrderedProcessNode(int ThreadID, Session Session, Volume Data, ExpressionCollection Keys, AggregateCollection Values, Filter Where, Register Memory, 
             ExpressionCollection OutputKeys, Register OutputMemory, RecordWriter Writer)
-            : base(ThreadID)
+            : base(ThreadID, Session)
         {
 
             this._data = Data;
@@ -565,7 +594,7 @@ namespace Rye.Query
 
                     } // End where 
 
-                } // End Unit Extent Loop 
+                } // End Unit Shard Loop 
 
             } // End Volume Loop
 
@@ -639,8 +668,8 @@ namespace Rye.Query
         private ExpressionCollection _Select;
         private long _Clicks = 0;
 
-        public AggregateOrderedConsolidationProcess()
-            : base()
+        public AggregateOrderedConsolidationProcess(Session Session)
+            : base(Session)
         {
         }
 

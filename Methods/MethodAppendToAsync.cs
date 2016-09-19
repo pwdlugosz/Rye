@@ -30,7 +30,7 @@ namespace Rye.Methods
             this._tParentData = UseParentData;
             this._eParentData = null;
             this._RecordCache = new Extent(UseParentData.Columns);
-            this._RecordCache.MaxRecords = UseParentData.MaxRecords;
+            this._RecordCache.Header.PageSize = UseParentData.Header.PageSize;
             this._Fields = UseFields;
             this._IsTable = true;
 
@@ -46,7 +46,7 @@ namespace Rye.Methods
             this._tParentData = null;
             this._eParentData = UseParentData;
             this._RecordCache = new Extent(UseParentData.Columns);
-            this._RecordCache.MaxRecords = UseParentData.MaxRecords;
+            this._RecordCache.Header.PageSize = UseParentData.Header.PageSize;
             this._Fields = UseFields;
             this._IsTable = false;
 
@@ -61,11 +61,11 @@ namespace Rye.Methods
             {
                 this._tParentData.AddExtent(this._RecordCache);
                 this._RecordCache = new Extent(this._tParentData.Columns);
-                this._RecordCache.MaxRecords = this._tParentData.MaxRecords;
+                this._RecordCache.Header.PageSize = this._tParentData.Header.PageSize;
             }
             else if (this._RecordCache.IsFull)
             {
-                throw new IndexOutOfRangeException("Extent is full; cannot add any more records");
+                throw new IndexOutOfRangeException("Shard is full; cannot add any more records");
             }
 
             // Accumulate the record //
@@ -153,7 +153,7 @@ namespace Rye.Methods
             this._tParentData = UseParentData;
             this._eParentData = null;
             this._RecordCache = new Extent(UseParentData.Columns);
-            this._RecordCache.MaxRecords = UseParentData.MaxRecords;
+            this._RecordCache.Header.PageSize = UseParentData.Header.PageSize;
             this._Fields = UseFields;
             this._IsTable = true;
 
@@ -169,7 +169,7 @@ namespace Rye.Methods
             this._tParentData = null;
             this._eParentData = UseParentData;
             this._RecordCache = new Extent(UseParentData.Columns);
-            this._RecordCache.MaxRecords = UseParentData.MaxRecords;
+            this._RecordCache.Header.PageSize = UseParentData.Header.PageSize;
             this._Fields = UseFields;
             this._IsTable = false;
 
@@ -179,7 +179,7 @@ namespace Rye.Methods
         public override void BeginInvoke()
         {
             this._CurrentCount = this._RecordCache.Count;
-            this._MaxCount = (int)this._RecordCache.MaxRecords;
+            this._MaxCount = (int)this._RecordCache.MaxRecordEstimate;
             this._IsFull = this._CurrentCount >= this._MaxCount;
         }
 
@@ -194,13 +194,13 @@ namespace Rye.Methods
             {
                 this._tParentData.AddExtent(this._RecordCache);
                 this._RecordCache = new Extent(this._tParentData.Columns);
-                this._RecordCache.MaxRecords = this._tParentData.MaxRecords;
+                this._RecordCache.Header.PageSize = this._tParentData.Header.PageSize;
                 this._CurrentCount = 0;
-                this._MaxCount = (int)this._RecordCache.MaxRecords;
+                this._MaxCount = (int)this._RecordCache.MaxRecordEstimate;
             }
             else if (this._IsFull)
             {
-                throw new IndexOutOfRangeException("Extent is full; cannot add any more records");
+                throw new IndexOutOfRangeException("Shard is full; cannot add any more records");
             }
 
             // Accumulate the record //

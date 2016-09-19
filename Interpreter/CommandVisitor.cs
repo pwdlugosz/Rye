@@ -18,9 +18,9 @@ namespace Rye.Interpreter
     public sealed class CommandVisitor : RyeParserBaseVisitor<int>
     {
 
-        private Workspace _enviro;
+        private Session _enviro;
 
-        public CommandVisitor(Workspace Enviro)
+        public CommandVisitor(Session Enviro)
             : base()
         {
             this._enviro = Enviro;
@@ -44,7 +44,7 @@ namespace Rye.Interpreter
             sw.Stop();
 
             this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);
-            this._enviro.IO.WriteLine(m.Message());
+            //this._enviro.IO.WriteLine(m.Message());
             this._enviro.IO.WriteLine();
 
 
@@ -70,7 +70,7 @@ namespace Rye.Interpreter
                 {
                     throw new RyeCompileException("Directory does not exist: \n\t{0}", path);
                 }
-                this._enviro.Connections.Reallocate(alias, path);
+                this._enviro.SetConnection(alias, path);
                 sb.AppendLine(string.Format("\t{0} : {1}", alias, path));
             }
             
@@ -90,7 +90,7 @@ namespace Rye.Interpreter
             StringBuilder sb = new StringBuilder();
             foreach (Antlr4.Runtime.Tree.ITerminalNode t in context.IDENTIFIER())
             {
-                this._enviro.Connections.Deallocate(t.GetText());
+                //this._enviro.Connections.Deallocate(t.GetText());
                 sb.AppendLine("\t" + t.GetText());
             }
 
@@ -116,11 +116,8 @@ namespace Rye.Interpreter
             foreach (RyeParser.Unit_declare_scalarContext ctx1 in context.unit_declare_scalar())
             {
 
-                string sname = CompilerHelper.GetParentName(ctx1.generic_name(), this._enviro.Global.Name);
-                if (!this._enviro.Structures.Exists(sname))
-                    throw new RyeCompileException("Structure '{0}' does not exist", sname);
-                CompilerHelper.AppendScalar(this._enviro, this._enviro.Structures[sname], exp, ctx1);
-                sb.AppendLine("\t" + sname + "." + CompilerHelper.GetVariableName(ctx1.generic_name()) + " AS " + ctx1.type().GetText());
+                CompilerHelper.AppendScalar(this._enviro, this._enviro.Scalars, exp, ctx1);
+                sb.AppendLine("\t" + ctx1.IDENTIFIER().GetText() + " AS " + ctx1.type().GetText());
 
             }
 
@@ -128,11 +125,8 @@ namespace Rye.Interpreter
             foreach (RyeParser.Unit_declare_matrixContext ctx2 in context.unit_declare_matrix())
             {
 
-                string sname = CompilerHelper.GetParentName(ctx2.generic_name(), this._enviro.Global.Name);
-                if (!this._enviro.Structures.Exists(sname))
-                    throw new RyeCompileException("Structure '{0}' does not exist", sname);
-                CompilerHelper.AppendMatrix(this._enviro, this._enviro.Structures[sname], exp, ctx2);
-                sb.AppendLine("\t" + sname + "." + CompilerHelper.GetVariableName(ctx2.generic_name()) + "[] AS " + ctx2.type().GetText());
+                CompilerHelper.AppendMatrix(this._enviro, this._enviro.Matrixes, exp, ctx2);
+                sb.AppendLine("\t" + ctx2.IDENTIFIER().GetText() + "[] AS " + ctx2.type().GetText());
 
             }
 
@@ -140,10 +134,8 @@ namespace Rye.Interpreter
             foreach (RyeParser.Unit_declare_lambdaContext ctx3 in context.unit_declare_lambda())
             {
 
-                string sname = ctx3.lambda_name()[0].IDENTIFIER()[0].GetText();
-                if (!this._enviro.Structures.Exists(sname))
-                    throw new RyeCompileException("Structure '{0}' does not exist", sname);
-                CompilerHelper.AppendLambda(this._enviro, this._enviro.Structures[sname], ctx3);
+                string sname = ctx3.lambda_name()[0].IDENTIFIER().GetText();
+                CompilerHelper.AppendLambda(this._enviro, ctx3);
                 sb.AppendLine("\t" + ctx3.lambda_name()[0].GetText());
 
             }
@@ -175,9 +167,9 @@ namespace Rye.Interpreter
             }
 
             // get the size //
-            long extent_size = Extent.EstimateMaxRecords(cols);
+            long page_size = Extent.DEFAULT_PAGE_SIZE;
             if (context.LITERAL_INT() != null)
-                extent_size = long.Parse(context.LITERAL_INT().GetText());
+                page_size = long.Parse(context.LITERAL_INT().GetText());
             
             // Get the names //
             string sname = context.table_name().IDENTIFIER()[0].GetText();
@@ -185,15 +177,14 @@ namespace Rye.Interpreter
             
             // Check we need to build this //
             bool Table = false;
-            if (this._enviro.Connections.Exists(sname))
+            if (this._enviro.ConnectionExists(sname))
             {
-                Table t = new Table(this._enviro.Connections[sname], tname, cols, extent_size);
+                Table t = this._enviro.CreateTable(sname, tname, cols, (int)page_size);
                 Table = true;
             }
-            else if (this._enviro.Structures.Exists(sname))
+            else if (this._enviro.IsGlobal(sname))
             {
-                Extent e = new Extent(cols, Header.NewMemoryOnlyExtentHeader(sname, cols.Count, extent_size));
-                this._enviro.Structures[sname].Extents.Reallocate(tname, e);
+                Extent e = this._enviro.CreateExtent(tname, cols, (int)page_size);
             }
             else
             {
@@ -215,7 +206,7 @@ namespace Rye.Interpreter
             this._enviro.IO.WriteHeader("Select");
             
             // Get some high level data first, such as thread count, 'where' clause, and source data //
-            DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
+            TabularData data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
             int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
             List<SelectProcessNode> nodes = new List<SelectProcessNode>();
             string alias = (context.base_clause().IDENTIFIER() == null ? data.Header.Name : context.base_clause().IDENTIFIER().GetText());
@@ -228,49 +219,43 @@ namespace Rye.Interpreter
                 ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
 
                 // Create the local heap //
-                MemoryStructure local = new MemoryStructure("LOCAL");
-                local.Scalars.Allocate(SelectProcessNode.ROW_ID, Cell.ZeroValue(CellAffinity.INT));
-                local.Scalars.Allocate(SelectProcessNode.EXTENT_ID, Cell.ZeroValue(CellAffinity.INT));
-                local.Scalars.Allocate(SelectProcessNode.KEY_CHANGE, Cell.FALSE);
-                local.Scalars.Allocate(SelectProcessNode.IS_FIRST, Cell.FALSE);
-                local.Scalars.Allocate(SelectProcessNode.IS_LAST, Cell.FALSE);
+                Heap<Cell> lscalars = new Heap<Cell>();
+                Heap<CellMatrix> lmatrixes = new Heap<CellMatrix>();
+                lscalars.Allocate(SelectProcessNode.ROW_ID, Cell.ZeroValue(CellAffinity.INT));
+                lscalars.Allocate(SelectProcessNode.EXTENT_ID, Cell.ZeroValue(CellAffinity.INT));
+                lscalars.Allocate(SelectProcessNode.KEY_CHANGE, Cell.FALSE);
+                lscalars.Allocate(SelectProcessNode.IS_FIRST, Cell.FALSE);
+                lscalars.Allocate(SelectProcessNode.IS_LAST, Cell.FALSE);
 
                 // Create a register //
                 Register reg = new Register(alias, data.Columns);
 
                 // Accumulate the heap and register to the expression visitor //
                 exp.AddRegister(alias, reg);
-                exp.AddStructure("LOCAL", local);
-                exp.SetPrimary(local);
+                exp.SetSecondary("LOCAL", lscalars, lmatrixes);
 
                 // Process the 'by' clause //
                 ExpressionCollection by_clause = (context.by_clause() == null ? null : exp.ToNodes(context.by_clause().expression_or_wildcard_set()));
 
                 // Create a matrix visitor //
                 MatrixExpressionVisitor mat = new MatrixExpressionVisitor(exp, this._enviro);
-                mat.AddStructure("LOCAL", local);
                 
                 // Create a method visitor //
                 MethodVisitor met = new MethodVisitor(exp, mat, this._enviro);
-                met.AddStructure("LOCAL", local);
-
+                
                 // Load the local heap //
                 if (context.command_declare() != null)
                 {
 
                     foreach (RyeParser.Unit_declare_scalarContext ctx in context.command_declare().unit_declare_scalar())
                     {
-                        string sname = CompilerHelper.GetParentName(ctx.generic_name(), "LOCAL");
-                        if (!StringComparer.OrdinalIgnoreCase.Equals(sname, "LOCAL"))
-                            throw new RyeCompileException("Attempting to declare a variable outside of the local scope '{0}'", sname);
-                        CompilerHelper.AppendScalar(this._enviro, local, exp, ctx);
+                        string sname = ctx.IDENTIFIER().GetText();
+                        CompilerHelper.AppendScalar(this._enviro, lscalars, exp, ctx);
                     }
                     foreach (RyeParser.Unit_declare_matrixContext ctx in context.command_declare().unit_declare_matrix())
                     {
-                        string sname = CompilerHelper.GetParentName(ctx.generic_name(), "LOCAL");
-                        if (!StringComparer.OrdinalIgnoreCase.Equals(sname, "LOCAL"))
-                            throw new RyeCompileException("Attempting to declare a matrix outside of the local scope '{0}'", sname);
-                        CompilerHelper.AppendMatrix(this._enviro, local, exp, ctx);
+                        string sname = ctx.IDENTIFIER().GetText();
+                        CompilerHelper.AppendMatrix(this._enviro, lmatrixes, exp, ctx);
                     }
 
                 }
@@ -295,13 +280,13 @@ namespace Rye.Interpreter
                 }
                 
                 // Render the worker node //
-                SelectProcessNode node = new SelectProcessNode(i, data.CreateVolume(i, threads), reg, local, map, reduce, where, by_clause);
+                SelectProcessNode node = new SelectProcessNode(i, this._enviro, data.CreateVolume(i, threads), reg, lscalars, lmatrixes, map, reduce, where, by_clause);
                 nodes.Add(node);
 
             }
 
             // Render the reducer //
-            SelectProcessConsolidation reducer = new SelectProcessConsolidation();
+            SelectProcessConsolidation reducer = new SelectProcessConsolidation(this._enviro);
 
             // Create a process //
             QueryProcess<SelectProcessNode> process = new QueryProcess<SelectProcessNode>(nodes, reducer);
@@ -334,7 +319,7 @@ namespace Rye.Interpreter
             this._enviro.IO.WriteHeader("Update");
             
             // Get the source data //
-            DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
+            TabularData data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
             string alias = (context.base_clause().IDENTIFIER() != null ? context.base_clause().IDENTIFIER().GetText() : "T");
             int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
 
@@ -366,16 +351,16 @@ namespace Rye.Interpreter
 
                 if (data.Header.IsMemoryOnly)
                 {
-                    nodes.Add(new UpdateProcessNode(0, null, data.CreateVolume(i, threads), key, values, where, mem));
+                    nodes.Add(new UpdateProcessNode(0, this._enviro, null, data.CreateVolume(i, threads), key, values, where, mem));
                 }
                 else
                 {
-                    nodes.Add(new UpdateProcessNode(i, data as Table, data.CreateVolume(i, threads), key, values, where, mem));
+                    nodes.Add(new UpdateProcessNode(i, this._enviro, data as Table, data.CreateVolume(i, threads), key, values, where, mem));
                 }
 
             }
 
-            QueryProcess<UpdateProcessNode> tprocess = new QueryProcess<UpdateProcessNode>(nodes, new UpdateProcessConsolidation());
+            QueryProcess<UpdateProcessNode> tprocess = new QueryProcess<UpdateProcessNode>(nodes, new UpdateProcessConsolidation(this._enviro));
             Stopwatch sw = Stopwatch.StartNew();
             if (this._enviro.AllowAsync && threads > 1)
                 tprocess.ExecuteAsync();
@@ -399,7 +384,7 @@ namespace Rye.Interpreter
             this._enviro.IO.WriteHeader("Delete");
             
             // Get the source data //
-            DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
+            TabularData data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
             string alias = (context.base_clause().IDENTIFIER() != null ? context.base_clause().IDENTIFIER().GetText() : "T");
             int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
 
@@ -419,17 +404,17 @@ namespace Rye.Interpreter
 
                 if (data.Header.IsMemoryOnly)
                 {
-                    nodes.Add(new DeleteProcessNode(0, null, data.CreateVolume(i, threads), where, mem));
+                    nodes.Add(new DeleteProcessNode(0, this._enviro, null, data.CreateVolume(i, threads), where, mem));
                 }
                 else
                 {
-                    nodes.Add(new DeleteProcessNode(i, data as Table, data.CreateVolume(i, threads), where, mem));
+                    nodes.Add(new DeleteProcessNode(i, this._enviro, data as Table, data.CreateVolume(i, threads), where, mem));
                 }
 
             }
 
             // Build the consolidator //
-            DeleteProcessConsolidation reducer = new DeleteProcessConsolidation();
+            DeleteProcessConsolidation reducer = new DeleteProcessConsolidation(this._enviro);
 
             // Build the processor //
             QueryProcess<DeleteProcessNode> process = new QueryProcess<DeleteProcessNode>(nodes, reducer);
@@ -475,7 +460,7 @@ namespace Rye.Interpreter
             }
 
             // Otherwise, lets optimize //
-            DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
+            TabularData data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
             int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
             string alias = (context.base_clause().IDENTIFIER() == null ? data.Header.Name : context.base_clause().IDENTIFIER().GetText());
 
@@ -511,10 +496,10 @@ namespace Rye.Interpreter
         {
 
             // Notify //
-            this._enviro.IO.WriteHeader("Aggregate - Hash Table");
+            this._enviro.IO.WriteHeader("Aggregate - Hash ShartTable");
 
             // Get some high level data first, such as thread count, 'where' clause, and source data //
-            DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
+            TabularData data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
             int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
             List<AggregateHashTableProcessNode> nodes = new List<AggregateHashTableProcessNode>();
             string alias = (context.base_clause().IDENTIFIER() == null ? data.Header.Name : context.base_clause().IDENTIFIER().GetText());
@@ -535,7 +520,7 @@ namespace Rye.Interpreter
                 AggregateCollection aggs = in_exp.ToReducers(context.over_clause().beta_reduction_list());
                 Filter where = CompilerHelper.GetWhere(in_exp, context.base_clause().where_clause());
 
-                AggregateHashTableProcessNode n = new AggregateHashTableProcessNode(i, data.CreateVolume(i, threads), keys, aggs, where, in_mem);
+                AggregateHashTableProcessNode n = new AggregateHashTableProcessNode(i, this._enviro, data.CreateVolume(i, threads), keys, aggs, where, in_mem, null);
                 nodes.Add(n);
 
                 // Save the key/value //
@@ -551,12 +536,19 @@ namespace Rye.Interpreter
             out_exp.AddRegister("OUT", out_mem); // TODO, think of a better alias to use
             ExpressionCollection out_keys = out_exp.ToNodes(context.append_method().expression_or_wildcard_set());
 
+            // Create the sink table //
+            Table sink = KeyValueSet.DataSink(this._enviro, FinalKey, FinalValue);
+            foreach (AggregateHashTableProcessNode node in nodes)
+            {
+                node.Sink = sink;
+            }
+
             // Render the record writer that will be used to fill the output //
-            DataSet out_data = CompilerHelper.RenderData(this._enviro, out_keys, context.append_method());
+            TabularData out_data = CompilerHelper.RenderData(this._enviro, out_keys, context.append_method());
             RecordWriter out_writer = out_data.OpenWriter();
 
             // Create the consolidation process //
-            AggregateHashTableConsolidationProcess reducer = new AggregateHashTableConsolidationProcess(FinalKey, FinalValue, out_writer, out_keys, out_mem);
+            AggregateHashTableConsolidationProcess reducer = new AggregateHashTableConsolidationProcess(this._enviro, FinalKey, FinalValue, out_writer, out_keys, out_mem, sink);
 
             // Build the query process that will handle this //
             QueryProcess<AggregateHashTableProcessNode> process = new QueryProcess<AggregateHashTableProcessNode>(nodes, reducer);
@@ -589,13 +581,13 @@ namespace Rye.Interpreter
             this._enviro.IO.WriteHeader("Aggregate - Order");
 
             // Get some high level data first, such as thread count, 'where' clause, and source data //
-            DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
+            TabularData data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
             int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
             List<AggregateOrderedProcessNode> nodes = new List<AggregateOrderedProcessNode>();
             string alias = (context.base_clause().IDENTIFIER() == null ? data.Header.Name : context.base_clause().IDENTIFIER().GetText());
 
             // Create all the aggregate process nodes //
-            DataSet out_data = this.RenderAggregateDestination(context);
+            TabularData out_data = this.RenderAggregateDestination(context);
             for (int i = 0; i < threads; i++)
             {
 
@@ -620,13 +612,13 @@ namespace Rye.Interpreter
                 RecordWriter out_writer = out_data.OpenWriter();
 
                 // Render the node //
-                AggregateOrderedProcessNode n = new AggregateOrderedProcessNode(i, data.CreateVolume(i, threads), keys, aggs, where, in_mem, out_keys, out_mem, out_writer);
+                AggregateOrderedProcessNode n = new AggregateOrderedProcessNode(i, this._enviro, data.CreateVolume(i, threads), keys, aggs, where, in_mem, out_keys, out_mem, out_writer);
                 nodes.Add(n);
 
             }
 
             // Create the consolidation process //
-            AggregateOrderedConsolidationProcess reducer = new AggregateOrderedConsolidationProcess();
+            AggregateOrderedConsolidationProcess reducer = new AggregateOrderedConsolidationProcess(this._enviro);
 
             // Build the query process that will handle this //
             QueryProcess<AggregateOrderedProcessNode> process = new QueryProcess<AggregateOrderedProcessNode>(nodes, reducer);
@@ -660,11 +652,11 @@ namespace Rye.Interpreter
 
         }
 
-        private DataSet RenderAggregateDestination(RyeParser.Command_aggregateContext context)
+        private TabularData RenderAggregateDestination(RyeParser.Command_aggregateContext context)
         {
 
             // Get some high level data first, such as thread count, 'where' clause, and source data //
-            DataSet data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
+            TabularData data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
             string alias = (context.base_clause().IDENTIFIER() == null ? data.Header.Name : context.base_clause().IDENTIFIER().GetText());
 
             // Construct the expression visitor and memory register used in the aggregation process //
@@ -688,7 +680,7 @@ namespace Rye.Interpreter
 
         }
 
-        private PreProcessor RenderAggregatePreProcessor(RyeParser.Command_aggregateContext context, DataSet Data, string Alias)
+        private PreProcessor RenderAggregatePreProcessor(RyeParser.Command_aggregateContext context, TabularData Data, string Alias)
         {
 
             // Construct the expression visitor and memory register used in the aggregation process //
@@ -718,11 +710,11 @@ namespace Rye.Interpreter
             this._enviro.IO.WriteHeader("Sort");
             
             // Get the data //
-            DataSet data = CompilerHelper.CallData(this._enviro, context.table_name());
-            string alias = (context.K_AS() == null ? data.Name : context.IDENTIFIER().GetText());
+            TabularData data = CompilerHelper.CallData(this._enviro, context.table_name());
+            string alias = (context.K_AS() == null ? data.Header.Name : context.IDENTIFIER().GetText());
             
             // Create a visitor / register //
-            Register r = new Register(data.Name, data.Columns);
+            Register r = new Register(data.Header.Name, data.Columns);
             ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
             exp.AddRegister(alias, r);
 
@@ -800,8 +792,8 @@ namespace Rye.Interpreter
             this._enviro.IO.WriteHeader("Join");
                 
             // Get each table //
-            DataSet DLeft = CompilerHelper.CallData(this._enviro, context.table_name()[0]);
-            DataSet DRight = CompilerHelper.CallData(this._enviro, context.table_name()[1]);
+            TabularData DLeft = CompilerHelper.CallData(this._enviro, context.table_name()[0]);
+            TabularData DRight = CompilerHelper.CallData(this._enviro, context.table_name()[1]);
 
             // Get the aliases //
             string ALeft = context.IDENTIFIER()[0].GetText();
@@ -815,9 +807,11 @@ namespace Rye.Interpreter
             Cell hint = CompilerHelper.GetHint(this._enviro, context);
 
             // Create an algorithm //
-            JoinAlgorithm Engine = new NestedLoop();
-            if (context.join_on_unit() != null && hint.valueSTRING.ToUpper() != "LOOP")
-                Engine = new SortMerge();
+            JoinAlgorithm Engine = new SortMerge();
+            if (context.join_predicate() == null || hint.valueSTRING.ToUpper() == "LOOP")
+            {
+                Engine = new NestedLoop();
+            }
 
             // Get the join type //
             JoinType t = this.RenderJoinType(context.join_type());
@@ -828,7 +822,7 @@ namespace Rye.Interpreter
             {
 
                 // Create a record comparer //
-                KeyedRecordComparer rc = this.RenderJoinRecordComparer(DLeft.Columns, DRight.Columns, ALeft, ARight, context.join_on_unit());
+                KeyedRecordComparer rc = this.RenderJoinRecordComparer(DLeft.Columns, DRight.Columns, ALeft, ARight, context.join_predicate());
 
                 // Create out registers //
                 Register MemLeft = new Register(ALeft, DLeft.Columns);
@@ -846,11 +840,11 @@ namespace Rye.Interpreter
                 ExpressionCollection select = exp.ToNodes(context.append_method().expression_or_wildcard_set());
 
                 // Get the output table //
-                DataSet OutSet = CompilerHelper.RenderData(this._enviro, select, context.append_method());
+                TabularData OutSet = CompilerHelper.RenderData(this._enviro, select, context.append_method());
                 RecordWriter w = OutSet.OpenWriter();
 
                 // Create the new join node //
-                JoinProcessNode node = new JoinProcessNode(i, Engine, t, DLeft.CreateVolume(i, Threads), MemLeft, DRight.CreateVolume(), MemRight, rc, F, select, w);
+                JoinProcessNode node = new JoinProcessNode(i, this._enviro, Engine, t, DLeft.CreateVolume(i, Threads), MemLeft, DRight.CreateVolume(), MemRight, rc, F, select, w);
 
                 // Add the node to collection //
                 Nodes.Add(node);
@@ -858,18 +852,18 @@ namespace Rye.Interpreter
             }
 
             // Create the process //
-            JoinConsolidation reducer = new JoinConsolidation();
+            JoinConsolidation reducer = new JoinConsolidation(this._enviro);
             QueryProcess<JoinProcessNode> process = new QueryProcess<JoinProcessNode>(Nodes, reducer);
 
             // Create a record comparer //
             if (Engine.BaseJoinAlgorithmType == JoinAlgorithmType.SortMerge)
             {
 
-                KeyedRecordComparer comp = this.RenderJoinRecordComparer(DLeft.Columns, DRight.Columns, ALeft, ARight, context.join_on_unit());
+                KeyedRecordComparer comp = this.RenderJoinRecordComparer(DLeft.Columns, DRight.Columns, ALeft, ARight, context.join_predicate());
 
                 if (KeyComparer.IsStrongSubset(DLeft.SortBy, comp.LeftKey))
                 {
-                    this._enviro.IO.WriteLine("Join optimized for '{0}' by using pre-sorted data", DLeft.Name);
+                    this._enviro.IO.WriteLine("Join optimized for '{0}' by using pre-sorted data", DLeft.Header.Name);
                 }
                 else
                 {
@@ -878,7 +872,7 @@ namespace Rye.Interpreter
 
                 if (KeyComparer.IsStrongSubset(DRight.SortBy, comp.RightKey))
                 {
-                    this._enviro.IO.WriteLine("Join optimized for '{0}' by using pre-sorted data", DRight.Name);
+                    this._enviro.IO.WriteLine("Join optimized for '{0}' by using pre-sorted data", DRight.Header.Name);
                 }
                 else
                 {
@@ -910,19 +904,24 @@ namespace Rye.Interpreter
 
         }
 
-        private KeyedRecordComparer RenderJoinRecordComparer(Schema SLeft, Schema SRight, string ALeft, string ARight, RyeParser.Join_on_unitContext[] Predicates)
+        private KeyedRecordComparer RenderJoinRecordComparer(Schema SLeft, Schema SRight, string ALeft, string ARight, RyeParser.Join_predicateContext Predicates)
         {
 
             Key KLeft = new Key();
             Key KRight = new Key();
 
-            for (int i = 0; i < Predicates.Length; i++)
+            if (Predicates == null)
+            {
+                return new KeyedRecordComparer(KLeft, KRight);
+            }
+
+            for (int i = 0; i < Predicates.join_on_unit().Length; i++)
             {
 
-                string AL = Predicates[i].IDENTIFIER()[0].GetText();
-                string CL = Predicates[i].IDENTIFIER()[1].GetText();
-                string AR = Predicates[i].IDENTIFIER()[2].GetText();
-                string CR = Predicates[i].IDENTIFIER()[3].GetText();
+                string AL = Predicates.join_on_unit()[i].IDENTIFIER()[0].GetText();
+                string CL = Predicates.join_on_unit()[i].IDENTIFIER()[1].GetText();
+                string AR = Predicates.join_on_unit()[i].IDENTIFIER()[2].GetText();
+                string CR = Predicates.join_on_unit()[i].IDENTIFIER()[3].GetText();
 
                 if (AL == ALeft && AR == ARight)
                 {
@@ -991,24 +990,6 @@ namespace Rye.Interpreter
             }
 
             throw new RyeCompileException("Invalid join type '{0}'", context.GetText());
-
-        }
-
-        // Debug //
-        public override int VisitCommand_debug(RyeParser.Command_debugContext context)
-        {
-
-            // Get the data //
-            DataSet data = CompilerHelper.CallData(this._enviro, context.table_name());
-           
-            // Get the string //
-            ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
-            string path = exp.ToNode(context.expression()).Evaluate().valueSTRING;
-
-            // Dump //
-            Kernel.TextDump(data, path,',');
-
-            return 1;
 
         }
 

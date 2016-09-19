@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Rye.Data;
 using Rye.Expressions;
 using Rye.Structures;
+using Rye.Libraries;
 
 namespace Rye.Interpreter
 {
@@ -70,7 +71,7 @@ namespace Rye.Interpreter
 
         }
 
-        public static Cell GetHint(Workspace Enviro, RyeParser.Base_clauseContext context)
+        public static Cell GetHint(Session Enviro, RyeParser.Base_clauseContext context)
         {
 
             if (context.K_HINT() == null)
@@ -80,7 +81,7 @@ namespace Rye.Interpreter
 
         }
 
-        public static Cell GetHint(Workspace Enviro, RyeParser.Command_joinContext context)
+        public static Cell GetHint(Session Enviro, RyeParser.Command_joinContext context)
         {
 
             if (context.K_HINT() == null)
@@ -91,42 +92,35 @@ namespace Rye.Interpreter
         }
 
         // Get the data //
-        public static DataSet CallData(Workspace Enviro, RyeParser.Table_nameContext context)
+        public static TabularData CallData(Session Enviro, RyeParser.Table_nameContext context)
         {
 
             // Get the name //
             string db_name = context.IDENTIFIER()[0].GetText();
             string t_name = context.IDENTIFIER()[1].GetText();
 
-            if (Enviro.Connections.Exists(db_name))
+            if (Enviro.TableExists(db_name, t_name))
             {
                 return Enviro.GetTable(db_name, t_name);
             }
-            else if (Enviro.Structures.Exists(db_name))
+            else if (Enviro.IsGlobal(db_name) && Enviro.ExtentExists(t_name))
             {
-                if (Enviro.Structures[db_name].Extents.Exists(t_name))
-                {
-                    return Enviro.Structures[db_name].Extents[t_name];
-                }
-                else
-                {
-                    throw new RyeParseException("Extent '{0}' does not exist in '{1}'", t_name, db_name);
-                }
+                return Enviro.GetExtent(t_name);
             }
 
-            throw new RyeParseException("'{0}' does not exist as an in memory structure or a disk connection", db_name);
+            throw new RyeCompileException("'{0}.{1}' does not exist as either a structure or a disk connection", db_name, t_name);
 
         }
 
-        public static DataSet RenderData(Workspace Enviro, ExpressionCollection Nodes, RyeParser.ActAppendContext context)
+        public static TabularData RenderData(Session Enviro, ExpressionCollection Nodes, RyeParser.ActAppendContext context)
         {
 
             // Check if we need to create the table or just open it //
             if (context.append_method().K_NEW() == null)
             {
 
-                long size = (context.append_method().K_SIZE() == null ? Extent.DEFAULT_MAX_RECORD_COUNT : long.Parse(context.append_method().LITERAL_INT().GetText()));
-                DataSet t = CallData(Enviro, context.append_method().table_name());
+                long size = (context.append_method().K_SIZE() == null ? Extent.DEFAULT_PAGE_SIZE : long.Parse(context.append_method().LITERAL_INT().GetText()));
+                TabularData t = CallData(Enviro, context.append_method().table_name());
                 if (t.Columns.Count != Nodes.Columns.Count)
                     throw new RyeCompileException("Attempting to insert {0} columns into {1}", Nodes.Columns.Count, t.Columns.Count);
                 
@@ -138,32 +132,27 @@ namespace Rye.Interpreter
             string t_name = context.append_method().table_name().IDENTIFIER()[1].GetText();
 
             // Check if disk based //
-            if (Enviro.Connections.Exists(db_name))
+            if (Enviro.ConnectionExists(db_name))
             {
-                return new Table(Enviro.Connections[db_name], t_name, Nodes.Columns);
+                return Enviro.CreateTable(db_name, t_name, Nodes.Columns, (int)Table.DEFAULT_PAGE_SIZE);
             }
             // Check if memory based //
-            else if (Enviro.Structures.Exists(db_name))
+            else if (Enviro.IsGlobal(db_name))
             {
-                Extent e = new Extent(Nodes.Columns);
-                e.Header.Name = t_name;
-                Enviro.Structures[db_name].Extents.Reallocate(t_name, e);
-                return e;
+                return Enviro.CreateExtent(t_name, Nodes.Columns, (int)Table.DEFAULT_PAGE_SIZE);
             }
-            else
-            {
-                throw new RyeCompileException("'{0}' does not exist as either a structure or a disk connection");
-            }
+
+            throw new RyeCompileException("'{0}.{1}' does not exist as either a structure or a disk connection", db_name, t_name);
 
         }
 
-        public static DataSet RenderData(Workspace Enviro, ExpressionCollection Nodes, RyeParser.Append_methodContext context)
+        public static TabularData RenderData(Session Enviro, ExpressionCollection Nodes, RyeParser.Append_methodContext context)
         {
 
             // Check if we need to create the table or just open it //
             if (context.K_NEW() == null)
             {
-                DataSet t = CallData(Enviro, context.table_name());
+                TabularData t = CallData(Enviro, context.table_name());
                 if (t.Columns.Count != Nodes.Columns.Count)
                     throw new RyeCompileException("Attempting to insert {0} columns into {1}", Nodes.Columns.Count, t.Columns.Count);
 
@@ -175,22 +164,17 @@ namespace Rye.Interpreter
             string t_name = context.table_name().IDENTIFIER()[1].GetText();
 
             // Check if disk based //
-            if (Enviro.Connections.Exists(db_name))
+            if (Enviro.ConnectionExists(db_name))
             {
-                return new Table(Enviro.Connections[db_name], t_name, Nodes.Columns);
+                return Enviro.CreateTable(db_name, t_name, Nodes.Columns, (int)Table.DEFAULT_PAGE_SIZE);
             }
             // Check if memory based //
-            else if (Enviro.Structures.Exists(db_name))
+            else if (Enviro.IsGlobal(db_name))
             {
-                Extent e = new Extent(Nodes.Columns);
-                e.Header.Name = t_name;
-                Enviro.Structures[db_name].Extents.Reallocate(t_name, e);
-                return e;
+                return Enviro.CreateExtent(t_name, Nodes.Columns, (int)Table.DEFAULT_PAGE_SIZE);
             }
-            else
-            {
-                throw new RyeCompileException("'{0}' does not exist as either a structure or a disk connection");
-            }
+
+            throw new RyeCompileException("'{0}.{1}' does not exist as either a structure or a disk connection", db_name, t_name);
 
         }
 
@@ -209,10 +193,10 @@ namespace Rye.Interpreter
             return context.IDENTIFIER()[0].GetText();
         }
         
-        public static void AppendScalar(Workspace Enviro, MemoryStructure Heap, ExpressionVisitor Visitor, RyeParser.Unit_declare_scalarContext context)
+        public static void AppendScalar(Session Enviro, Heap<Cell> Heap, ExpressionVisitor Visitor, RyeParser.Unit_declare_scalarContext context)
         {
 
-            string vname = GetVariableName(context.generic_name());
+            string vname = context.IDENTIFIER().GetText();
             CellAffinity t = GetAffinity(context.type());
             int size = GetSize(context.type());
 
@@ -223,57 +207,51 @@ namespace Rye.Interpreter
                 c = Visitor.Visit(context.expression()).Evaluate();
             }
 
-            Heap.Scalars.Reallocate(vname, c);
+            Heap.Reallocate(vname, c);
 
         }
 
-        public static void AppendMatrix(Workspace Enviro, MemoryStructure Heap, ExpressionVisitor Visitor, RyeParser.Unit_declare_matrixContext context)
+        public static void AppendMatrix(Session Enviro, Heap<CellMatrix> Heap, ExpressionVisitor Visitor, RyeParser.Unit_declare_matrixContext context)
         {
 
-            string vname = GetVariableName(context.generic_name());
+            string vname = context.IDENTIFIER().GetText();
             CellAffinity t = GetAffinity(context.type());
             int size = GetSize(context.type());
 
-            MatrixExpressionVisitor mat = new MatrixExpressionVisitor(Visitor);
+            MatrixExpressionVisitor mat = new MatrixExpressionVisitor(Visitor, Enviro);
  
             int row = (context.expression().Length >= 1 ? (int)Visitor.Visit(context.expression()[0]).Evaluate().INT : 1);
             int col = (context.expression().Length == 2 ? (int)Visitor.Visit(context.expression()[1]).Evaluate().INT : 1);
 
             CellMatrix m = (context.matrix_expression() == null ? new CellMatrix(row, col, t) : mat.ToMatrix(context.matrix_expression()).Evaluate());
 
-            Heap.Matricies.Reallocate(vname, m);
+            Heap.Reallocate(vname, m);
 
         }
 
-        public static void AppendLambda(Workspace Enviro, MemoryStructure Heap, RyeParser.Unit_declare_lambdaContext context)
+        public static void AppendLambda(Session Enviro, RyeParser.Unit_declare_lambdaContext context)
         {
 
             if (context.K_GRADIENT() == null)
             {
-                CompilerHelper.AppendLambdaBuild(Enviro, Heap, context);
+                CompilerHelper.AppendLambdaBuild(Enviro, context);
             }
             else
             {
-                CompilerHelper.AppendLambdaGradient(Enviro, Heap, context);
+                CompilerHelper.AppendLambdaGradient(Enviro, context);
             }
 
         }
 
-        private static void AppendLambdaBuild(Workspace Enviro, MemoryStructure Heap, RyeParser.Unit_declare_lambdaContext context)
+        private static void AppendLambdaBuild(Session Enviro, RyeParser.Unit_declare_lambdaContext context)
         {
 
             // Get the name of lambda //
-            string sname = context.lambda_name()[0].IDENTIFIER()[0].GetText();
-            string vname = context.lambda_name()[0].IDENTIFIER()[1].GetText();
-
-            // Check the caller //
-            if (StringComparer.OrdinalIgnoreCase.Compare(sname, Heap.Name) != 0)
-                throw new ArgumentException(string.Format("Caller structure '{0}' differs from assigned structure '{1}'", Heap.Name, sname));
+            string vname = context.lambda_name()[0].IDENTIFIER().GetText();
 
             // create an expression visitor //
             ExpressionVisitor exp = new ExpressionVisitor(Enviro);
-            exp.AddStructure(Heap.Name, Heap);
-
+            
             // add all needed pointers to the visitor //
             List<string> pointers = new List<string>();
             foreach (Antlr4.Runtime.Tree.ITerminalNode t in context.IDENTIFIER())
@@ -289,48 +267,21 @@ namespace Rye.Interpreter
             Lambda l = new Lambda(vname, mu, pointers);
 
             // Add the lambda to our heap //
-            Heap.Lambda.Reallocate(vname, l);
+            Enviro.SetLambda(vname, l);
 
         }
 
-        private static void AppendLambdaGradient(Workspace Enviro, MemoryStructure Heap, RyeParser.Unit_declare_lambdaContext context)
+        private static void AppendLambdaGradient(Session Enviro,  RyeParser.Unit_declare_lambdaContext context)
         {
 
-            // Get the name of lambda //
-            string sname = context.lambda_name()[0].IDENTIFIER()[0].GetText();
-            string vname = context.lambda_name()[0].IDENTIFIER()[1].GetText();
-
-            // Get the name of the current lambda //
-            string sname_fx = context.lambda_name()[1].IDENTIFIER()[0].GetText();
-            string vname_fx = context.lambda_name()[1].IDENTIFIER()[1].GetText();
-
-            // Check the caller //
-            if (StringComparer.OrdinalIgnoreCase.Compare(sname, Heap.Name) != 0)
-                throw new ArgumentException(string.Format("Caller structure '{0}' differs from assigned structure '{1}'", Heap.Name, sname));
-
+            // Get the name of lambda we are creating //
+            string sname = context.lambda_name()[0].IDENTIFIER().GetText();
+            
+            // Get the name of the lambda that already exists //
+            string sname_fx = context.lambda_name()[1].IDENTIFIER().GetText();
+            
             // Look for the original lambda, f(x) //
-            Lambda l = null;
-            if (Heap.Lambda.Exists(vname_fx) && string.Compare(sname_fx, Heap.Name, true) == 0)
-            {
-                l = Heap.Lambda[vname_fx];
-            }
-            else if (Enviro.Structures.Exists(sname_fx))
-            {
-
-                if (Enviro.Structures[sname_fx].Lambda.Exists(vname_fx))
-                {
-                    l = Enviro.Structures[sname_fx].Lambda[vname_fx];
-                }
-                else
-                {
-                    throw new ArgumentException(string.Format("Cannot find lambda '{0}'", vname_fx));
-                }
-
-            }
-            else
-            {
-                throw new ArgumentException(string.Format("Cannot find lambda '{0}'", vname_fx));
-            }
+            Lambda l = Enviro.GetLambda(sname_fx);
 
             // Get the x variable, to calculate f'(x) //
             string x = context.IDENTIFIER()[0].GetText();
@@ -339,7 +290,7 @@ namespace Rye.Interpreter
             Lambda f_prime = l.Gradient(sname, x);
 
             // Allocate //
-            Heap.Lambda.Reallocate(vname, f_prime);
+            Enviro.SetLambda(sname, f_prime);
             
         }
 

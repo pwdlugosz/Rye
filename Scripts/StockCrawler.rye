@@ -1,0 +1,199 @@
+﻿
+
+CONNECT
+{
+	TEMP TO 'C:\Users\pwdlu_000\Documents\Data\TempDB';
+};
+
+DECLARE
+{
+	TICKER AS STRING = 'AAPL';
+};
+
+DECLARE
+{
+
+	S_URL(TICKER, BEG_DATE, END_DATE) AS LAMBDA 
+	= 
+	'http://chart.finance.yahoo.com/table.csv?s=' + TICKER 
+	+ '&a=' + MONTH(BEG_DATE)
+	+ '&b=' + DAY(BEG_DATE)
+	+ '&c=' + YEAR(BEG_DATE)
+	+ '&d=' + MONTH(END_DATE)
+	+ '&e=' + DAY(END_DATE)
+	+ '&f=' + YEAR(END_DATE)
+	+ '&g=d&ignore=.csv'
+	;
+
+	D_URL(TICKER, BEG_DATE, END_DATE) AS LAMBDA 
+	= 
+	'http://chart.finance.yahoo.com/table.csv?s=' + TICKER 
+	+ '&a=' + MONTH(BEG_DATE)
+	+ '&b=' + DAY(BEG_DATE)
+	+ '&c=' + YEAR(BEG_DATE)
+	+ '&d=' + MONTH(END_DATE)
+	+ '&e=' + DAY(END_DATE)
+	+ '&f=' + YEAR(END_DATE)
+	+ '&g=v&ignore=.csv'
+	;
+
+};
+
+
+DECLARE
+{
+	FIN_SUM AS STRING = "";
+};
+
+FIN_SUM = 
+$$
+
+	FILE.DOWNLOAD 
+	{
+		URL = S_URL('@TICKER', '2001-01-01'T, NOW());
+		PATH = 'C:\Users\pwdlu_000\Documents\Finance\Stock_Flat_Files\@TICKER.csv';
+	};
+
+	FILE.DOWNLOAD 
+	{
+		URL = D_URL('@TICKER', '2001-01-01'T, NOW());
+		PATH = 'C:\Users\pwdlu_000\Documents\Finance\Dividend_Flat_Files\@TICKER.csv';
+	};
+
+	CREATE TABLE GLOBAL.STOCK
+	{
+		TRADE_DT AS DATE,
+		OPEN_AMT AS DOUBLE,
+		HIGH_AMT AS DOUBLE,
+		LOW_AMT AS DOUBLE,
+		CLOSE_AMT AS DOUBLE,
+		VOLUME AS DOUBLE,
+		ADJ_CLOSE AS DOUBLE
+	};
+
+	CREATE TABLE GLOBAL.DIVIDEND
+	{
+		TRADE_DT AS DATE,
+		DIV_AMT AS DOUBLE
+	};
+
+	FILE.IMPORT { DATA = TABLE GLOBAL.STOCK; PATH = 'C:\Users\pwdlu_000\Documents\Finance\Stock_Flat_Files\@TICKER.csv'; DELIM = ','; SKIP = 1; };
+
+	FILE.IMPORT { DATA = TABLE GLOBAL.DIVIDEND; PATH = 'C:\Users\pwdlu_000\Documents\Finance\Dividend_Flat_Files\@TICKER.csv'; DELIM = ','; SKIP = 1; };
+
+	JOIN
+	{
+		FROM GLOBAL.STOCK AS S;
+		FROM GLOBAL.DIVIDEND AS D;
+		LEFT;
+	};
+	ON
+	{
+		S.TRADE_DT = D.TRADE_DT;
+	};
+	APPEND
+	{
+		NEW GLOBAL.DATA_S1;
+		RETAIN
+			'@TICKER' AS TICKER,
+			S.*,
+			D.DIV_AMT ?? 0D AS DIV_AMT
+		;
+	};
+
+	SORT
+	{
+		FROM GLOBAL.DATA_S1;
+	};
+	BY
+	{
+		TRADE_DT ASC;
+	};
+
+	SELECT
+	{
+		FROM GLOBAL.DATA_S1 AS T;
+	};
+	DECLARE
+	{
+		RUN_DIV AS DOUBLE = 0D;
+		LOG_RETURN AS DOUBLE = 0D;
+		LAG_ADJ_CLOSE AS DOUBLE = NULL -> DOUBLE;
+		TICKS AS INT = TABLIX.ROW_COUNT('GLOBAL.DATA_S1');
+	};
+	MAP
+	{
+
+		TICKS--;
+		APPEND
+		{
+			NEW TEMP.@TICKER;
+			RETAIN
+				T.*,
+				LOCAL.TICKS AS TICKS,
+				LOG(ADJ_CLOSE) - LOG(LOCAL.LAG_ADJ_CLOSE) AS LOG_RETURN,
+				LOG(CLOSE_AMT) - LOG(OPEN_AMT) AS DAY_RETURN
+			;
+		};
+
+		LAG_ADJ_CLOSE = ADJ_CLOSE;
+
+	};
+
+	AGGREGATE
+	{
+		FROM TEMP.@TICKER AS A;
+	};
+	BY
+	{
+		YEAR(TRADE_DT) AS YEAR;
+	};
+	OVER
+	{
+
+		SUM(1D) AS COUNT_TOTAL,
+		SUM(ABS(LOG_RETURN) < 0.01 ? 1D : 0D) AS COUNT_LOWER,
+		SUM(ABS(LOG_RETURN) >= 0.01 ? 1D : 0D) AS COUNT_UPPER,
+
+		AVG(LOG_RETURN) AS AVG_VAL,
+		AVG(ABS(LOG_RETURN) < 0.01 ? LOG_RETURN : SIGN(LOG_RETURN) * 0.01) AS AVG_VAL_LOWER,
+		AVG(ABS(LOG_RETURN) >= 0.01 ? (ABS(LOG_RETURN) - 0.01) * SIGN(LOG_RETURN) : 0D) AS AVG_VAL_UPPER,
+
+		STDEV(LOG_RETURN) AS STDEV_VAL,
+		STDEV(ABS(LOG_RETURN) < 0.01 ? LOG_RETURN : SIGN(LOG_RETURN) * 0.01) AS STDEV_VAL_LOWER,
+		STDEV(ABS(LOG_RETURN) >= 0.01 ? (ABS(LOG_RETURN) - 0.01) * SIGN(LOG_RETURN) : 0D) AS STDEV_VAL_UPPER
+
+		;
+	};
+	APPEND
+	{
+		NEW GLOBAL.DATA_S3;
+		RETAIN
+			OUT.*
+			;
+	};
+
+
+	FILE.EXPORT 
+	{ 
+		DATA = TABLE GLOBAL.DATA_S3; 
+		PATH = 'C:\Users\pwdlu_000\Documents\Finance\@TICKER_Summary.csv'; 
+		DELIM = ','; 
+	};
+
+$$;
+
+/*
+EXECUTE 
+{
+	SCRIPT = GLOBAL.FIN_SUM;
+	@TICKER = 'BAC';
+};
+*/
+
+PRINT FIN.BS_CALL_VOL(0.32, 15.49, 16, 0.0025, 0D, 1D/12D);
+
+
+
+
+

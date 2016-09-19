@@ -47,10 +47,10 @@ namespace Rye.Query
 
         private ExpressionCollection _cols;
         private Register _memory;
-        private DataSet _data;
+        private TabularData _data;
         private Key _key;
 
-        public SortPreProcessor(DataSet Data, ExpressionCollection Key, Register Memory)
+        public SortPreProcessor(TabularData Data, ExpressionCollection Key, Register Memory)
             : base()
         {
             this._cols = Key;
@@ -58,11 +58,11 @@ namespace Rye.Query
             this._data = Data;
         }
 
-        public SortPreProcessor(DataSet Data, Key K)
+        public SortPreProcessor(TabularData Data, Key K)
             : base()
         {
-            this._memory = new Register(Data.Name, Data.Columns);
-            this._cols = ExpressionCollection.Render(Data.Columns, Data.Name, this._memory, K);
+            this._memory = new Register(Data.Header.Name, Data.Columns);
+            this._cols = ExpressionCollection.Render(Data.Columns, Data.Header.Name, this._memory, K);
             this._data = Data;
         }
 

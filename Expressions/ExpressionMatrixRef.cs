@@ -14,26 +14,20 @@ namespace Rye.Expressions
 
         private Expression _RowIndex;
         private Expression _ColIndex;
-        private MemoryStructure _Heap;
+        private CellMatrix _Matrix;
         private int _DirectRef;
 
-        public ExpressionArrayDynamicRef(Expression Parent, Expression Row, Expression Col, MemoryStructure Heap, int DirectRef)
+        public ExpressionArrayDynamicRef(Expression Parent, Expression Row, Expression Col, CellMatrix M)
             : base(Parent, ExpressionAffinity.Matrix)
         {
             this._RowIndex = Row;
             this._ColIndex = Col;
-            this._DirectRef = DirectRef;
-            this._Heap = Heap;
-        }
-
-        public ExpressionArrayDynamicRef(Expression Parent, Expression Row, Expression Col, MemoryStructure Heap, string Name)
-            : this(Parent, Row, Col, Heap, Heap.Matricies.GetPointer(Name))
-        { 
+            this._Matrix = M;
         }
 
         public override Cell Evaluate()
         {
-            return this._Heap.Matricies[this._DirectRef][(int)this._RowIndex.Evaluate().INT, (int)this._ColIndex.Evaluate().INT];
+            return this._Matrix[(int)this._RowIndex.Evaluate().INT, (int)this._ColIndex.Evaluate().INT];
         }
 
         public override string Unparse(Schema S)
@@ -43,7 +37,7 @@ namespace Rye.Expressions
 
         public override Expression CloneOfMe()
         {
-            return new ExpressionArrayDynamicRef(this.ParentNode, this._RowIndex, this._ColIndex, this._Heap, this._DirectRef);
+            return new ExpressionArrayDynamicRef(this.ParentNode, this._RowIndex, this._ColIndex, this._Matrix);
         }
 
         public override string ToString()
@@ -53,7 +47,7 @@ namespace Rye.Expressions
 
         public override CellAffinity ReturnAffinity()
         {
-            return this._Heap.Matricies[this._DirectRef].Affinity;
+            return this._Matrix.Affinity;
         }
 
         public override int DataSize()
@@ -61,11 +55,6 @@ namespace Rye.Expressions
             return 0;//this._Heap.Matricies[this._DirectRef].;
         }
 
-        public MemoryStructure Heap
-        {
-            get { return this._Heap; }
-            set { this._Heap = value; }
-        }
 
     }
 

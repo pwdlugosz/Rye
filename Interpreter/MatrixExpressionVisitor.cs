@@ -14,29 +14,15 @@ namespace Rye.Interpreter
     public sealed class MatrixExpressionVisitor : RyeParserBaseVisitor<MatrixExpression>
     {
 
-        private Heap<MemoryStructure> _structs;
         private ExpressionVisitor _exp;
         private MatrixExpression _parent;
-        private MemoryStructure _Primary;
-        private string _PrimaryName;
+        private Session _Session;
 
-        public MatrixExpressionVisitor(ExpressionVisitor ExpVisitor)
+        public MatrixExpressionVisitor(ExpressionVisitor ExpVisitor, Session Home)
             :base()
         {
-            this._structs = new Heap<MemoryStructure>();
             this._exp = ExpVisitor;
-            this.SetPrimary(ExpVisitor.Primary);
-        }
-
-        public MatrixExpressionVisitor(ExpressionVisitor ExpVisitor, Workspace Home)
-            : this(ExpVisitor)
-        {
-
-            foreach (KeyValuePair<string, MemoryStructure> kv in Home.Structures.Entries)
-            {
-                this._structs.Reallocate(kv.Key, kv.Value);
-            }
-
+            this._Session = Home;
         }
 
         public MatrixExpression MasterNode
@@ -44,19 +30,6 @@ namespace Rye.Interpreter
             get { return this._parent; }
         }
         
-        public void AddStructure(string Alias, MemoryStructure Structure)
-        {
-            this._structs.Reallocate(Alias, Structure);
-        }
-
-        public void SetPrimary(MemoryStructure Value)
-        {
-            this._Primary = Value;
-            if (!this._structs.Exists(Value.Name))
-                this._structs.Allocate(Value.Name, Value);
-            this._PrimaryName = Value.Name;
-        }
-
         // Overrides //
         public override MatrixExpression VisitMatrixMinus(RyeParser.MatrixMinusContext context)
         {
@@ -200,31 +173,45 @@ namespace Rye.Interpreter
         public override MatrixExpression VisitMatrixLookup(RyeParser.MatrixLookupContext context)
         {
 
+            // Naked Lookup //
             if (context.generic_name().IDENTIFIER().Length == 1)
             {
 
                 string vname = context.generic_name().IDENTIFIER()[0].GetText();
-                if (this._Primary.Matricies.Exists(vname))
+                if (this._exp.SecondaryMatrixes.Exists(vname))
                 {
-                    return new MatrixExpressionHeap(this._parent, this._Primary.Matricies, this._Primary.Matricies.GetPointer(vname));
+                    return new MatrixExpressionHeap(this._parent, this._exp.SecondaryMatrixes, this._exp.SecondaryMatrixes.GetPointer(vname));
                 }
                 else
                 {
-                    throw new RyeCompileException("Matrix '{0}' does not exist in '{1}'", vname, this._PrimaryName);
+                    throw new RyeCompileException("Matrix '{0}' does not exist in '{1}'", vname, this._exp.SecondaryName);
                 }
 
             }
 
-
+            // Explicit lookup //
             string sname = context.generic_name().IDENTIFIER()[0].GetText();
             string mname = context.generic_name().IDENTIFIER()[1].GetText();
 
-            if (this._structs.Exists(sname))
+            if (string.Equals(this._exp.SecondaryName, sname, StringComparison.OrdinalIgnoreCase))
             {
 
-                if (this._structs[sname].Matricies.Exists(mname))
+                if (this._exp.SecondaryMatrixes.Exists(mname))
                 {
-                    return new MatrixExpressionHeap(this._parent, this._structs[sname].Matricies, this._structs[sname].Matricies.GetPointer(mname));
+                    return new MatrixExpressionHeap(this._parent, this._exp.SecondaryMatrixes, this._exp.SecondaryMatrixes.GetPointer(mname));
+                }
+                else
+                {
+                    throw new RyeCompileException("Matrix '{0}' does not exist in '{1}'", mname, this._exp.SecondaryName);
+                }
+
+            }
+            else if (this._Session.IsGlobal(sname))
+            {
+
+                if (this._Session.MatrixExists(mname))
+                {
+                    return new MatrixExpressionHeap(this._parent, this._Session.Matrixes, this._Session.Matrixes.GetPointer(mname));
                 }
                 else
                 {
@@ -234,7 +221,9 @@ namespace Rye.Interpreter
             }
             else
             {
+
                 throw new RyeCompileException("Structure '{0}' does not exist", sname);
+
             }
 
         }

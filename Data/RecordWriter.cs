@@ -20,10 +20,25 @@ namespace Rye.Data
 
         public abstract Schema Columns { get;}
 
-        public void Insert(params Cell[] Values)
+        public virtual void Insert(params Cell[] Values)
         {
-            Record r = new Record(Values);
-            this.Insert(r);
+            this.Insert(new Record(Values));
+        }
+
+        public virtual void Insert(RecordBuilder Builder)
+        {
+            this.Insert(Builder.ToRecord());
+        }
+
+        public virtual void BulkInsert(Extent Data)
+        {
+            foreach (Record r in Data.Records)
+                this.Insert(r);
+        }
+
+        public virtual bool IsChecked
+        {
+            get { return true; }
         }
 
     }
@@ -68,6 +83,14 @@ namespace Rye.Data
             this._e.UncheckedAdd(Data);
         }
 
+        public override bool IsChecked
+        {
+            get
+            {
+                return false;
+            }
+        }
+
     }
 
     public class TableWriter : RecordWriter
@@ -94,10 +117,20 @@ namespace Rye.Data
 
         }
 
+        public override void BulkInsert(Extent Data)
+        {
+
+            if (Data.Columns.GetHashCode() == this._t.Columns.GetHashCode())
+                this._t.AddExtent(Data);
+            else
+                base.BulkInsert(Data);
+
+        }
+
         public override void Close()
         {
             this._t.SetExtent(this._e);
-            Kernel.RequestFlushTable(this._t);
+            this._t.RequestFlushMe();
         }
 
         public override Schema Columns
@@ -118,6 +151,19 @@ namespace Rye.Data
         public override void Insert(Record Data)
         {
             this._e.UncheckedAdd(Data);
+        }
+
+        public override void BulkInsert(Extent Data)
+        {
+            this._t.AddExtent(Data);
+        }
+
+        public override bool IsChecked
+        {
+            get
+            {
+                return false;
+            }
         }
 
     }

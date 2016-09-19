@@ -20,8 +20,8 @@ namespace Rye.Query
         private Register _Memory;
         private bool _PassBack = false;
 
-        public UpdateProcessNode(int ThreadID, Table Source, Volume Data, Key Fields, ExpressionCollection Values, Filter Where, Register MemoryLocation)
-            : base(ThreadID)
+        public UpdateProcessNode(int ThreadID, Session Session, Table Source, Volume Data, Key Fields, ExpressionCollection Values, Filter Where, Register MemoryLocation)
+            : base(ThreadID, Session)
         {
 
             this._Source = Source;
@@ -87,6 +87,11 @@ namespace Rye.Query
 
     public sealed class UpdateProcessConsolidation : QueryConsolidation<UpdateProcessNode>
     {
+
+        public UpdateProcessConsolidation(Session Session)
+            : base(Session)
+        {
+        }
 
         public override void Consolidate(List<UpdateProcessNode> Nodes)
         {

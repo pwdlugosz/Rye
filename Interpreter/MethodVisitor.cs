@@ -8,6 +8,7 @@ using Rye.Data;
 using Rye.Expressions;
 using Rye.MatrixExpressions;
 using Rye.Methods;
+using Rye.Libraries;
 
 namespace Rye.Interpreter
 {
@@ -19,43 +20,16 @@ namespace Rye.Interpreter
         private ExpressionVisitor _exp;
         private MatrixExpressionVisitor _mat;
         private Method _master;
-        private Heap<MemoryStructure> _structs;
-        private Workspace _enviro;
-        private MemoryStructure _Primary;
-        private string _PrimaryName;
-
-        public MethodVisitor(ExpressionVisitor ExpVisitor, MatrixExpressionVisitor MatVisitor, Workspace Enviro)
+        private Session _Session;
+        
+        public MethodVisitor(ExpressionVisitor ExpVisitor, MatrixExpressionVisitor MatVisitor, Session Enviro)
             : base()
         {
             this._exp = ExpVisitor;
             this._mat = MatVisitor;
             this._OpenStreams = new Heap<RecordWriter>();
-            this._enviro = Enviro;
+            this._Session = Enviro;
 
-            this._structs = new Heap<MemoryStructure>();
-            foreach (KeyValuePair<string, MemoryStructure> kv in Enviro.Structures.Entries)
-            {
-                this._structs.Reallocate(kv.Key, kv.Value);
-            }
-
-            if (ExpVisitor.Primary == null)
-                this.SetPrimary(Enviro.Global);
-            else
-                this.SetPrimary(ExpVisitor.Primary);
-
-        }
-
-        public void AddStructure(string Alias, MemoryStructure Structure)
-        {
-            this._structs.Reallocate(Alias, Structure);
-        }
-
-        public void SetPrimary(MemoryStructure Value)
-        {
-            this._Primary = Value;
-            if (!this._structs.Exists(Value.Name))
-                this._structs.Allocate(Value.Name, Value);
-            this._PrimaryName = Value.Name;
         }
 
         // Actions //
@@ -63,14 +37,9 @@ namespace Rye.Interpreter
         {
 
             Expression node = this._exp.ToNode(context.expression());
-            string vname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            if (!this._structs.Exists(sname))
-                throw new RyeCompileException("Structure does not exist '{0}'", sname);
-            if (!this._structs[sname].Scalars.Exists(vname))
-                throw new RyeCompileException("Variable '{0}' does not exist in structure '{1}'", vname, sname);
-            MemoryStructure h = this._structs[sname];
-            Method t = new MethodAssignScalar(this._master, h, h.Scalars.GetPointer(vname), node, 0);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<Cell> h = this._exp.GetScalarHeap(context.generic_name());
+            Method t = new MethodAssignScalar(this._master, h, h.GetPointer(name), node, 0);
             this._master = t;
             return t;
 
@@ -80,10 +49,9 @@ namespace Rye.Interpreter
         {
 
             Expression node = this._exp.ToNode(context.expression());
-            string vname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            MemoryStructure h = this._structs[sname];
-            Method t = new MethodAssignScalar(this._master, h, h.Scalars.GetPointer(vname), node, 1);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<Cell> h = this._exp.GetScalarHeap(context.generic_name());
+            Method t = new MethodAssignScalar(this._master, h, h.GetPointer(name), node, 1);
             this._master = t;
             return t;
 
@@ -93,10 +61,9 @@ namespace Rye.Interpreter
         {
 
             Expression node = this._exp.ToNode(context.expression());
-            string vname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            MemoryStructure h = this._structs[sname];
-            Method t = new MethodAssignScalar(this._master, h, h.Scalars.GetPointer(vname), node, 2);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<Cell> h = this._exp.GetScalarHeap(context.generic_name());
+            Method t = new MethodAssignScalar(this._master, h, h.GetPointer(name), node, 2);
             this._master = t;
             return t;
 
@@ -105,10 +72,9 @@ namespace Rye.Interpreter
         public override Method VisitActAutoInc(RyeParser.ActAutoIncContext context)
         {
 
-            string vname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            MemoryStructure h = this._structs[sname];
-            Method t = new MethodAssignScalar(this._master, h, h.Scalars.GetPointer(vname), null, 3);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<Cell> h = this._exp.GetScalarHeap(context.generic_name());
+            Method t = new MethodAssignScalar(this._master, h, h.GetPointer(name), null, 3);
             this._master = t;
             return t;
 
@@ -117,10 +83,9 @@ namespace Rye.Interpreter
         public override Method VisitActAutoDec(RyeParser.ActAutoDecContext context)
         {
 
-            string vname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            MemoryStructure h = this._structs[sname];
-            Method t = new MethodAssignScalar(this._master, h, h.Scalars.GetPointer(vname), null, 4);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<Cell> h = this._exp.GetScalarHeap(context.generic_name());
+            Method t = new MethodAssignScalar(this._master, h, h.GetPointer(name), null, 4);
             this._master = t;
             return t;
 
@@ -133,7 +98,7 @@ namespace Rye.Interpreter
             ExpressionCollection nodes = new ExpressionCollection();
             this._exp.AppendSet(nodes, context.append_method().expression_or_wildcard_set());
 
-            DataSet data = CompilerHelper.RenderData(this._enviro, nodes, context);
+            TabularData data = CompilerHelper.RenderData(this._Session, nodes, context);
             
             Method node;
             if (data.Header.Affinity == HeaderType.Table)
@@ -170,21 +135,16 @@ namespace Rye.Interpreter
         {
 
             // Get the variable name, which is located on one of the heaps //
-            string struct_name = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            string var_name = CompilerHelper.GetVariableName(context.generic_name());
-
-            if (!this._structs.Exists(struct_name))
-                throw new RyeCompileException("Structure '{0}' does not exist", struct_name);
-            MemoryStructure h = this._structs[struct_name];
-            if (!h.Scalars.Exists(var_name))
-                h.Scalars.Allocate(var_name, Cell.ZeroValue(CellAffinity.INT));
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<Cell> h = this._exp.GetScalarHeap(context.generic_name());
             
             // Determine the begin and end values //
             Expression beg = this._exp.ToNode(context.expression()[0]);
             Expression end = this._exp.ToNode(context.expression()[1]);
+            Expression step = (context.K_BY() != null ? this._exp.ToNode(context.expression()[2]) : new ExpressionValue(null, Cell.OneValue(beg.ReturnAffinity())));
 
             // Create the parent node //
-            Method t = new MethodFor(this._master, beg, end, h, h.Scalars.GetPointer(var_name));
+            Method t = new MethodFor(this._master, beg, end, step, h, h.GetPointer(name));
 
             // Get the sub - action //
             Method sub_action = this.ToNode(context.method());
@@ -251,7 +211,7 @@ namespace Rye.Interpreter
 
             ExpressionCollection vars = new ExpressionCollection();
             this._exp.AppendSet(vars, context.expression_or_wildcard_set());
-            Action go = () => { this._enviro.IO.WriteLine(vars.Evaluate().ToString()); };
+            Action go = () => { this._Session.IO.WriteLine(vars.Evaluate().ToString()); };
 
             MethodGeneric t = new MethodGeneric(this._master, go);
             return t;
@@ -262,7 +222,7 @@ namespace Rye.Interpreter
         {
 
             MatrixExpression mat = this._mat.ToMatrix(context.matrix_expression());
-            Action go = () => { this._enviro.IO.WriteLine(mat.Evaluate().ToString()); };
+            Action go = () => { this._Session.IO.WriteLine(mat.Evaluate().ToString()); };
 
             MethodGeneric t = new MethodGeneric(this._master, go);
             return t;
@@ -272,16 +232,14 @@ namespace Rye.Interpreter
         public override Method VisitActPrintLambda(RyeParser.ActPrintLambdaContext context)
         {
 
-            string sname = context.IDENTIFIER()[0].GetText();
+            string libname = context.IDENTIFIER()[0].GetText();
             string lname = context.IDENTIFIER()[1].GetText();
 
-            if (!this._enviro.Structures.Exists(sname))
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            if (!this._enviro.Structures[sname].Lambda.Exists(lname))
-                throw new RyeCompileException("Lambda '{0}' does not exist in '{1}'", lname, sname);
+            if (!this._Session.LambdaExists(lname))
+                throw new RyeCompileException("Structure '{0}' does not exist", libname);
 
-            Lambda l = this._enviro.Structures[sname].Lambda[lname];
-            Action go = () => { this._enviro.IO.WriteLine(l.FormatString()); };
+            Lambda l = this._Session.GetLambda(lname);
+            Action go = () => { this._Session.IO.WriteLine(l.FormatString()); };
 
             MethodGeneric t = new MethodGeneric(this._master, go);
             return t;
@@ -299,7 +257,7 @@ namespace Rye.Interpreter
                 parameters.Allocate(ctx.PARAMETER().GetText(), this._exp.ToNode(ctx.expression()));
             }
 
-            return new MethodExecScript(this._master, this._enviro, script, parameters);
+            return new MethodExecScript(this._master, this._Session, script, parameters);
 
         }
 
@@ -308,23 +266,12 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.matrix_name().generic_name());
-            string sname = CompilerHelper.GetParentName(context.matrix_name().generic_name(), this._PrimaryName);
-            
-            // Create a visitor //
+            string name = context.matrix_name().generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.matrix_name().generic_name());
             MatrixExpression mat = this._mat.ToMatrix(context.matrix_expression());
-
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
             
             // Build a node //
-            return new MethodMatrixAssign(this._master, this._structs[sname].Matricies, this._structs[sname].Matricies.GetPointer(mname), mat);
+            return new MethodMatrixAssign(this._master, heap, heap.GetPointer(name), mat);
 
         }
 
@@ -333,26 +280,15 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            Heap<CellMatrix> mat = this._structs[sname].Matricies;
-            int idx = mat.GetPointer(mname);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.generic_name());
+            int idx = heap.GetPointer(name);
 
             Expression row = this._exp.ToNode(context.expression()[0]);
             Expression col = this._exp.ToNode(context.expression()[1]);
             Expression exp = this._exp.ToNode(context.expression()[2]);
 
-            return new MethodMatrixUnitAssign(this._master, mat, idx, exp, row, col, 0);
+            return new MethodMatrixUnitAssign(this._master, heap, idx, exp, row, col, 0);
 
         }
 
@@ -360,26 +296,16 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            Heap<CellMatrix> mat = this._structs[sname].Matricies;
-            int idx = mat.GetPointer(mname);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.generic_name());
+            int idx = heap.GetPointer(name);
 
             Expression row = this._exp.ToNode(context.expression()[0]);
             Expression col = this._exp.ToNode(context.expression()[1]);
             Expression exp = this._exp.ToNode(context.expression()[2]);
 
-            return new MethodMatrixUnitAssign(this._master, mat, idx, exp, row, col, 1);
+            return new MethodMatrixUnitAssign(this._master, heap, idx, exp, row, col, 1);
+
 
         }
 
@@ -387,26 +313,16 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.generic_name());
+            int idx = heap.GetPointer(name);
 
-            Heap<CellMatrix> mat = this._structs[sname].Matricies;
-            int idx = mat.GetPointer(mname);
-            
             Expression row = this._exp.ToNode(context.expression()[0]);
             Expression col = this._exp.ToNode(context.expression()[1]);
             Expression exp = this._exp.ToNode(context.expression()[2]);
 
-            return new MethodMatrixUnitAssign(this._master, mat, idx, exp, row, col, 2);
+            return new MethodMatrixUnitAssign(this._master, heap, idx, exp, row, col, 2);
+
 
         }
 
@@ -414,26 +330,16 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            Heap<CellMatrix> mat = this._structs[sname].Matricies;
-            int idx = mat.GetPointer(mname);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.generic_name());
+            int idx = heap.GetPointer(name);
 
             Expression row = this._exp.ToNode(context.expression()[0]);
             Expression col = this._exp.ToNode(context.expression()[1]);
-            //Expression exp = this._exp.ToNode(context.expression()[2]);
+            Expression exp = this._exp.ToNode(context.expression()[2]);
 
-            return new MethodMatrixUnitAssign(this._master, mat, idx, null, row, col, 3);
+            return new MethodMatrixUnitAssign(this._master, heap, idx, exp, row, col, 3);
+
 
         }
 
@@ -441,26 +347,16 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            Heap<CellMatrix> mat = this._structs[sname].Matricies;
-            int idx = mat.GetPointer(mname);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.generic_name());
+            int idx = heap.GetPointer(name);
 
             Expression row = this._exp.ToNode(context.expression()[0]);
             Expression col = this._exp.ToNode(context.expression()[1]);
-            //Expression exp = this._exp.ToNode(context.expression()[2]);
+            Expression exp = this._exp.ToNode(context.expression()[2]);
 
-            return new MethodMatrixUnitAssign(this._master, mat, idx, null, row, col, 4);
+            return new MethodMatrixUnitAssign(this._master, heap, idx, exp, row, col, 4);
+
 
         }
 
@@ -469,26 +365,15 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            Heap<CellMatrix> mat = this._structs[sname].Matricies;
-            int idx = mat.GetPointer(mname);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.generic_name());
+            int idx = heap.GetPointer(name);
 
             Expression row = this._exp.ToNode(context.expression()[0]);
             Expression col = new ExpressionValue(null, new Cell(0));
             Expression exp = this._exp.ToNode(context.expression()[1]);
 
-            return new MethodMatrixUnitAssign(this._master, mat, idx, exp, row, col, 0);
+            return new MethodMatrixUnitAssign(this._master, heap, idx, exp, row, col, 0);
 
         }
 
@@ -496,26 +381,15 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            Heap<CellMatrix> mat = this._structs[sname].Matricies;
-            int idx = mat.GetPointer(mname);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.generic_name());
+            int idx = heap.GetPointer(name);
 
             Expression row = this._exp.ToNode(context.expression()[0]);
             Expression col = new ExpressionValue(null, new Cell(0));
             Expression exp = this._exp.ToNode(context.expression()[1]);
 
-            return new MethodMatrixUnitAssign(this._master, mat, idx, exp, row, col, 1);
+            return new MethodMatrixUnitAssign(this._master, heap, idx, exp, row, col, 1);
 
         }
 
@@ -523,26 +397,15 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            Heap<CellMatrix> mat = this._structs[sname].Matricies;
-            int idx = mat.GetPointer(mname);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.generic_name());
+            int idx = heap.GetPointer(name);
 
             Expression row = this._exp.ToNode(context.expression()[0]);
             Expression col = new ExpressionValue(null, new Cell(0));
             Expression exp = this._exp.ToNode(context.expression()[1]);
 
-            return new MethodMatrixUnitAssign(this._master, mat, idx, exp, row, col, 2);
+            return new MethodMatrixUnitAssign(this._master, heap, idx, exp, row, col, 2);
 
         }
 
@@ -550,25 +413,14 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            Heap<CellMatrix> mat = this._structs[sname].Matricies;
-            int idx = mat.GetPointer(mname);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.generic_name());
+            int idx = heap.GetPointer(name);
 
             Expression row = this._exp.ToNode(context.expression());
             Expression col = new ExpressionValue(null, new Cell(0));
-
-            return new MethodMatrixUnitAssign(this._master, mat, idx, null, row, col, 3);
+            
+            return new MethodMatrixUnitAssign(this._master, heap, idx, null, row, col, 3);
 
         }
 
@@ -576,25 +428,14 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            
-            if (!this._structs.Exists(sname))
-            {
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            }
-            else if (!this._structs[sname].Matricies.Exists(mname))
-            {
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-            }
-
-            Heap<CellMatrix> mat = this._structs[sname].Matricies;
-            int idx = mat.GetPointer(mname);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.generic_name());
+            int idx = heap.GetPointer(name);
 
             Expression row = this._exp.ToNode(context.expression());
             Expression col = new ExpressionValue(null, new Cell(0));
 
-            return new MethodMatrixUnitAssign(this._master, mat, idx, null, row, col, 4);
+            return new MethodMatrixUnitAssign(this._master, heap, idx, null, row, col, 4);
 
         }
 
@@ -603,20 +444,13 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            
-            if (!this._structs.Exists(sname))
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            else if (!this._structs[sname].Matricies.Exists(mname))
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-
-            Heap<CellMatrix> mat = this._structs[sname].Matricies;
-            int idx = mat.GetPointer(mname);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.generic_name());
+            int idx = heap.GetPointer(name);
 
             Expression val = this._exp.ToNode(context.expression());
-            
-            return new MethodMatrixAllAssign(this._master, mat, idx, val, 0);
+
+            return new MethodMatrixAllAssign(this._master, heap, idx, val, 0);
 
         }
 
@@ -624,20 +458,13 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            
-            if (!this._structs.Exists(sname))
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            else if (!this._structs[sname].Matricies.Exists(mname))
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-
-            Heap<CellMatrix> mat = this._structs[sname].Matricies;
-            int idx = mat.GetPointer(mname);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.generic_name());
+            int idx = heap.GetPointer(name);
 
             Expression val = this._exp.ToNode(context.expression());
 
-            return new MethodMatrixAllAssign(this._master, mat, idx, val, 1);
+            return new MethodMatrixAllAssign(this._master, heap, idx, val, 1);
 
         }
 
@@ -645,20 +472,13 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            
-            if (!this._structs.Exists(sname))
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            else if (!this._structs[sname].Matricies.Exists(mname))
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
-
-            Heap<CellMatrix> mat = this._structs[sname].Matricies;
-            int idx = mat.GetPointer(mname);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.generic_name());
+            int idx = heap.GetPointer(name);
 
             Expression val = this._exp.ToNode(context.expression());
 
-            return new MethodMatrixAllAssign(this._master, mat, idx, val, 2);
+            return new MethodMatrixAllAssign(this._master, heap, idx, val, 2);
 
         }
 
@@ -666,18 +486,11 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            
-            if (!this._structs.Exists(sname))
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            else if (!this._structs[sname].Matricies.Exists(mname))
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.generic_name());
+            int idx = heap.GetPointer(name);
 
-            Heap<CellMatrix> mat = this._structs[sname].Matricies;
-            int idx = mat.GetPointer(mname);
-
-            return new MethodMatrixAllAssign(this._master, mat, idx, null, 3);
+            return new MethodMatrixAllAssign(this._master, heap, idx, null, 3);
 
         }
 
@@ -685,18 +498,11 @@ namespace Rye.Interpreter
         {
 
             // Get the name //
-            string mname = CompilerHelper.GetVariableName(context.generic_name());
-            string sname = CompilerHelper.GetParentName(context.generic_name(), this._PrimaryName);
-            
-            if (!this._structs.Exists(sname))
-                throw new RyeCompileException("Structure '{0}' does not exist", sname);
-            else if (!this._structs[sname].Matricies.Exists(mname))
-                throw new RyeCompileException("Matrix '{0}' does not exist in structure '{1}'", mname, sname);
+            string name = context.generic_name().IDENTIFIER().Last().GetText();
+            Heap<CellMatrix> heap = this._exp.GetMatrixHeap(context.generic_name());
+            int idx = heap.GetPointer(name);
 
-            Heap<CellMatrix> mat = this._structs[sname].Matricies;
-            int idx = mat.GetPointer(mname);
-
-            return new MethodMatrixAllAssign(this._master, mat, idx, null, 4);
+            return new MethodMatrixAllAssign(this._master, heap, idx, null, 4);
 
         }
         
@@ -705,24 +511,25 @@ namespace Rye.Interpreter
         {
             
             // Get the name of the structure and the method //
-            string struct_name = context.IDENTIFIER()[0].GetText();
+            string lib_name = context.IDENTIFIER()[0].GetText();
             string method_name = context.IDENTIFIER()[1].GetText();
 
-            // Check to see if the structure exists //
-            if (!this._enviro.Structures.Exists(struct_name))
+            // Check to see if the library exists //
+            if (!this._Session.MethodLibraryExists(lib_name))
             {
-                throw new ArgumentException(string.Format("Structure '{0}' does not exist", struct_name));
+                throw new ArgumentException(string.Format("Library '{0}' does not exist", lib_name));
             }
             // Now check that the method exists in the structure //
-            MemoryStructure ms = this._enviro.Structures[struct_name];
-            if (!ms.Procedures.Exists(method_name))
+            MethodLibrary lib = this._Session.GetMethodLibrary(lib_name);
+            if (!lib.Exists(method_name))
             {
-                throw new ArgumentException(string.Format("Method '{0}' does not exist for '{1}'", method_name, struct_name));
+                throw new ArgumentException(string.Format("Method '{0}' does not exist for '{1}'", method_name, lib_name));
             }
 
             // Render a visitor //
-            ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
-            
+            ExpressionVisitor exp = new ExpressionVisitor(this._Session);
+            exp.SetSecondary(exp.SecondaryName, exp.SecondaryScalars, exp.SecondaryMatrixes);
+
             // Create a parameter collection //
             ParameterCollection parameters = new ParameterCollection();
 
@@ -740,7 +547,7 @@ namespace Rye.Interpreter
                     string alias = (ctx.method_param().IDENTIFIER() == null ? name : ctx.method_param().IDENTIFIER().GetText());
 
                     // Get the table //
-                    DataSet data = this._enviro.GetData(db, name);
+                    TabularData data = this._Session.GetTabularData(db, name);
 
                     // Add to the expression visitor //
                     exp.AddRegister(alias, new Register(alias, data.Columns));
@@ -753,8 +560,8 @@ namespace Rye.Interpreter
             }
 
             // Now that we're this far, build a matrix visitor //
-            MatrixExpressionVisitor mat = new MatrixExpressionVisitor(exp);
-
+            MatrixExpressionVisitor mat = new MatrixExpressionVisitor(exp, this._Session);
+            
             // Now go through and parse the expressions and matricies //
             foreach (RyeParser.Method_param_namedContext ctx in context.method_param_named())
             {
@@ -793,11 +600,11 @@ namespace Rye.Interpreter
             }
 
             // Now that the parameter collection is ready, check against the signiture //
-            ParameterCollectionSigniture sig = ms.Procedures.RenderSigniture(method_name);
+            ParameterCollectionSigniture sig = lib.RenderSigniture(method_name);
             sig.Check(parameters);
 
             // If we made it this far... we must have passed the checking steps and can render the method node //
-            Method node = ms.Procedures.RenderMethod(this._master, method_name, parameters);
+            Method node = lib.RenderMethod(this._master, method_name, parameters);
             this._master = node;
 
             return node;
@@ -808,23 +615,23 @@ namespace Rye.Interpreter
         {
 
             // Get the name of the structure and the method //
-            string struct_name = context.IDENTIFIER()[0].GetText();
+            string lib_name = context.IDENTIFIER()[0].GetText();
             string method_name = context.IDENTIFIER()[1].GetText();
 
             // Check to see if the structure exists //
-            if (!this._enviro.Structures.Exists(struct_name))
+            if (!this._Session.MethodLibraryExists(lib_name))
             {
-                throw new ArgumentException(string.Format("Structure '{0}' does not exist", struct_name));
+                throw new ArgumentException(string.Format("Library '{0}' does not exist", lib_name));
             }
             // Now check that the method exists in the structure //
-            MemoryStructure ms = this._enviro.Structures[struct_name];
-            if (!ms.Procedures.Exists(method_name))
+            MethodLibrary lib = this._Session.GetMethodLibrary(lib_name);
+            if (!lib.Exists(method_name))
             {
-                throw new ArgumentException(string.Format("Method '{0}' does not exist for '{1}'", method_name, struct_name));
+                throw new ArgumentException(string.Format("Method '{0}' does not exist for '{1}'", method_name, lib_name));
             }
 
             // Lookup up the method //
-            ParameterCollectionSigniture sig = ms.Procedures.RenderSigniture(method_name);
+            ParameterCollectionSigniture sig = lib.RenderSigniture(method_name);
 
             // First, check that the parameter counts match, otherwise throw an exception and dont bother trying to parse any further //
             if (sig.Count != context.method_param().Length)
@@ -833,9 +640,9 @@ namespace Rye.Interpreter
             }
 
             // Render a visitor //
-            ExpressionVisitor exp = new ExpressionVisitor();
-            exp.AddStructure(struct_name, this._enviro.Structures[struct_name]);
-            Queue<DataSet> TableQueue = new Queue<DataSet>();
+            ExpressionVisitor exp = new ExpressionVisitor(this._Session);
+            exp.SetSecondary(this._exp.SecondaryName, this._exp.SecondaryScalars, this._exp.SecondaryMatrixes);
+            Queue<TabularData> TableQueue = new Queue<TabularData>();
             Queue<string> NameQueue = new Queue<string>();
 
             // Search through the parameters for all table references //
@@ -852,7 +659,7 @@ namespace Rye.Interpreter
                     string alias = (ctx.IDENTIFIER() == null ? name : ctx.IDENTIFIER().GetText());
 
                     // Get the table //
-                    DataSet data = this._enviro.GetData(db, name);
+                    TabularData data = this._Session.GetTabularData(db, name);
 
                     // Add to the expression visitor //
                     exp.AddRegister(alias, new Register(alias, data.Columns));
@@ -866,8 +673,8 @@ namespace Rye.Interpreter
             }
 
             // Now that we're this far, build a matrix visitor //
-            MatrixExpressionVisitor mat = new MatrixExpressionVisitor(exp);
-
+            MatrixExpressionVisitor mat = new MatrixExpressionVisitor(exp, this._Session);
+            
             // Now go through create the parameter collection //
             int i = 0;
             ParameterCollection parameters = new ParameterCollection();
@@ -910,7 +717,7 @@ namespace Rye.Interpreter
             // Note that we shouldn't have to check the signiture since we were checking along the way
 
             // If we made it this far... we must have passed the checking steps and can render the method node //
-            Method node = ms.Procedures.RenderMethod(this._master, method_name, parameters);
+            Method node = lib.RenderMethod(this._master, method_name, parameters);
             this._master = node;
 
             return node;

@@ -16,9 +16,6 @@ namespace Rye.Structures
         protected Heap<Cell> _scalar;
         protected Heap<CellMatrix> _matrix;
         protected Heap<Extent> _extents;
-        protected Heap<Lambda> _lambdas;
-        protected FunctionLibrary _functions;
-        protected ProcedureLibrary _procedures;
         protected string _name;
 
         public MemoryStructure(string Name)
@@ -26,43 +23,46 @@ namespace Rye.Structures
             this._scalar = new Heap<Cell>();
             this._matrix = new Heap<CellMatrix>();
             this._extents = new Heap<Extent>();
-            this._lambdas = new Heap<Lambda>();
             this._name = Name;
         }
 
+        /// <summary>
+        /// Gets the name of memory structure
+        /// </summary>
         public string Name
         {
             get { return this._name; }
         }
 
+        /// <summary>
+        /// Gets the cell resource
+        /// </summary>
         public Heap<Cell> Scalars
         {
             get { return this._scalar; }
         }
 
+        /// <summary>
+        /// Gets the cell matrix resource
+        /// </summary>
         public Heap<CellMatrix> Matricies
         {
             get { return this._matrix; }
         }
 
+        /// <summary>
+        /// Gets the extent resource
+        /// </summary>
         public Heap<Extent> Extents
         {
             get { return this._extents; }
         }
 
-        public Heap<Lambda> Lambda
+        /// <summary>
+        /// This method is intended to release any resources used by the structure
+        /// </summary>
+        public virtual void Burn()
         {
-            get { return this._lambdas; }
-        }
-
-        public FunctionLibrary Functions
-        {
-            get { return this._functions; }
-        }
-
-        public ProcedureLibrary Procedures
-        {
-            get { return this._procedures; }
         }
 
     }
@@ -76,7 +76,6 @@ namespace Rye.Structures
             : base(DEFAULT_NAME)
         {
 
-            this._functions = new SystemFunctionLibrary();
             this._scalar.Allocate("MS_TICKS", new Cell(10000L));
             this._scalar.Allocate("S_TICKS", new Cell(10000000L));
             this._scalar.Allocate("M_TICKS", new Cell(600000000L));

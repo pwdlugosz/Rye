@@ -1,0 +1,90 @@
+﻿
+
+CONNECT
+{
+	TEMP TO 'C:\Users\pwdlu_000\Documents\Data\TempDB';
+};
+
+DECLARE
+{
+
+	GLOBAL.S_URL(TICKER, BEG_DATE, END_DATE) AS LAMBDA 
+	= 
+	'http://chart.finance.yahoo.com/table.csv?s=' + TICKER 
+	+ '&a=' + MONTH(BEG_DATE)
+	+ '&b=' + DAY(BEG_DATE)
+	+ '&c=' + YEAR(BEG_DATE)
+	+ '&d=' + MONTH(END_DATE)
+	+ '&e=' + DAY(END_DATE)
+	+ '&f=' + YEAR(END_DATE)
+	+ '&g=d&ignore=.csv'
+	;
+
+	GLOBAL.D_URL(TICKER, BEG_DATE, END_DATE) AS LAMBDA 
+	= 
+	'http://chart.finance.yahoo.com/table.csv?s=' + TICKER 
+	+ '&a=' + MONTH(BEG_DATE)
+	+ '&b=' + DAY(BEG_DATE)
+	+ '&c=' + YEAR(BEG_DATE)
+	+ '&d=' + MONTH(END_DATE)
+	+ '&e=' + DAY(END_DATE)
+	+ '&f=' + YEAR(END_DATE)
+	+ '&g=v&ignore=.csv'
+	;
+
+};
+
+FILE.DOWNLOAD 
+{
+	URL = GLOBAL.S_URL('CYH', '2001-01-01'T, NOW());
+	PATH = 'C:\Users\pwdlu_000\Documents\Finance\Stock_Flat_Files\CYH.csv';
+};
+
+FILE.DOWNLOAD 
+{
+	URL = GLOBAL.D_URL('CYH', '2001-01-01'T, NOW());
+	PATH = 'C:\Users\pwdlu_000\Documents\Finance\Dividend_Flat_Files\CYH.csv';
+};
+
+CREATE TABLE GLOBAL.STOCK
+{
+	TRADE_DT AS DATE,
+	OPEN_AMT AS DOUBLE,
+	HIGH_AMT AS DOUBLE,
+	LOW_AMT AS DOUBLE,
+	CLOSE_AMT AS DOUBLE,
+	VOLUME AS DOUBLE,
+	ADJ_CLOSE AS DOUBLE
+};
+
+CREATE TABLE GLOBAL.DIVIDEND
+{
+	TRADE_DT AS DATE,
+	DIV_AMT AS DOUBLE
+};
+
+FILE.IMPORT { DATA = TABLE GLOBAL.STOCK; PATH = 'C:\Users\pwdlu_000\Documents\Finance\Stock_Flat_Files\CYH.csv'; DELIM = ','; SKIP = 1; };
+
+FILE.IMPORT { DATA = TABLE GLOBAL.DIVIDEND; PATH = 'C:\Users\pwdlu_000\Documents\Finance\Dividend_Flat_Files\CYH.csv'; DELIM = ','; SKIP = 1; };
+
+JOIN
+{
+	FROM GLOBAL.STOCK AS S;
+	FROM GLOBAL.DIVIDEND AS D;
+	LEFT;
+};
+ON
+{
+	S.TRADE_DT = D.TRADE_DT;
+};
+APPEND
+{
+	NEW GLOBAL.DATA_S1;
+	RETAIN
+		'CYH' AS TICKER,
+		S.*,
+		D.DIV_AMT ?? 0D AS DIV_AMT
+	;
+};
+
+FILE.EXPORT { DATA = TABLE GLOBAL.DATA_S1; PATH = 'C:\Users\pwdlu_000\Documents\Finance\CYH.csv'; DELIM = ','; };

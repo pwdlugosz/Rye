@@ -21,9 +21,9 @@ namespace Rye.Query
         protected Filter _F;
         protected ExpressionCollection _C;
         protected RecordWriter _W;
-        
-        public JoinProcessNode(int ThreadID, JoinAlgorithm JA, JoinType JT, Volume V1, Register M1, Volume V2, Register M2, RecordComparer RC, Filter F, ExpressionCollection C, RecordWriter W)
-            : base(ThreadID)
+
+        public JoinProcessNode(int ThreadID, Session Session, JoinAlgorithm JA, JoinType JT, Volume V1, Register M1, Volume V2, Register M2, RecordComparer RC, Filter F, ExpressionCollection C, RecordWriter W)
+            : base(ThreadID, Session)
         {
             this._BaseAlgorithm = JA;
             this._BaseType = JT;
@@ -63,6 +63,11 @@ namespace Rye.Query
 
     public class JoinConsolidation : QueryConsolidation<JoinProcessNode>
     {
+
+        public JoinConsolidation(Session Session)
+            : base(Session)
+        {
+        }
 
         public long IOCalls
         {
@@ -562,19 +567,19 @@ namespace Rye.Query
         }
 
         // Cost metrics //
-        public abstract double Cost_Block_ExE(DataSet T1, DataSet T2, int Threads, double TupleRatioHint);
+        public abstract double Cost_Block_ExE(TabularData T1, TabularData T2, int Threads, double TupleRatioHint);
 
-        public abstract double Cost_Block_ExV(DataSet T1, DataSet T2, int Threads, double TupleRatioHint);
+        public abstract double Cost_Block_ExV(TabularData T1, TabularData T2, int Threads, double TupleRatioHint);
 
-        public abstract double Cost_Block_ExT(DataSet T1, DataSet T2, int Threads, double TupleRatioHint);
+        public abstract double Cost_Block_ExT(TabularData T1, TabularData T2, int Threads, double TupleRatioHint);
 
-        public abstract double Cost_Block_VxV(DataSet T1, DataSet T2, int Threads, double TupleRatioHint);
+        public abstract double Cost_Block_VxV(TabularData T1, TabularData T2, int Threads, double TupleRatioHint);
 
-        public abstract double Cost_Block_VxT(DataSet T1, DataSet T2, int Threads, double TupleRatioHint);
+        public abstract double Cost_Block_VxT(TabularData T1, TabularData T2, int Threads, double TupleRatioHint);
 
-        public abstract double Cost_Block_TxT(DataSet T1, DataSet T2, int Threads, double TupleRatioHint);
+        public abstract double Cost_Block_TxT(TabularData T1, TabularData T2, int Threads, double TupleRatioHint);
 
-        public double Cost(DataSet T1, DataSet T2, int Threads, double TupleRatioHint, JoinImplementationType Type)
+        public double Cost(TabularData T1, TabularData T2, int Threads, double TupleRatioHint, JoinImplementationType Type)
         {
 
             switch (Type)
@@ -597,7 +602,7 @@ namespace Rye.Query
 
         }
 
-        public JoinImplementationType LowestCost(DataSet T1, DataSet T2, int Threads, double TupleRatioHint)
+        public JoinImplementationType LowestCost(TabularData T1, TabularData T2, int Threads, double TupleRatioHint)
         {
 
             JoinImplementationType MinType = JoinImplementationType.Block_TxT;
@@ -652,14 +657,14 @@ namespace Rye.Query
 
         }
 
-        public double Cost_AvgExtentSize(DataSet T)
+        public double Cost_AvgExtentSize(TabularData T)
         {
             if (T.ExtentCount == 0)
                 return 0;
             return (double)T.RecordCount / (double)T.ExtentCount;
         }
 
-        public double Cost_AvgVolumeSize(DataSet T, int Threads)
+        public double Cost_AvgVolumeSize(TabularData T, int Threads)
         {
             if (T.ExtentCount <= Threads)
                 return (double)T.RecordCount / T.ExtentCount;
@@ -668,7 +673,7 @@ namespace Rye.Query
 
         }
 
-        public double Cost_Volumes(DataSet T, int Threads)
+        public double Cost_Volumes(TabularData T, int Threads)
         {
             if (T.ExtentCount <= Threads)
                 return (double)T.ExtentCount;
@@ -1142,7 +1147,7 @@ namespace Rye.Query
         }
 
         // Cost metrics //
-        public override double Cost_Block_ExE(DataSet T1, DataSet T2, int Threads, double TupleRatioHint)
+        public override double Cost_Block_ExE(TabularData T1, TabularData T2, int Threads, double TupleRatioHint)
         {
             double avg1 = this.Cost_AvgExtentSize(T1);
             double avg2 = this.Cost_AvgExtentSize(T2);
@@ -1151,7 +1156,7 @@ namespace Rye.Query
             return Math.Max(avg1, avg2) * Combinations * TupleRatioHint / ThreadFactor;
         }
 
-        public override double Cost_Block_ExV(DataSet T1, DataSet T2, int Threads, double TupleRatioHint)
+        public override double Cost_Block_ExV(TabularData T1, TabularData T2, int Threads, double TupleRatioHint)
         {
 
             double avg1 = this.Cost_AvgExtentSize(T1);
@@ -1162,7 +1167,7 @@ namespace Rye.Query
 
         }
 
-        public override double Cost_Block_ExT(DataSet T1, DataSet T2, int Threads, double TupleRatioHint)
+        public override double Cost_Block_ExT(TabularData T1, TabularData T2, int Threads, double TupleRatioHint)
         {
 
             double avg1 = this.Cost_AvgExtentSize(T1);
@@ -1173,7 +1178,7 @@ namespace Rye.Query
 
         }
 
-        public override double Cost_Block_VxV(DataSet T1, DataSet T2, int Threads, double TupleRatioHint)
+        public override double Cost_Block_VxV(TabularData T1, TabularData T2, int Threads, double TupleRatioHint)
         {
 
             double avg1 = this.Cost_AvgVolumeSize(T1, Threads);
@@ -1184,7 +1189,7 @@ namespace Rye.Query
 
         }
 
-        public override double Cost_Block_VxT(DataSet T1, DataSet T2, int Threads, double TupleRatioHint)
+        public override double Cost_Block_VxT(TabularData T1, TabularData T2, int Threads, double TupleRatioHint)
         {
 
             double avg1 = this.Cost_AvgVolumeSize(T1, Threads);
@@ -1195,7 +1200,7 @@ namespace Rye.Query
 
         }
 
-        public override double Cost_Block_TxT(DataSet T1, DataSet T2, int Threads, double TupleRatioHint)
+        public override double Cost_Block_TxT(TabularData T1, TabularData T2, int Threads, double TupleRatioHint)
         {
 
             double avg1 = T1.RecordCount;
@@ -1355,37 +1360,37 @@ namespace Rye.Query
         }
 
         // Costs //
-        public override double Cost_Block_ExE(DataSet T1, DataSet T2, int Threads, double CardnalityHint)
+        public override double Cost_Block_ExE(TabularData T1, TabularData T2, int Threads, double CardnalityHint)
         {
             double ThreadFactor = Math.Min((double)(T1.ExtentCount * T2.ExtentCount), (double)Threads);
             return (double)(T1.RecordCount * T2.RecordCount) / ThreadFactor;
         }
 
-        public override double Cost_Block_ExV(DataSet T1, DataSet T2, int Threads, double CardnalityHint)
+        public override double Cost_Block_ExV(TabularData T1, TabularData T2, int Threads, double CardnalityHint)
         {
             double ThreadFactor = Math.Min((double)T1.ExtentCount, (double)Threads);
             return (double)(T1.RecordCount * T2.RecordCount) / ThreadFactor;
         }
 
-        public override double Cost_Block_ExT(DataSet T1, DataSet T2, int Threads, double CardnalityHint)
+        public override double Cost_Block_ExT(TabularData T1, TabularData T2, int Threads, double CardnalityHint)
         {
             double ThreadFactor = Math.Min((double)T1.ExtentCount, (double)Threads);
             return (double)(T1.RecordCount * T2.RecordCount) / ThreadFactor;
         }
 
-        public override double Cost_Block_VxV(DataSet T1, DataSet T2, int Threads, double CardnalityHint)
+        public override double Cost_Block_VxV(TabularData T1, TabularData T2, int Threads, double CardnalityHint)
         {
             double ThreadFactor = Math.Min((double)Math.Max(T1.ExtentCount, T2.ExtentCount), (double)Threads);
             return (double)(T1.RecordCount * T2.RecordCount) / ThreadFactor;
         }
 
-        public override double Cost_Block_VxT(DataSet T1, DataSet T2, int Threads, double CardnalityHint)
+        public override double Cost_Block_VxT(TabularData T1, TabularData T2, int Threads, double CardnalityHint)
         {
             double ThreadFactor = Math.Min((double)T1.ExtentCount, (double)Threads);
             return (double)(T1.RecordCount * T2.RecordCount) / ThreadFactor;
         }
 
-        public override double Cost_Block_TxT(DataSet T1, DataSet T2, int Threads, double CardnalityHint)
+        public override double Cost_Block_TxT(TabularData T1, TabularData T2, int Threads, double CardnalityHint)
         {
             return (double)(T1.RecordCount * T2.RecordCount);
         }

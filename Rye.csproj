@@ -13,6 +13,22 @@
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>1</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <PublishWizardCompleted>true</PublishWizardCompleted>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -34,9 +50,29 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ManifestCertificateThumbprint>6847ECD89C5C2D5E6A6E1BB5B153EDA4A5DE9E05</ManifestCertificateThumbprint>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ManifestKeyFile>Rye_TemporaryKey.pfx</ManifestKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GenerateManifests>true</GenerateManifests>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignManifests>true</SignManifests>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Antlr4.Runtime, Version=4.5.0.0, Culture=neutral, PublicKeyToken=e9931a4108ef2354, processorArchitecture=MSIL">
       <HintPath>..\packages\Antlr4.Runtime.4.5-alpha003\lib\net45\Antlr4.Runtime.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Excel, Version=2.1.2.3, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
+      <HintPath>..\packages\ExcelDataReader.2.1.2.3\lib\net45\Excel.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ICSharpCode.SharpZipLib, Version=0.86.0.518, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpZipLib.0.86.0\lib\20\ICSharpCode.SharpZipLib.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -73,6 +109,7 @@
     <Compile Include="Data\Cell.cs" />
     <Compile Include="Data\CellAffinity.cs" />
     <Compile Include="Data\CellAffinityHelper.cs" />
+    <Compile Include="Data\CellFormat.cs" />
     <Compile Include="Data\CompoundRecord.cs" />
     <Compile Include="Data\DataManager.cs" />
     <Compile Include="Data\DataSet.cs" />
@@ -84,6 +121,10 @@
     <Compile Include="Data\RecordComparer.cs" />
     <Compile Include="Data\RecordWriter.cs" />
     <Compile Include="Data\Schema.cs" />
+    <Compile Include="Exchange\ExchangeProvider.cs" />
+    <Compile Include="Exchange\MSExcelProvider.cs" />
+    <Compile Include="Exchange\ObjectExchange.cs" />
+    <Compile Include="Exchange\OLEDB.cs" />
     <Compile Include="Expressions\Register.cs" />
     <Compile Include="Expressions\SystemFunctions.cs" />
     <Compile Include="Expressions\Expression.cs" />
@@ -118,7 +159,10 @@
       <DependentUpon>RyeParser.g4</DependentUpon>
     </Compile>
     <Compile Include="Interpreter\RyeScriptProcessorcs.cs" />
-    <Compile Include="Interpreter\Workspace.cs" />
+    <Compile Include="Data\Session.cs" />
+    <Compile Include="Libraries\FinanceLibrary.cs" />
+    <Compile Include="Libraries\MSOfficeLibrary.cs" />
+    <Compile Include="Libraries\SystemLibrary.cs" />
     <Compile Include="MatrixExpressions\MatrixExpression.cs" />
     <Compile Include="MatrixExpressions\MatrixExpressionAdd.cs" />
     <Compile Include="MatrixExpressions\MatrixExpressionAddScalar.cs" />
@@ -156,10 +200,10 @@
     <Compile Include="Methods\MethodWhile.cs" />
     <Compile Include="Data\SortMaster.cs" />
     <Compile Include="Query\PreProcessor.cs" />
-    <Compile Include="Structures\FileStructure.cs" />
-    <Compile Include="Expressions\FunctionLibrary.cs" />
+    <Compile Include="Libraries\FileLibrary.cs" />
+    <Compile Include="Libraries\FunctionLibrary.cs" />
     <Compile Include="Structures\Heap.cs" />
-    <Compile Include="Methods\ProcedureLibrary.cs" />
+    <Compile Include="Libraries\ProcedureLibrary.cs" />
     <Compile Include="Methods\StructureMethod.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -170,7 +214,11 @@
     <Compile Include="Query\SelectProcess.cs" />
     <Compile Include="Query\UpdateProcess.cs" />
     <Compile Include="Structures\MemoryStructure.cs" />
-    <Compile Include="Structures\TableStructure.cs" />
+    <Compile Include="Structures\MSOffice.cs" />
+    <Compile Include="Libraries\BaseLibrary.cs" />
+    <Compile Include="Libraries\TableLibrary.cs" />
+    <Compile Include="Structures\PartionedHeap.cs" />
+    <Compile Include="Structures\Quack.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -183,12 +231,16 @@
       <CustomToolNamespace>Rye.Interpreter</CustomToolNamespace>
     </Antlr4>
     <None Include="packages.config" />
+    <None Include="Rye_TemporaryKey.pfx" />
     <None Include="Scripts\AggregateTesting.rye" />
     <None Include="Scripts\ExpressionTesting.rye" />
     <None Include="Scripts\MatrixTesting.rye" />
+    <None Include="Scripts\Primes.rye" />
     <None Include="Scripts\QueryTesting.rye" />
     <None Include="Scripts\SortTesting.rye" />
+    <None Include="Scripts\StockCrawler.rye" />
     <None Include="Scripts\TableBuildTests.rye" />
+    <None Include="Scripts\TickerDownload.rye" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Scripts\ActionTesting.rye" />
@@ -254,6 +306,21 @@
       <Isolated>False</Isolated>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </COMReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Scripts\CallSimulator.rye" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

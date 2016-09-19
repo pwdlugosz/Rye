@@ -11,7 +11,7 @@ namespace Rye.Data
     public static class SortMaster
     {
 
-        // Extent //
+        // Shard //
         public static long Sort(Extent A, RecordComparer RC)
         {
 
@@ -59,8 +59,8 @@ namespace Rye.Data
             // Variables //
             Extent x = new Extent(A.Columns);
             Extent y = new Extent(B.Columns);
-            x.MaxRecords = A.MaxRecords;
-            y.MaxRecords = B.MaxRecords;
+            x.Header.PageSize = A.Header.PageSize;
+            y.Header.PageSize = B.Header.PageSize;
             int CompareResult = 0;
 
             // Main record loop //
@@ -164,13 +164,13 @@ namespace Rye.Data
             {
 
                 // Buffer record set //
-                Extent e = Kernel.RequestBufferExtent(h.Path);
+                Extent e = A.IO.RequestBufferExtent(A, h.ID);
 
                 // Check if it is sorted //
                 Clicks += SortMaster.Sort(e, RC);
 
                 // FlushRecordUnion //
-                Kernel.RequestFlushExtent(e);
+                A.IO.RequestFlushExtent(e);
 
             }
 
@@ -192,7 +192,7 @@ namespace Rye.Data
                 Clicks += SortMaster.Sort(e, RC);
 
                 // FlushRecordUnion //
-                Kernel.RequestFlushExtent(e);
+                A.IO.RequestFlushExtent(e);
 
             }
             return Clicks;
@@ -249,7 +249,7 @@ namespace Rye.Data
             return SortMaster.SortEach(A, rc, Extents);
         }
 
-        // Table //
+        // ShartTable //
         public static long Sort(Table A, RecordComparer RC)
         {
 
@@ -298,7 +298,7 @@ namespace Rye.Data
             }
 
             // Flush //
-            Kernel.RequestFlushTable(A);
+            A.RequestFlushMe();
 
             // Return cost //
             return Clicks;
@@ -352,7 +352,7 @@ namespace Rye.Data
             }
 
             // Flush //
-            Kernel.RequestFlushTable(A);
+            A.RequestFlushMe();
 
             return Clicks;
 

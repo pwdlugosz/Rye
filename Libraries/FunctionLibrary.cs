@@ -4,14 +4,28 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Rye.Expressions;
+using Rye.Data;
 
-namespace Rye.Expressions
+namespace Rye.Libraries
 {
 
     public abstract class FunctionLibrary
     {
 
+        protected Session _Session;
+
+        public FunctionLibrary(Session Session)
+        {
+            this._Session = Session;
+        }
+
         public abstract CellFunction RenderFunction(string Name);
+
+        public string LibName
+        {
+            get;
+            protected set;
+        }
 
         public abstract string[] Names { get; }
 

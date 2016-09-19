@@ -17,6 +17,7 @@ namespace Rye.Methods
     {
 
         private Expression _Mapping;
+        private Heap<Cell> _Heap;
         private int _Index;
         private int _AssignID; // 0 == assign, 1 == increment, 2 == decrement, 3 == auto increment, 4 == auto decrement
 
@@ -28,7 +29,7 @@ namespace Rye.Methods
         /// <param name="Index">The direct location of the variable in the heap</param>
         /// <param name="Map">The expression to assign to</param>
         /// <param name="AssignID">0 == assign, 1 == increment, 2 == decrement, 3 == auto increment, 4 == auto decrement</param>
-        public MethodAssignScalar(Method Parent, MemoryStructure Heap, int Index, Expression Map, int AssignID)
+        public MethodAssignScalar(Method Parent, Heap<Cell> Heap, int Index, Expression Map, int AssignID)
             : base(Parent)
         {
             this._Heap = Heap;
@@ -43,23 +44,23 @@ namespace Rye.Methods
             {
 
                 case 0:
-                    this._Heap.Scalars[this._Index] = this._Mapping.Evaluate();
+                    this._Heap[this._Index] = this._Mapping.Evaluate();
                     return;
 
                 case 1:
-                    this._Heap.Scalars[this._Index] += this._Mapping.Evaluate();
+                    this._Heap[this._Index] += this._Mapping.Evaluate();
                     return;
 
                 case 2:
-                    this._Heap.Scalars[this._Index] -= this._Mapping.Evaluate();
+                    this._Heap[this._Index] -= this._Mapping.Evaluate();
                     return;
 
                 case 3:
-                    this._Heap.Scalars[this._Index]++;
+                    this._Heap[this._Index]++;
                     return;
 
                 case 4:
-                    this._Heap.Scalars[this._Index]--;
+                    this._Heap[this._Index]--;
                     return;
 
             }
@@ -69,7 +70,7 @@ namespace Rye.Methods
         public override string Message()
         {
 
-            return string.Format("{0} = {1}", this._Heap.Scalars.Name(this._Index), this._Heap.Scalars[this._Index]);
+            return string.Format("{0} = {1}", this._Heap.Name(this._Index), this._Heap[this._Index]);
 
         }
 

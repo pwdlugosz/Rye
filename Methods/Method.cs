@@ -18,21 +18,14 @@ namespace Rye.Methods
 
         protected Method _Parent;
         protected List<Method> _Children;
-        protected MemoryStructure _Heap;
         protected int _RaiseElement = 0; // 0 == normal, 1 == break loop, 2 == break main read
         protected Register _reg;
 
-        public Method(Method Parent, MemoryStructure Heap)
+        public Method(Method Parent)
         {
             this._Parent = Parent;
             this._Children = new List<Method>();
-            this._Heap = Heap;
             this._reg = null;
-        }
-
-        public Method(Method Parent)
-            : this(Parent, new MemoryStructure("NULL"))
-        {
         }
 
         // Properties //

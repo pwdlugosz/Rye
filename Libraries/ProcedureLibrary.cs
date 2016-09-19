@@ -7,20 +7,27 @@ using Rye.Expressions;
 using Rye.Data;
 using Rye.Structures;
 using Rye.Interpreter;
+using Rye.Methods;
 
-namespace Rye.Methods
+namespace Rye.Libraries
 {
 
-    public abstract class ProcedureLibrary
+    public abstract class MethodLibrary
     {
 
-        protected MemoryStructure _Caller;
-        
-        public ProcedureLibrary(MemoryStructure Caller)
+        protected Session _Session;
+
+        public MethodLibrary(Session Session)
         {
-            this._Caller = Caller;
+            this._Session = Session;
         }
-            
+        
+        public string LibName
+        {
+            get;
+            protected set;
+        }
+
         public abstract Method RenderMethod(Method Parent, string Name, ParameterCollection Parameters);
 
         public virtual Method RenderMethod(string Name, ParameterCollection Parameters)
@@ -42,7 +49,7 @@ namespace Rye.Methods
             get { return this.Names.Length; }
         }
 
-        public sealed class EmptyLibrary : ProcedureLibrary
+        public sealed class EmptyLibrary : MethodLibrary
         {
 
             public EmptyLibrary()

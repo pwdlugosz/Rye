@@ -163,6 +163,50 @@ namespace Rye.Data
 
         }
 
+        public static bool IsValidType(Type T)
+        {
+
+            if (T == typeof(byte) || T == typeof(ushort) || T == typeof(uint) || T == typeof(ulong))
+                return true;
+            else if (T == typeof(sbyte) || T == typeof(short) || T == typeof(int) || T == typeof(long))
+                return true;
+            else if (T == typeof(float) || T == typeof(double))
+                return true;
+            else if (T == typeof(string))
+                return true;
+            else if (T == typeof(byte[]))
+                return true;
+            else if (T == typeof(DateTime))
+                return true;
+            else if (T == typeof(bool))
+                return true;
+
+            return false;
+
+        }
+
+        public static CellAffinity Render(Type T)
+        {
+
+            if (T == typeof(byte) || T == typeof(ushort) || T == typeof(uint) || T == typeof(ulong))
+                return CellAffinity.INT;
+            else if (T == typeof(sbyte) || T == typeof(short) || T == typeof(int) || T == typeof(long))
+                return CellAffinity.INT;
+            else if (T == typeof(float) || T == typeof(double))
+                return CellAffinity.DOUBLE;
+            else if (T == typeof(string))
+                return CellAffinity.STRING;
+            else if (T == typeof(byte[]))
+                return CellAffinity.BLOB;
+            else if (T == typeof(DateTime))
+                return CellAffinity.DATE_TIME;
+            else if (T == typeof(bool))
+                return CellAffinity.BOOL;
+
+            return CellAffinity.INT;
+
+        }
+
     }
 
 }

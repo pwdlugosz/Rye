@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Rye.Data;
+using Rye.Structures;
 
 namespace Rye.Expressions
 {
@@ -78,12 +79,13 @@ namespace Rye.Expressions
 
     }
 
+    
     public static class FilterFactory
     {
 
         public static Filter Equals(Expression Left, Expression Right)
         {
-            ExpressionResult node = new ExpressionResult(null, SystemFunctionLibrary.LookUp(SystemFunctionLibrary.TOKEN_BOOL_EQ));
+            ExpressionResult node = new ExpressionResult(null, new CellBoolEQ());
             node.AddChildNode(Left);
             node.AddChildNode(Right);
             return new Filter(node);
@@ -91,7 +93,7 @@ namespace Rye.Expressions
 
         public static Filter NotEquals(Expression Left, Expression Right)
         {
-            ExpressionResult node = new ExpressionResult(null, SystemFunctionLibrary.LookUp(SystemFunctionLibrary.TOKEN_BOOL_NEQ));
+            ExpressionResult node = new ExpressionResult(null, new CellBoolNEQ());
             node.AddChildNode(Left);
             node.AddChildNode(Right);
             return new Filter(node);
@@ -99,21 +101,21 @@ namespace Rye.Expressions
 
         public static Filter IsNull(Expression N)
         {
-            ExpressionResult node = new ExpressionResult(null, SystemFunctionLibrary.LookUp(SystemFunctionLibrary.FUNC_IS_NULL));
+            ExpressionResult node = new ExpressionResult(null, new CellFuncFKIsNull());
             node.AddChildNode(N);
             return new Filter(node);
         }
 
         public static Filter IsNotNull(Expression N)
         {
-            ExpressionResult node = new ExpressionResult(null, SystemFunctionLibrary.LookUp(SystemFunctionLibrary.FUNC_IS_NOT_NULL));
+            ExpressionResult node = new ExpressionResult(null, new CellFuncFKIsNotNull());
             node.AddChildNode(N);
             return new Filter(node);
         }
 
         public static Filter LessThan(Expression Left, Expression Right)
         {
-            ExpressionResult node = new ExpressionResult(null, SystemFunctionLibrary.LookUp(SystemFunctionLibrary.BOOL_LT));
+            ExpressionResult node = new ExpressionResult(null, new CellBoolLT());
             node.AddChildNode(Left);
             node.AddChildNode(Right);
             return new Filter(node);
@@ -121,7 +123,7 @@ namespace Rye.Expressions
 
         public static Filter GreaterThan(Expression Left, Expression Right)
         {
-            ExpressionResult node = new ExpressionResult(null, SystemFunctionLibrary.LookUp(SystemFunctionLibrary.BOOL_GT));
+            ExpressionResult node = new ExpressionResult(null, new CellBoolGT());
             node.AddChildNode(Left);
             node.AddChildNode(Right);
             return new Filter(node);
@@ -129,7 +131,7 @@ namespace Rye.Expressions
 
         public static Filter LessThanOrEquals(Expression Left, Expression Right)
         {
-            ExpressionResult node = new ExpressionResult(null, SystemFunctionLibrary.LookUp(SystemFunctionLibrary.BOOL_LTE));
+            ExpressionResult node = new ExpressionResult(null, new CellBoolLTE());
             node.AddChildNode(Left);
             node.AddChildNode(Right);
             return new Filter(node);
@@ -137,7 +139,7 @@ namespace Rye.Expressions
 
         public static Filter GreaterThanOrEquals(Expression Left, Expression Right)
         {
-            ExpressionResult node = new ExpressionResult(null, SystemFunctionLibrary.LookUp(SystemFunctionLibrary.BOOL_GTE));
+            ExpressionResult node = new ExpressionResult(null, new CellBoolGTE());
             node.AddChildNode(Left);
             node.AddChildNode(Right);
             return new Filter(node);
@@ -171,7 +173,7 @@ namespace Rye.Expressions
             return new Filter(or);
         }
 
-
     }
+    
     
 }

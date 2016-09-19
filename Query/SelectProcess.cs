@@ -25,7 +25,8 @@ namespace Rye.Query
 
         private Register _main;
         private Register _peek;
-        private MemoryStructure _local;
+        private Heap<Cell> _lscalar;
+        private Heap<CellMatrix> _lmatrix;
         private MethodCollection _map;
         private MethodCollection _reduce;
 
@@ -40,15 +41,16 @@ namespace Rye.Query
         private int _isLastptr = 0;
         private bool _hasKC = false;
 
-        public SelectProcessNode(int ThreadID, Volume Data, Register Main, MemoryStructure LocalHeap, MethodCollection MapActions, MethodCollection ReduceActions, 
+        public SelectProcessNode(int ThreadID, Session Session, Volume Data, Register Main, Heap<Cell> Scalars, Heap<CellMatrix> Matrixes, MethodCollection MapActions, MethodCollection ReduceActions, 
             Filter Where, ExpressionCollection KeyChange)
-            : base(ThreadID)
+            : base(ThreadID, Session)
         {
 
             this._data = Data;
 
             this._main = Main;
-            this._local = LocalHeap;
+            this._lscalar = Scalars;
+            this._lmatrix = Matrixes;
             this._map = MapActions;
             this._reduce = ReduceActions;
             this._where = Where;
@@ -75,11 +77,11 @@ namespace Rye.Query
         {
             
             // Get the pointers //
-            this._rowIDptr = this._local.Scalars.GetPointer(ROW_ID);
-            this._extentIDptr = this._local.Scalars.GetPointer(EXTENT_ID);
-            this._kcptr = this._local.Scalars.GetPointer(KEY_CHANGE);
-            this._isFirstptr = this._local.Scalars.GetPointer(IS_FIRST);
-            this._isLastptr = this._local.Scalars.GetPointer(IS_LAST);
+            this._rowIDptr = this._lscalar.GetPointer(ROW_ID);
+            this._extentIDptr = this._lscalar.GetPointer(EXTENT_ID);
+            this._kcptr = this._lscalar.GetPointer(KEY_CHANGE);
+            this._isFirstptr = this._lscalar.GetPointer(IS_FIRST);
+            this._isLastptr = this._lscalar.GetPointer(IS_LAST);
             this._map.BeginInvoke();
 
         }
@@ -133,16 +135,16 @@ namespace Rye.Query
                 }
 
                 // Set the key variables //
-                this._local.Scalars[this._extentIDptr] = new Cell(stream.SetID);
-                this._local.Scalars[this._rowIDptr] = new Cell(stream.Position);
-                this._local.Scalars[this._isFirstptr] = (first ? Cell.TRUE : Cell.FALSE);
-                this._local.Scalars[this._isLastptr] = (stream.EndOfData ? Cell.TRUE : Cell.FALSE);
+                this._lscalar[this._extentIDptr] = new Cell(stream.SetID);
+                this._lscalar[this._rowIDptr] = new Cell(stream.Position);
+                this._lscalar[this._isFirstptr] = (first ? Cell.TRUE : Cell.FALSE);
+                this._lscalar[this._isLastptr] = (stream.EndOfData ? Cell.TRUE : Cell.FALSE);
                 if (first) 
                     first = false;
                 if (this._hasKC)
                 {
                     bool b = !rc.Equals(this._key1.Evaluate(), this._key2.Evaluate());
-                    this._local.Scalars[this._kcptr] = new Cell(b);
+                    this._lscalar[this._kcptr] = new Cell(b);
                 }
 
                 // Perform our actions //
@@ -162,6 +164,11 @@ namespace Rye.Query
 
     public sealed class SelectProcessConsolidation : QueryConsolidation<SelectProcessNode>
     {
+
+        public SelectProcessConsolidation(Session Session)
+            :base(Session)
+        {
+        }
 
         public override void Consolidate(List<SelectProcessNode> Nodes)
         {

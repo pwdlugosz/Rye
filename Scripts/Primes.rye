@@ -1,0 +1,82 @@
+﻿
+
+CONNECT
+{
+	TEMP TO 'C:\Users\pwdlu_000\Documents\Data\TempDB';
+};
+
+CREATE TABLE GLOBAL.PRIMES
+{
+	NUMBER AS INT
+};
+
+FOR I = 1 TO 1000
+DO
+{
+	IF (ISPRIME(I)) THEN
+	DO
+	{
+
+		APPEND
+		{ 
+			GLOBAL.PRIMES;
+			RETAIN I AS NUMBER;
+		};
+
+	};
+};
+
+JOIN
+{
+	FROM GLOBAL.PRIMES AS A;
+	FROM GLOBAL.PRIMES AS B;
+	WHERE A.NUMBER < B.NUMBER;
+};
+APPEND
+{
+	NEW GLOBAL.PRIMES_COMBINED;
+	RETAIN A.NUMBER AS P_NUM, B.NUMBER AS Q_NUM;
+};
+
+SELECT
+{
+	FROM GLOBAL.PRIMES_COMBINED AS X;
+};
+DECLARE
+{
+	N AS INT = 0;
+	P2 AS INT = 0;
+	Q2 AS INT = 0;
+	T AS INT = 0;
+	A AS INT = 0;
+	B AS INT = 0;
+	C AS INT = 0;
+};
+MAP
+{
+	
+	N = X.P_NUM * X.Q_NUM;
+	P2 = X.P_NUM ^ 2;
+	Q2 = X.Q_NUM ^ 2;
+	T = (X.P_NUM - 1) * (X.Q_NUM - 1);
+	A = N - P2;
+	B =	Q2 - N;
+	C = B - A;
+
+};
+
+
+//SELECT { FROM GLOBAL.PRIMES_COMBINED AS A; }; MAP { PRINT A.*; };
+FILE.EXPORT
+{
+	DATA = TABLE GLOBAL.PRIMES_COMBINED;
+	PATH = 'C:\Users\pwdlu_000\Documents\Data\PRIMES.txt';
+	DELIM = TAB;
+};
+
+
+
+
+
+
+
