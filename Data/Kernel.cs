@@ -105,11 +105,37 @@ namespace Rye.Data
             get { return this._Provider.DefaultPageSize; }
         }
 
+        public string[] ExtentNames
+        {
+            get
+            {
+                List<string> names = new List<string>();
+                foreach (Extent e in this._ExtentCache.Values)
+                {
+                    names.Add(string.Format("{0} : {1} : {2}", e.Header.Name, e.Header.ID, e.MemCost));
+                }
+                return names.ToArray();
+            }
+        }
+
+        public string[] TableNames
+        {
+            get
+            {
+                List<string> names = new List<string>();
+                foreach (Table t in this._TableCache.Values)
+                {
+                    names.Add(string.Format("{0}", t.Header.Name));
+                }
+                return names.ToArray();
+            }
+        }
+
         // Public Methods //
         public void RequestFlushExtent(Extent E)
         {
 
-            if (this.CanExceptExtent(E))
+            if (this.CanAcceptExtent(E))
             {
                 this.VirtualFlushExtent(E);
                 return;
@@ -122,7 +148,7 @@ namespace Rye.Data
         public void RequestFlushTable(Table T)
         {
 
-            if (this.CanExceptTable(T))
+            if (this.CanAcceptTable(T))
             {
                 this.VirtualFlushTable(T);
                 return;
@@ -144,7 +170,7 @@ namespace Rye.Data
 
             Extent e = this.BufferExtent(Parent, ID);
 
-            if (this.CanExceptExtent(e))
+            if (this.CanAcceptExtent(e))
                 this.VirtualFlushExtent(e);
 
             return e;
@@ -161,7 +187,7 @@ namespace Rye.Data
 
             Table t = this.BufferTable(Path);
 
-            if (this.CanExceptTable(t))
+            if (this.CanAcceptTable(t))
                 this.VirtualFlushTable(t);
 
             return t;
@@ -248,6 +274,48 @@ namespace Rye.Data
             return File.Exists(Path) || this.IsTableCached(Path);
         }
 
+        public void MarkTable(string Path, bool PriorityOne)
+        {
+
+            // Buffer the table //
+            Table t = this.RequestBufferTable(Path);
+
+            // Check if there are any extents to buffer //
+            if (t.ExtentCount == 0)
+                return;
+
+            // Check if we can accept a table //
+            if (!this.CanAcceptTable(t) && !PriorityOne)
+                return;
+            else if (!this.CanAcceptTable(t))
+                this.ClearCache();
+
+            // Check again if we can now accept the table //
+            if (!this.CanAcceptTable(t))
+                return;
+
+            // Call all extents //
+            int id = 0;
+            while (id < t.ExtentCount)
+            {
+                
+                // Check if the extent is in memory //
+                Header h = t.RenderHeader(id);
+                if (!this.IsExtentCached(h.LookUpKey))
+                {
+
+                    // See if we can take the extent //
+                    if (this._ExtentCache.Count + 1 < this._ExtentCacheLimit)
+                    {
+                        Extent e = this.RequestBufferExtent(t, id);
+                    }
+
+                }
+
+            }
+
+        }
+
         #region IO_Manager
 
         private long _MaxMemory = 256 * 1024 * 1024; // 256 mb
@@ -261,7 +329,7 @@ namespace Rye.Data
             return this._ExtentCache.ContainsKey(Path);
         }
 
-        private bool CanExceptExtent(Extent Data)
+        private bool CanAcceptExtent(Extent Data)
         {
 
             // Shard is already cached //
@@ -277,6 +345,24 @@ namespace Rye.Data
             //    return false;
 
             // Otherwise we can accept it //
+            return true;
+
+        }
+
+        private bool CanAcceptExtent(Table Data, long ID)
+        {
+
+            // Get the ID //
+            if (ID > Data.ExtentCount || ID < 0)
+                return false;
+
+            // Get the record count //
+            long MemoryCost = Data.GetRecordCount(ID) * Data.Columns.RecordMemCost;
+
+            // Check if we have space //
+            if (MemoryCost + this._CurrentMemory > this._MaxMemory)
+                return false;
+
             return true;
 
         }
@@ -340,7 +426,7 @@ namespace Rye.Data
             return this._TableCache.ContainsKey(Path);
         }
 
-        private bool CanExceptTable(Table Data)
+        private bool CanAcceptTable(Table Data)
         {
             if (this._TableCache.ContainsKey(Data.Header.Path))
                 return true;
@@ -522,6 +608,52 @@ namespace Rye.Data
             }
 
             writer.Close();
+
+        }
+
+        internal static string RyeProjectsDir
+        {
+            get { return System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\Rye Projects\"; }
+        }
+
+        internal static string RyeTempDir
+        {
+            get { return Kernel.RyeProjectsDir + @"Temp\"; }
+        }
+
+        internal static string RyeFlatFilesDir
+        {
+            get { return Kernel.RyeProjectsDir + @"Flat Files\"; }
+        }
+
+        internal static string RyeScriptsDir
+        {
+            get { return Kernel.RyeProjectsDir + @"Scripts\"; }
+        }
+
+        internal static string RyeLogDir
+        {
+            get { return Kernel.RyeProjectsDir + @"Log Files\"; }
+        }
+
+        internal static void CheckDir()
+        {
+
+            // Temp Dir //
+            if (!Directory.Exists(Kernel.RyeTempDir))
+                Directory.CreateDirectory(Kernel.RyeTempDir);
+
+            // Flat Files //
+            if (!Directory.Exists(Kernel.RyeFlatFilesDir))
+                Directory.CreateDirectory(Kernel.RyeFlatFilesDir);
+
+            // Scripts //
+            if (!Directory.Exists(Kernel.RyeScriptsDir))
+                Directory.CreateDirectory(Kernel.RyeScriptsDir);
+
+            // Log //
+            if (!Directory.Exists(Kernel.RyeLogDir))
+                Directory.CreateDirectory(Kernel.RyeLogDir);
 
         }
 

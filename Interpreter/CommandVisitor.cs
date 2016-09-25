@@ -496,7 +496,7 @@ namespace Rye.Interpreter
         {
 
             // Notify //
-            this._enviro.IO.WriteHeader("Aggregate - Hash ShartTable");
+            this._enviro.IO.WriteHeader("Aggregate - Hash ShardTable");
 
             // Get some high level data first, such as thread count, 'where' clause, and source data //
             TabularData data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());

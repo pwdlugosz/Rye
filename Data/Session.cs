@@ -20,6 +20,7 @@ namespace Rye.Data
         private const string DEFAULT_NAMESPACE = "GLOBAL";
         private const string TEMP_DB = "TEMP";
         private const int SYS_REF = 0;
+        public const string VERSION = "0.0.2";
 
         // Private variables //
         private Heap<Extent> _extents;
@@ -324,13 +325,104 @@ namespace Rye.Data
             return this._methods[Namespace].RenderSigniture(Name);
         }
 
+        // Meta data //
+        public string MemoryDump
+        {
+
+            get
+            {
+                
+                StringBuilder sb = new StringBuilder();
+
+                // Extents
+                sb.AppendLine("EXTENT CACHE");
+                if (this._extents.Count == 0)
+                    sb.AppendLine("\t<EMPTY>");
+                foreach (Extent extent in this._extents.Values)
+                    sb.AppendLine("\t" + extent.Header.Name);
+
+                // Connections
+                sb.AppendLine("CONNECTIONS");
+                if (this._connections.Count == 0)
+                    sb.AppendLine("\t<EMPTY>");
+                foreach (string connection in this._connections.Values)
+                    sb.AppendLine("\t" + connection);
+
+                // Scalars 
+                sb.AppendLine("SCALAR CACHE");
+                if (this._scalars.Count == 0)
+                    sb.AppendLine("\t<EMPTY>");
+                foreach (KeyValuePair<string,Cell> scalar in this._scalars.Entries)
+                    sb.AppendLine("\t" + scalar.Key);
+
+                // Matricies
+                sb.AppendLine("MATRIX CACHE");
+                if (this._matrixes.Count == 0)
+                    sb.AppendLine("\t<EMPTY>");
+                foreach (KeyValuePair<string, CellMatrix> matrix in this._matrixes.Entries)
+                    sb.AppendLine("\t" + matrix.Key + "[" + matrix.Value.RowCount.ToString() + "," + matrix.Value.ColumnCount.ToString() + "]");
+
+                // Lambdas
+                sb.AppendLine("LAMBDA CACHE");
+                if (this._lambdas.Count == 0)
+                    sb.AppendLine("\t<EMPTY>");
+                foreach (Lambda lam in this._lambdas.Values)
+                    sb.AppendLine("\t" + lam.Name);
+
+                // Function
+                sb.AppendLine("FUNCTION LIBRARIES");
+                if (this._functions.Count == 0)
+                    sb.AppendLine("\t<EMPTY>");
+                foreach (FunctionLibrary flib in this._functions.Values)
+                {
+                    sb.AppendLine("\t" + flib.LibName);
+                    foreach (string name in flib.Names)
+                    {
+                        sb.AppendLine("\t\t" + name);
+                    }
+                }
+
+                // Function
+                sb.AppendLine("METHOD LIBRARIES");
+                if (this._methods.Count == 0)
+                    sb.AppendLine("\t<EMPTY>");
+                foreach (MethodLibrary mlib in this._methods.Values)
+                {
+                    sb.AppendLine("\t" + mlib.LibName);
+                    foreach (string name in mlib.Names)
+                    {
+                        sb.AppendLine("\t\t" + name);
+                    }
+                }
+
+                // Kernel Dump 
+                sb.AppendLine("KERNEL CACHE");
+                sb.AppendLine("\tTables");
+                foreach (string m in this._kernel.TableNames)
+                {
+                    sb.AppendLine("\t\t" + m);
+                }
+                sb.AppendLine("\tExtents");
+                foreach (string m in this._kernel.ExtentNames)
+                {
+                    sb.AppendLine("\t\t" + m);
+                }
+
+                // Return //
+                return sb.ToString();
+
+            }
+
+
+        }
+
     }
 
     public abstract class Communicator
     {
 
-        public string BREAKER_LINE = "-------------------------------------------------------------------------";
-        public string HEADER_LINE = "---------------------------------- {0} ----------------------------------";
+        public string BREAKER_LINE = "----------------------------------------------------------------------";
+        public string HEADER_LINE = "----------------------------------- {0} -----------------------------------";
         public string NEW_LINE = "\n";
 
         public Communicator()
@@ -361,7 +453,15 @@ namespace Rye.Data
 
         public virtual void WriteHeader(string Message)
         {
-            this.WriteLine(HEADER_LINE, Message);
+            this.WriteLine(BlankHeader(Message.Length), Message);
+        }
+
+        public static string BlankHeader(int StringSize)
+        {
+            int len = (StringSize > 70 ? 1 : (70 - StringSize) / 2 + 1);
+
+            string s = new string('-', len);
+            return s + "{0}" + s;
         }
 
         public abstract void ShutDown();
@@ -389,6 +489,52 @@ namespace Rye.Data
         public override void ShutDown()
         {
  	        
+        }
+
+    }
+
+    public sealed class HybridCommunicator : Communicator
+    {
+
+        private System.IO.StreamWriter _FileLog;
+
+        public HybridCommunicator(string Path)
+            : base()
+        {
+            this._FileLog = new System.IO.StreamWriter(Path, false);
+        }
+
+        public HybridCommunicator()
+            : this(HybridCommunicator.RandomLogFile())
+        {
+        }
+
+        public override void Write(string Message, params object[] Paramters)
+        {
+            Console.Write(Message,Paramters);
+            this._FileLog.WriteLine(Message, Paramters);
+        }
+
+        public override void WriteLine(string Message)
+        {
+            Console.WriteLine(Message);
+            this._FileLog.WriteLine(Message);
+        }
+
+        public override void ShutDown()
+        {
+            this._FileLog.Flush();
+            this._FileLog.Close();
+        }
+
+        public static string RandomLogFile()
+        {
+
+            string Dir = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\Rye Projects\Log Files\";
+            DateTime now = DateTime.Now;
+            string Name = string.Format("Log_{0}{1}{2}_{3}{4}{5}.txt", now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Millisecond);
+            return Dir + Name;
+
         }
 
     }

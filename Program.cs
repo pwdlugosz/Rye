@@ -29,20 +29,22 @@ namespace Rye
 
             // Open the file to get the script //
             string script = System.IO.File.ReadAllText(System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\Rye\Rye\Interpreter\TestScript.rye");
-            Kernel k = new Kernel(@"C:\Users\pwdlu_000\Documents\Data\TempDB");
-
+            Kernel k = new Kernel(System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\Rye Projects\Temp\");
+            
             // Render a Session
-            Session enviro = new Session(k, new CommandLineCommunicator(), true);
+            Session enviro = new Session(k, new HybridCommunicator(), true);
 
             // Add in the method library //
             enviro.SetMethodLibrary(new Libraries.FileMethodLibrary(enviro));
             enviro.SetMethodLibrary(new Libraries.TableMethodLibrary(enviro));
             enviro.SetMethodLibrary(new Libraries.MSOfficeLibrary(enviro));
+            enviro.SetMethodLibrary(new Libraries.SystemMethodLibrary(enviro));
 
             // Add the function libraries //
             enviro.SetFunctionLibrary(new Libraries.FileFunctionLibrary(enviro));
             enviro.SetFunctionLibrary(new Libraries.TableFunctionLibrary(enviro));
             enviro.SetFunctionLibrary(new Libraries.FinanceFunctionLibrary(enviro));
+            enviro.SetFunctionLibrary(new Libraries.SystemFunctionLibrary(enviro));
 
             // Create a script process //
             RyeScriptProcessor runner = new RyeScriptProcessor(enviro);
@@ -54,13 +56,16 @@ namespace Rye
             enviro.Kernel.ShutDown();
 
             sw.Stop();
-            Console.WriteLine("::::::::::::::::::::::::::::::::: Complete :::::::::::::::::::::::::::::::::");
-            Console.WriteLine("Run Time: {0}", sw.Elapsed);
-            Console.WriteLine("Virtual Reads: {0}", enviro.Kernel.VirtualReads);
-            Console.WriteLine("Virtual Writes: {0}", enviro.Kernel.VirtualWrites);
-            Console.WriteLine("Hard Reads: {0}", enviro.Kernel.DiskReads);
-            Console.WriteLine("Hard Writes: {0}", enviro.Kernel.DiskWrites);
-            
+            enviro.IO.WriteLine("::::::::::::::::::::::::::::::::: Complete :::::::::::::::::::::::::::::::::");
+            enviro.IO.WriteLine("Run Time: {0}", sw.Elapsed);
+            enviro.IO.WriteLine("Virtual Reads: {0}", enviro.Kernel.VirtualReads);
+            enviro.IO.WriteLine("Virtual Writes: {0}", enviro.Kernel.VirtualWrites);
+            enviro.IO.WriteLine("Hard Reads: {0}", enviro.Kernel.DiskReads);
+            enviro.IO.WriteLine("Hard Writes: {0}", enviro.Kernel.DiskWrites);
+
+            // Clear the IO cache //
+            enviro.IO.ShutDown();
+
         }
 
         public static void ReleaseRun(string[] args)
@@ -70,21 +75,23 @@ namespace Rye
             
             // Open the file to get the script //
             string script = System.IO.File.ReadAllText(args[0]);
-            Kernel k = new Kernel(System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"Rye Projects\Temp\");
+            Kernel k = new Kernel(System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\Rye Projects\Temp\");
             
             // Render a Session
             Session enviro = new Session(k, new CommandLineCommunicator(), true);
-            
+
             // Add in the method library //
             enviro.SetMethodLibrary(new Libraries.FileMethodLibrary(enviro));
             enviro.SetMethodLibrary(new Libraries.TableMethodLibrary(enviro));
             enviro.SetMethodLibrary(new Libraries.MSOfficeLibrary(enviro));
+            enviro.SetMethodLibrary(new Libraries.SystemMethodLibrary(enviro));
 
             // Add the function libraries //
             enviro.SetFunctionLibrary(new Libraries.FileFunctionLibrary(enviro));
             enviro.SetFunctionLibrary(new Libraries.TableFunctionLibrary(enviro));
             enviro.SetFunctionLibrary(new Libraries.FinanceFunctionLibrary(enviro));
-            
+            enviro.SetFunctionLibrary(new Libraries.SystemFunctionLibrary(enviro));
+
             // Create a script process //
             RyeScriptProcessor runner = new RyeScriptProcessor(enviro);
             
@@ -95,12 +102,16 @@ namespace Rye
             enviro.Kernel.ShutDown();
             
             sw.Stop();
-            Console.WriteLine("::::::::::::::::::::::::::::::::: Complete :::::::::::::::::::::::::::::::::");
-            Console.WriteLine("Run Time: {0}", sw.Elapsed);
-            Console.WriteLine("Virtual Reads: {0}", enviro.Kernel.VirtualReads);
-            Console.WriteLine("Virtual Writes: {0}", enviro.Kernel.VirtualWrites);
-            Console.WriteLine("Hard Reads: {0}", enviro.Kernel.DiskReads);
-            Console.WriteLine("Hard Writes: {0}", enviro.Kernel.DiskWrites);
+            enviro.IO.WriteLine("::::::::::::::::::::::::::::::::: Complete :::::::::::::::::::::::::::::::::");
+            enviro.IO.WriteLine("Run Time: {0}", sw.Elapsed);
+            enviro.IO.WriteLine("Virtual Reads: {0}", enviro.Kernel.VirtualReads);
+            enviro.IO.WriteLine("Virtual Writes: {0}", enviro.Kernel.VirtualWrites);
+            enviro.IO.WriteLine("Hard Reads: {0}", enviro.Kernel.DiskReads);
+            enviro.IO.WriteLine("Hard Writes: {0}", enviro.Kernel.DiskWrites);
+
+            // Clear the IO cache //
+            enviro.IO.ShutDown();
+
             
         }
 

@@ -11,6 +11,10 @@ namespace Rye.Libraries
     public sealed class FinanceFunctionLibrary : FunctionLibrary
     {
 
+        public const string NPDF = "NPDF";
+        public const string NDIST = "NDIST";
+        public const string NINV = "NINV";
+
         public const string BS_CALL = "BS_CALL";
         public const string BS_CALL_DELTA = "BS_CALL_DELTA";
         public const string BS_CALL_GAMMA = "BS_CALL_GAMMA";
@@ -19,7 +23,7 @@ namespace Rye.Libraries
         public const string BS_CALL_RHO = "BS_CALL_RHO";
         public const string BS_CALL_PSI = "BS_CALL_PSI";
         public const string BS_CALL_VOL = "BS_CALL_VOL";
-
+        
         public const string BS_PUT = "BS_PUT";
         public const string BS_PUT_DELTA = "BS_PUT_DELTA";
         public const string BS_PUT_GAMMA = "BS_PUT_GAMMA";
@@ -47,7 +51,11 @@ namespace Rye.Libraries
             BS_PUT_VEGA,
             BS_PUT_RHO,
             BS_PUT_PSI,
-            BS_PUT_VOL
+            BS_PUT_VOL,
+
+            NPDF,
+            NDIST,
+            NINV
 
         };
 
@@ -80,6 +88,14 @@ namespace Rye.Libraries
                 case BS_PUT_VEGA:
                 case BS_PUT_VOL:
                     return new Expressions.CellFunctionFixedShell(Name, 6, CellAffinity.DOUBLE, (x) => { return Wrapper(Name, x); });
+
+                case NPDF:
+                    return new Expressions.CellFunctionFixedShell(NPDF, 1, CellAffinity.DOUBLE, (x) => { return new Cell(NormalPDF(x[0].valueDOUBLE)); });
+                case NDIST:
+                    return new Expressions.CellFunctionFixedShell(NDIST, 1, CellAffinity.DOUBLE, (x) => { return new Cell(NormalCDF(x[0].valueDOUBLE)); });
+                case NINV:
+                    return new Expressions.CellFunctionFixedShell(NINV, 1, CellAffinity.DOUBLE, (x) => { return new Cell(NormalINV(x[0].valueDOUBLE)); });
+
             }
 
             throw new ArgumentException(string.Format("Function '{0}' does not exist", Name));
