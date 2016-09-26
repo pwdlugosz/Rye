@@ -395,38 +395,50 @@ namespace Rye.Interpreter
 
         }
 
-        //public override Expression VisitCaseOp(RyeParser.CaseOpContext context)
-        //{
+        public override Expression VisitCaseOp(RyeParser.CaseOpContext context)
+        {
 
-        //    List<Expression> when_nodes = new List<Expression>();
-        //    List<Expression> then_nodes = new List<Expression>();
-        //    Expression else_node = null;
+            ExpressionCaseWhenElse e = new ExpressionCaseWhenElse(this.MasterNode, CellAffinity.BOOL);
+            CellAffinity r = CellAffinity.BOOL;
+            bool isVol = false;
 
-        //    int when_then_count = context.K_WHEN().Length * 2;
-        //    for (int i = 0; i < when_then_count; i += 2)
-        //    {
+            int when_then_count = context.K_WHEN().Length * 2;
+            for (int i = 0; i < when_then_count; i += 2)
+            {
 
-        //        int when_idx = i;
-        //        int then_idx = when_idx + 1;
+                int when_idx = i;
+                int then_idx = when_idx + 1;
 
-        //        Expression when_node = this.Visit(context.expression()[when_idx]);
-        //        Expression then_node = this.Visit(context.expression()[then_idx]);
+                Expression x = this.Visit(context.expression()[when_idx]);
+                Expression y = this.Visit(context.expression()[then_idx]);
 
-        //        when_nodes.Add(when_node);
-        //        then_nodes.Add(then_node);
+                e.AddChildNode(x);
+                e.AddChildNode(y);
 
-        //    }
+                isVol = isVol | y.IsVolatile;
+                r = CellAffinityHelper.Highest(r, y.ReturnAffinity());
 
-        //    // Check for the else //
-        //    if (context.K_ELSE() != null)
-        //        else_node = this.Visit(context.expression().Last());
+            }
 
-        //    // Build the case statement //
-        //    CellFuncCase func = new CellFuncCase(when_nodes, then_nodes, else_node);
+            // Check for the else //
+            if (context.K_ELSE() != null)
+            {
+                e.AddChildNode(this.Visit(context.expression().Last()));
+            }
+            else
+            {
+                e.AddChildNode(new ExpressionValue(e, new Cell(r)));
+            }
 
-        //    return new ExpressionResult(this.MasterNode, func);
+            // Set the return value //
+            e.SetCellAffinity(r);
 
-        //}
+            // Set the master value //
+            this.MasterNode = e;
+
+            return e;
+
+        }
 
         public override Expression VisitParens(RyeParser.ParensContext context)
         {

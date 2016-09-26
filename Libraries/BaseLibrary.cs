@@ -107,7 +107,9 @@ namespace Rye.Libraries
         public const string FUNC_FROM_HEX = "fromhex";
         public const string FUNC_NDIST = "ndist";
         public const string FUNC_THREAD_ID = "threadid";
+
         public const string FUNC_ISPRIME = "isprime";
+        public const string FUNC_MODPOW = "modpow";
 
         public const string FUNC_LOG = "log";
         public const string FUNC_EXP = "exp";
@@ -170,6 +172,7 @@ namespace Rye.Libraries
 
         public const string SPECIAL_IF = "if";
         public const string SPECIAL_DATE_BUILD = "date_build";
+        public const string SPECIAL_CASE = "case";
 
         #endregion
 
@@ -227,6 +230,7 @@ namespace Rye.Libraries
             FUNC_NDIST,
             FUNC_THREAD_ID,
             FUNC_ISPRIME,
+            FUNC_MODPOW,
 
             FUNC_LOG,
             FUNC_EXP,
@@ -372,6 +376,7 @@ namespace Rye.Libraries
                 case FUNC_NDIST: return new CellFuncFKNormal();
                 case FUNC_THREAD_ID: return new CellFuncFKThreadID();
                 case FUNC_ISPRIME: return new CellFuncFKIsPrime();
+                case FUNC_MODPOW: return new CellFuncFKModPow();
 
                 case FUNC_LOG: return new CellFuncFVLog();
                 case FUNC_EXP: return new CellFuncFVExp();

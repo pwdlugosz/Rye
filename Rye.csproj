@@ -125,6 +125,7 @@
     <Compile Include="Exchange\MSExcelProvider.cs" />
     <Compile Include="Exchange\ObjectExchange.cs" />
     <Compile Include="Exchange\OLEDB.cs" />
+    <Compile Include="Expressions\ExpressionCaseWhenElse.cs" />
     <Compile Include="Expressions\Register.cs" />
     <Compile Include="Expressions\SystemFunctions.cs" />
     <Compile Include="Expressions\Expression.cs" />
@@ -233,6 +234,7 @@
     <None Include="packages.config" />
     <None Include="Rye_TemporaryKey.pfx" />
     <None Include="Scripts\AggregateTesting.rye" />
+    <None Include="Scripts\CallOptionBlackScholesSimulator.rye" />
     <None Include="Scripts\ExpressionTesting.rye" />
     <None Include="Scripts\MatrixTesting.rye" />
     <None Include="Scripts\Primes.rye" />

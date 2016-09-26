@@ -1081,7 +1081,7 @@ namespace Rye.Expressions
                 return Cell.FALSE;
 
             if (n < 6)
-                return (n == 2 || n == 3) ? Cell.TRUE : Cell.FALSE;
+                return (n == 2 || n == 3 || n == 5) ? Cell.TRUE : Cell.FALSE;
 
             if (((n + 1) % 6 != 0) && ((n - 1) % 6 != 0))
                 return Cell.FALSE;
@@ -1090,6 +1090,35 @@ namespace Rye.Expressions
                 if (n % i == 0)
                     return Cell.FALSE;
             return Cell.TRUE;
+
+        }
+
+    }
+
+    public sealed class CellFuncFKModPow : CellFuncFixedKnown
+    {
+
+        public CellFuncFKModPow()
+            : base(BaseFunctionLibrary.FUNC_MODPOW, 3, CellAffinity.INT)
+        {
+        }
+
+        public override Cell Evaluate(params Cell[] Data)
+        {
+
+            long num = Data[0].valueINT;
+            long exp = Data[1].valueINT;
+            long modulo = Data[2].valueINT;
+            long mult = 1l;
+
+            for (long l = 0; l < exp; l++)
+            {
+
+                mult = (mult * num) % modulo;
+
+            }
+
+            return new Cell(mult);
 
         }
 
@@ -1685,75 +1714,6 @@ namespace Rye.Expressions
         }
 
     }
-
-    /*
-    public sealed class CellFuncCase : CellFunction
-    {
-
-        private List<Expression> _Whens;
-        private List<Expression> _Thens;
-        private Expression _Else;
-        private CellAffinity _Re
-        
-        public CellFuncCase(List<Expression> Whens, List<Expression> Thens, Expression ELSE)
-            : base(BaseFunctionLibrary.SPECIAL_CASE, -1, null, CellFunction.FuncHierStandard(), null)
-        {
-
-            if (Thens.Count != Whens.Count)
-                throw new Exception("When and then statements have different counts");
-
-            this._Whens = Whens;
-            this._Thens = Thens;
-            this._Else = ELSE ?? new ExpressionValue(null, new Cell(Thens.First().ReturnAffinity()));
-
-            
-
-        }
-
-        public override Cell Evaluate(params Cell[] Data)
-        {
-
-            for (int i = 0; i < this._Whens.Count; i++)
-            {
-
-                if (this._Whens[i].Evaluate().valueBOOL)
-                    return this._Thens[i].Evaluate();
-
-            }
-
-            return this._Else.Evaluate();
-
-        }
-
-        public override string Unparse(string[] Text)
-        {
-
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine("CASE ");
-            for (int i = 0; i < this._Whens.Count; i++)
-            {
-                sb.AppendLine(string.Format("WHEN {0} THEN {1} ", this._Whens[i].Unparse(y), this._Thens[i].Unparse(Columns)));
-            }
-
-            sb.AppendLine(string.Format("ELSE {0} ", this._Else.Unparse(Columns)));
-
-            sb.AppendLine("END");
-
-            return sb.ToString();
-
-        }
-
-
-
-        public override int ReturnSize(CellAffinity Type, params int[] Sizes)
-        {
-            if (Type == CellAffinity.STRING || Type == CellAffinity.BLOB)
-                return Sizes.Max();
-            return Schema.FixSize(Type, -1);
-        }
-
-    }
-    */
 
     #endregion
 
