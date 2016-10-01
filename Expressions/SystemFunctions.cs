@@ -1205,6 +1205,21 @@ namespace Rye.Expressions
 
     }
 
+    public sealed class CellFuncFVSQRT : CellFuncFixedVariable
+    {
+
+        public CellFuncFVSQRT()
+            : base(BaseFunctionLibrary.FUNC_POWER, 2)
+        {
+        }
+
+        public override Cell Evaluate(params Cell[] Data)
+        {
+            return Cell.Sqrt(Data[0]);
+        }
+
+    }
+
     public sealed class CellFuncFVSin : CellFuncFixedVariable
     {
 

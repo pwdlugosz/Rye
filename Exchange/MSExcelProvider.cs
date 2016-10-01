@@ -5,6 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Rye.Data;
 using xl = Microsoft.Office.Interop.Excel;
+using fxl = Excel;
+using System.IO;
+using System.Data;
 
 namespace Rye.Exchange
 {
@@ -265,6 +268,169 @@ namespace Rye.Exchange
             while (0 != System.Runtime.InteropServices.Marshal.ReleaseComObject(this._Application) ){ };
             this._Application = null;
             GC.Collect();
+
+        }
+
+    }
+
+    public sealed class MSExcelFast
+    {
+
+        public struct Address
+        {
+
+            private int _X1, _X2;
+            private int _Y1, _Y2;
+
+            public Address(string Text)
+            {
+                this._X1 = 0; this._X2 = 0; this._Y1 = 0; this._Y2 = 0;
+                this.Initialize(Text);
+            }
+
+            private int ColumnOffset(string Element)
+            {
+
+                Element = Element.ToUpper();
+                int Offset = 0;
+                for (int i = 0; i < Element.Length; i++)
+                {
+                    Offset += ((int)Element[i] - 65 + 1);
+                }
+
+                return Offset - 1;
+
+            }
+
+            private void Initialize(string Text)
+            {
+
+                StringBuilder sb1 = new StringBuilder();
+                StringBuilder sb2 = new StringBuilder();
+                StringBuilder sb3 = new StringBuilder();
+                StringBuilder sb4 = new StringBuilder();
+                int state = 1;
+
+                foreach (char c in Text)
+                {
+
+                    if (char.IsLetter(c))
+                    {
+
+                        if (state == 1)
+                        {
+                            sb1.Append(c);
+                        }
+                        else if (state == 2)
+                        {
+                            state = 3;
+                            sb3.Append(c);
+                        }
+                        else if (state == 3)
+                        {
+                            sb3.Append(c);
+                        }
+                        else
+                        {
+                            throw new FormatException(string.Format("String is not in the correct format {0}", Text));
+                        }
+
+                    }
+                    else if (char.IsNumber(c))
+                    {
+
+                        if (state == 1)
+                        {
+                            state = 2;
+                            sb2.Append(c);
+                        }
+                        else if (state == 2)
+                        {
+                            sb2.Append(c);
+                        }
+                        else if (state == 3)
+                        {
+                            state = 4;
+                            sb4.Append(c);
+                        }
+                        else if (state == 4)
+                        {
+                            sb4.Append(c);
+                        }
+                        else
+                        {
+                            throw new FormatException(string.Format("String is not in the correct format {0}", Text));
+                        }
+
+                    }
+
+                }
+
+                // Render the values //
+                this._X1 = int.Parse(sb2.ToString()) - 1;
+                this._X2 = int.Parse(sb4.ToString()) - 1;
+                this._Y1 = this.ColumnOffset(sb1.ToString());
+                this._Y2 = this.ColumnOffset(sb3.ToString());
+
+            }
+
+            public int RowRangeBegin
+            {
+                get { return this._X1; }
+            }
+
+            public int RowRangeEnd
+            {
+                get { return this._X2; }
+            }
+
+            public int RowSpan
+            {
+                get { return this._X2 - this._X1 + 1; }
+            }
+
+            public int ColRangeBegin
+            {
+                get { return this._Y1; }
+            }
+
+            public int ColRangeEnd
+            {
+                get { return this._Y2; }
+            }
+
+            public int ColSpan
+            {
+                get { return this._Y2 - this._Y1 + 1; }
+            }
+
+            public override string ToString()
+            {
+                return string.Format("{0}.{1} x {2}.{3}", this._X1, this._Y1, this._X2, this._Y2);
+            }
+
+        }
+
+        public static void ImportExcelFast(RecordWriter Writer, string Path, string Sheet, string Range)
+        {
+
+            using (System.IO.Stream s = File.OpenRead(Path))
+            {
+
+                
+                // Get the extension and format //
+                string format = Path.Split('.').Last().ToLower();
+                fxl.IExcelDataReader stream = (format == "xls" || format == "xlsb" ? fxl.ExcelReaderFactory.CreateBinaryReader(s) : fxl.ExcelReaderFactory.CreateOpenXmlReader(s));
+
+                // Render a dataset //
+                DataSet sets = stream.AsDataSet();
+                DataTable t = sets.Tables[Sheet];
+                Address point = new Address(Range);
+
+                // Write data //
+                Exchange.ObjectExchange.RaizeDataTable(t, Writer, point.RowRangeBegin, point.RowSpan, point.ColRangeBegin, point.ColSpan);
+                
+            }
 
         }
 

@@ -61,6 +61,9 @@ namespace Rye.Query
         private List<Q> _Nodes;
         private QueryConsolidation<Q> _Consolidator;
         private List<PreProcessor> _PreProcessorNodes;
+        private bool _RunFinalizer = true;
+        private Methods.MethodDo _PreProcessor;
+        private Methods.MethodDo _PostProcessor;
         
         public QueryProcess(List<Q> Nodes, QueryConsolidation<Q> Consolidator)
         {
@@ -69,6 +72,8 @@ namespace Rye.Query
             this._Consolidator = Consolidator;
             this._Nodes = Nodes;
             this._PreProcessorNodes = new List<PreProcessor>();
+            this._PreProcessor = new Methods.MethodDo(null);
+            this._PostProcessor = new Methods.MethodDo(null);
 
         }
 
@@ -92,6 +97,9 @@ namespace Rye.Query
             // Consolidate //
             this.RunConsolidator();
 
+            // Post processor //
+            this.RunPostProcessor();
+
         }
 
         public void ExecuteAsync()
@@ -106,22 +114,33 @@ namespace Rye.Query
             // Consolidate //
             this.RunConsolidator();
 
+            // Post processor //
+            this.RunPostProcessor();
+
         }
 
-        public void AddPreProcessor(PreProcessor P)
+        public Methods.Method PreProcessor
         {
-            this._PreProcessorNodes.Add(P);
+            get 
+            { 
+                return this._PreProcessor; 
+            }
+        }
+
+        public Methods.Method PostProcessor
+        {
+            get
+            {
+                return this._PostProcessor;
+            }
         }
 
         // Private methods //
         public void RunPreProcessor()
         {
-
-            foreach (PreProcessor p in this._PreProcessorNodes)
-            {
-                p.Invoke();
-            }
-
+            this._PreProcessor.BeginInvoke();
+            this._PreProcessor.Invoke();
+            this._PreProcessor.EndInvoke();
         }
 
         private void RunNodes()
@@ -172,7 +191,16 @@ namespace Rye.Query
 
         private void RunConsolidator()
         {
+
+            // Run the consolidation process //
             this._Consolidator.Consolidate(this._Nodes);
+        }
+
+        private void RunPostProcessor()
+        {
+            this._PostProcessor.BeginInvoke();
+            this._PostProcessor.Invoke();
+            this._PostProcessor.EndInvoke();
         }
 
     }

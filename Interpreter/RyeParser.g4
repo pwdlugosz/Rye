@@ -56,6 +56,14 @@ create_unit
 	: IDENTIFIER K_AS type
 	;
 
+// ------------------------------------------ Burn ------------------------------------------ //
+command_burn
+	: K_BURN K_TABLE table_name				// Table / Global
+	| K_BURN K_LAMBDA lambda_name			// Lambda 
+	| K_BURN generic_name LBRAC RBRAC		// Matrix 
+	| K_BURN IDENTIFIER						// Scalar
+	;
+
 // ------------------------------------------ Declare ------------------------------------------ //
 command_declare
 	: K_DECLARE LCURL ((unit_declare_scalar | unit_declare_matrix | unit_declare_lambda) SEMI_COLON)+ RCURL SEMI_COLON
@@ -82,7 +90,6 @@ command_sort
 		sort_unit (COMMA sort_unit)* SEMI_COLON
 	RCURL SEMI_COLON
 	;
-sort_unit : expression (K_ASC | K_DESC)?;
 
 // ------------------------------------------ Read ------------------------------------------ //
 command_read
@@ -201,7 +208,12 @@ exec_unit
 
 // Append table method //
 append_method
-	: K_APPEND LCURL (K_NEW)? table_name (K_SIZE LITERAL_INT)? SEMI_COLON (K_RETAIN expression_or_wildcard_set SEMI_COLON) RCURL SEMI_COLON
+	: K_APPEND 
+		LCURL (K_NEW)? table_name (K_SIZE LITERAL_INT)? SEMI_COLON 
+		K_RETAIN expression_or_wildcard_set SEMI_COLON 
+		(K_SORT sort_unit (COMMA sort_unit)* SEMI_COLON)?
+		(K_DUMP expression COMMA expression SEMI_COLON)?
+	RCURL SEMI_COLON
 	;
 
 // Structure Methods //
@@ -302,6 +314,10 @@ vector_literal
 // ----------------------------------------------------------------------------------------------------- //
 // --------------------------------------------- EXPRESSIONS ------------------------------------------- //
 // ----------------------------------------------------------------------------------------------------- //
+
+// Sort helper //
+sort_unit : expression (K_ASC | K_DESC)?;
+
 
  // Return Expression // 
 expression_or_wildcard_set 

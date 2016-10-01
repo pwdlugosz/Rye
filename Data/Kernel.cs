@@ -197,11 +197,23 @@ namespace Rye.Data
         public void RequestDropTable(string Path)
         {
 
-            // Delete the virtual table //
-            if (this.IsTableCached(Path))
+            // Check if the table even exists
+            if (!this.TableExists(Path))
             {
-                this.ReleaseTable(Path, false);
+                return;
             }
+
+            // Buffer the table //
+            Table t = this.RequestBufferTable(Path);
+
+            // Burn each extent //
+            foreach (Header h in t.Headers)
+            {
+                this.ReleaseExtent(h.LookUpKey, false);
+            }
+
+            // Burn the table //
+            this.ReleaseTable(Path, false);
 
             // Delete the disk based table //
             if (File.Exists(Path))

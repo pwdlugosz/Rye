@@ -294,6 +294,52 @@ namespace Rye.Interpreter
             
         }
 
+        // Append Helpers //
+        public static Methods.MethodDump RenderDumpMethod(Session Enviro, RyeParser.Append_methodContext context, TabularData Data)
+        {
+
+            if (context.K_DUMP() == null)
+                return Methods.MethodDump.Empty;
+
+            string path = Enviro.BaseVisitor.Visit(context.expression()[0]).Evaluate().valueSTRING;
+            char delim = Enviro.BaseVisitor.Visit(context.expression()[1]).Evaluate().valueSTRING.First();
+            return new Methods.MethodDump(null, Data, path, delim, Enviro);
+
+        }
+
+        public static Methods.MethodSort RenderSortMethod(Session Enviro, RyeParser.Append_methodContext context, TabularData Data)
+        {
+
+            if (context.K_SORT() == null)
+                return Methods.MethodSort.Empty;
+
+            // Build the sort key //
+            Key k = new Key();
+            ExpressionCollection cols = new ExpressionCollection();
+            ExpressionVisitor exp = new ExpressionVisitor(Enviro);
+            Register r = new Register("T", Data.Columns);
+            exp.AddRegister("T", r);
+
+            int idx = 0;
+            foreach (RyeParser.Sort_unitContext ctx in context.sort_unit())
+            {
+
+                Expression e = exp.ToNode(ctx.expression());
+                cols.Add(e);
+                KeyAffinity ka = KeyAffinity.Ascending;
+                if (ctx.K_DESC() != null)
+                    ka = KeyAffinity.Descending;
+                k.Add(idx, ka);
+
+                idx++;
+
+            }
+
+            return new Methods.MethodSort(null, Data, cols, r, k);
+
+
+        }
+
     }
 
 }

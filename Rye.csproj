@@ -182,6 +182,7 @@
     <Compile Include="MatrixExpressions\MatrixExpressionSubtract.cs" />
     <Compile Include="MatrixExpressions\MatrixExpressionSubtractScalar.cs" />
     <Compile Include="MatrixExpressions\MatrixExpressionTranspose.cs" />
+    <Compile Include="Methods\MethodDump.cs" />
     <Compile Include="Methods\MethodExecScript.cs" />
     <Compile Include="Methods\MethodMatrixAllAssign.cs" />
     <Compile Include="Methods\Method.cs" />
@@ -198,6 +199,7 @@
     <Compile Include="Methods\MethodMatrixUnitAssign.cs" />
     <Compile Include="Methods\MethodNothing.cs" />
     <Compile Include="Methods\MethodCollection.cs" />
+    <Compile Include="Methods\MethodSort.cs" />
     <Compile Include="Methods\MethodWhile.cs" />
     <Compile Include="Data\SortMaster.cs" />
     <Compile Include="Query\PreProcessor.cs" />
@@ -215,7 +217,6 @@
     <Compile Include="Query\SelectProcess.cs" />
     <Compile Include="Query\UpdateProcess.cs" />
     <Compile Include="Structures\MemoryStructure.cs" />
-    <Compile Include="Structures\MSOffice.cs" />
     <Compile Include="Libraries\BaseLibrary.cs" />
     <Compile Include="Libraries\TableLibrary.cs" />
     <Compile Include="Structures\PartionedHeap.cs" />
@@ -323,6 +324,9 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Mining\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

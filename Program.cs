@@ -18,7 +18,21 @@ namespace Rye
 
             Program.DebugRun(args);
             //Program.ReleaseRun(args);
+            //Program.ShellRun();
             string z = Console.ReadLine();
+
+        }
+
+        public static void ShellRun()
+        {
+
+            System.Diagnostics.Stopwatch sw = Stopwatch.StartNew();
+
+            
+            Console.WriteLine(Cell.IntRoot(65));
+            
+            Console.WriteLine("Run Time: {0}", sw.Elapsed);
+            string t = Console.ReadLine();
 
         }
 

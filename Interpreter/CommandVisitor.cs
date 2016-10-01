@@ -35,7 +35,7 @@ namespace Rye.Interpreter
 
             ExpressionVisitor exp_vis = new ExpressionVisitor(this._enviro);
             MatrixExpressionVisitor mat_vis = new MatrixExpressionVisitor(exp_vis, this._enviro);
-            MethodVisitor met_vis = new MethodVisitor(exp_vis, mat_vis, this._enviro);
+            MethodVisitor met_vis = new MethodVisitor(exp_vis, mat_vis, this._enviro, false);
             Method m = met_vis.Visit(context.method());
             Stopwatch sw = Stopwatch.StartNew();
             m.BeginInvoke();
@@ -198,6 +198,42 @@ namespace Rye.Interpreter
 
         }
 
+        // Burn //
+        public override int VisitCommand_burn(RyeParser.Command_burnContext context)
+        {
+            
+            // Table //
+            if (context.K_TABLE() != null)
+            {
+                this._enviro.BurnTabularData(context.table_name().IDENTIFIER()[0].GetText(), context.table_name().IDENTIFIER()[1].GetText());
+                return 1;
+            }
+
+            // Lambda //
+            if (context.K_LAMBDA() != null)
+            {
+                this._enviro.BurnLambda(context.lambda_name().IDENTIFIER().GetText());
+                return 1;
+            }
+
+            // Matrix //
+            if (context.generic_name() != null)
+            {
+                this._enviro.BurnMatrix(context.generic_name().IDENTIFIER()[0].GetText());
+                return 1;
+            }
+
+            // Scalar //
+            if (context.IDENTIFIER() != null)
+            {
+                this._enviro.BurnScalar(context.IDENTIFIER().GetText());
+                return 1;
+            }
+
+            return 0;
+
+        }
+
         // Select / Read //
         public override int VisitCommand_read(RyeParser.Command_readContext context)
         {
@@ -241,7 +277,7 @@ namespace Rye.Interpreter
                 MatrixExpressionVisitor mat = new MatrixExpressionVisitor(exp, this._enviro);
                 
                 // Create a method visitor //
-                MethodVisitor met = new MethodVisitor(exp, mat, this._enviro);
+                MethodVisitor met = new MethodVisitor(exp, mat, this._enviro, threads != 1);
                 
                 // Load the local heap //
                 if (context.command_declare() != null)
@@ -535,7 +571,7 @@ namespace Rye.Interpreter
             Register out_mem = new Register("OUT", out_columns);
             out_exp.AddRegister("OUT", out_mem); // TODO, think of a better alias to use
             ExpressionCollection out_keys = out_exp.ToNodes(context.append_method().expression_or_wildcard_set());
-
+            
             // Create the sink table //
             Table sink = KeyValueSet.DataSink(this._enviro, FinalKey, FinalValue);
             foreach (AggregateHashTableProcessNode node in nodes)
@@ -546,12 +582,17 @@ namespace Rye.Interpreter
             // Render the record writer that will be used to fill the output //
             TabularData out_data = CompilerHelper.RenderData(this._enviro, out_keys, context.append_method());
             RecordWriter out_writer = out_data.OpenWriter();
+            
+            // Get the export and sort nodes //
+            MethodSort xsort = CompilerHelper.RenderSortMethod(this._enviro, context.append_method(), out_data);
+            MethodDump xdump = CompilerHelper.RenderDumpMethod(this._enviro, context.append_method(), out_data);
 
             // Create the consolidation process //
             AggregateHashTableConsolidationProcess reducer = new AggregateHashTableConsolidationProcess(this._enviro, FinalKey, FinalValue, out_writer, out_keys, out_mem, sink);
-
+            
             // Build the query process that will handle this //
             QueryProcess<AggregateHashTableProcessNode> process = new QueryProcess<AggregateHashTableProcessNode>(nodes, reducer);
+            process.PostProcessor.AddChildren(xsort, xdump);
 
             // Run the process //
             Stopwatch sw = Stopwatch.StartNew();
@@ -567,6 +608,10 @@ namespace Rye.Interpreter
 
             // Close the output //
             this._enviro.IO.WriteLine("Actual Aggregate Cost: {0}", reducer.Clicks);
+            if (xsort.State != 0)
+                this._enviro.IO.WriteLine("Output Data Sort Cost: {0}", xsort.Clicks);
+            if (xdump.State != 0)
+                this._enviro.IO.WriteLine("Output Data Dumped to: {0}", xdump.Path);
             this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);
             this._enviro.IO.WriteLine();
 
@@ -617,18 +662,23 @@ namespace Rye.Interpreter
 
             }
 
+            // Get the export and sort nodes //
+            MethodSort xsort = CompilerHelper.RenderSortMethod(this._enviro, context.append_method(), out_data);
+            MethodDump xdump = CompilerHelper.RenderDumpMethod(this._enviro, context.append_method(), out_data);
+
             // Create the consolidation process //
             AggregateOrderedConsolidationProcess reducer = new AggregateOrderedConsolidationProcess(this._enviro);
-
+            
             // Build the query process that will handle this //
             QueryProcess<AggregateOrderedProcessNode> process = new QueryProcess<AggregateOrderedProcessNode>(nodes, reducer);
+            process.PostProcessor.AddChildren(xsort, xdump);
 
             // Run the process //
             Stopwatch sw = Stopwatch.StartNew();
 
             // Sort the dataset //
-            PreProcessor p = this.RenderAggregatePreProcessor(context, data, alias);
-            process.AddPreProcessor(p);
+            Methods.MethodSort xpre = this.RenderAggregatePreProcessor(context, data, alias);
+            process.PreProcessor.AddChild(xpre);
 
             // Run the gruoper //
             if (this._enviro.AllowAsync && threads > 1)
@@ -642,9 +692,13 @@ namespace Rye.Interpreter
             sw.Stop();
 
             // Close the output //
-            if (p.Clicks == 0)
+            if (xpre.Clicks == 0)
                 this._enviro.IO.WriteLine("Aggregate operation optimized using naturally sorted data");
-            this._enviro.IO.WriteLine("Actual Aggregate Cost: {0}", reducer.Clicks + p.Clicks);
+            this._enviro.IO.WriteLine("Actual Aggregate Cost: {0}", reducer.Clicks + xpre.Clicks);
+            if (xsort.State != 0)
+                this._enviro.IO.WriteLine("Output Data Sort Cost: {0}", xsort.Clicks);
+            if (xdump.State != 0)
+                this._enviro.IO.WriteLine("Output Data Dumped to: {0}", xdump.Path);
             this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);
             this._enviro.IO.WriteLine();
 
@@ -680,7 +734,7 @@ namespace Rye.Interpreter
 
         }
 
-        private PreProcessor RenderAggregatePreProcessor(RyeParser.Command_aggregateContext context, TabularData Data, string Alias)
+        private MethodSort RenderAggregatePreProcessor(RyeParser.Command_aggregateContext context, TabularData Data, string Alias)
         {
 
             // Construct the expression visitor and memory register used in the aggregation process //
@@ -691,14 +745,7 @@ namespace Rye.Interpreter
             // Generate the expression collection //
             ExpressionCollection keys = in_exp.ToNodes(context.by_clause().expression_or_wildcard_set());
 
-            // Now try to decompile the keys //
-            //Key k = ExpressionCollection.DecompileToKey(keys);
-            //if (k.Count == keys.Count)
-            //{
-            //    return new SortPreProcessor(Data, k);
-            //}
-
-            return new SortPreProcessor(Data, keys, in_mem);
+            return new Methods.MethodSort(null, Data, keys, in_mem, Key.Build(keys.Count));
 
         }
 
@@ -818,6 +865,7 @@ namespace Rye.Interpreter
 
             // Start rendering the nodes //
             List<JoinProcessNode> Nodes = new List<JoinProcessNode>();
+            TabularData x = null;
             for (int i = 0; i < Threads; i++)
             {
 
@@ -843,6 +891,9 @@ namespace Rye.Interpreter
                 TabularData OutSet = CompilerHelper.RenderData(this._enviro, select, context.append_method());
                 RecordWriter w = OutSet.OpenWriter();
 
+                // Save a copy of the table for the post processor //
+                x = x ?? OutSet;
+
                 // Create the new join node //
                 JoinProcessNode node = new JoinProcessNode(i, this._enviro, Engine, t, DLeft.CreateVolume(i, Threads), MemLeft, DRight.CreateVolume(), MemRight, rc, F, select, w);
 
@@ -851,9 +902,14 @@ namespace Rye.Interpreter
 
             }
 
+            // Get the export and sort nodes //
+            MethodSort xsort = CompilerHelper.RenderSortMethod(this._enviro, context.append_method(), x);
+            MethodDump xdump = CompilerHelper.RenderDumpMethod(this._enviro, context.append_method(), x);
+
             // Create the process //
             JoinConsolidation reducer = new JoinConsolidation(this._enviro);
             QueryProcess<JoinProcessNode> process = new QueryProcess<JoinProcessNode>(Nodes, reducer);
+            process.PostProcessor.AddChildren(xsort, xdump);
 
             // Create a record comparer //
             if (Engine.BaseJoinAlgorithmType == JoinAlgorithmType.SortMerge)
@@ -867,7 +923,7 @@ namespace Rye.Interpreter
                 }
                 else
                 {
-                    process.AddPreProcessor(new SortPreProcessor(DLeft, comp.LeftKey));
+                    process.PreProcessor.AddChild(new Methods.MethodSort(null, DLeft, comp.LeftKey));
                 }
 
                 if (KeyComparer.IsStrongSubset(DRight.SortBy, comp.RightKey))
@@ -876,7 +932,7 @@ namespace Rye.Interpreter
                 }
                 else
                 {
-                    process.AddPreProcessor(new SortPreProcessor(DRight, comp.RightKey));
+                    process.PreProcessor.AddChild(new Methods.MethodSort(null, DRight, comp.RightKey));
                 }
                     
             }
@@ -897,6 +953,10 @@ namespace Rye.Interpreter
             this._enviro.IO.WriteLine("Join Cost: \n\tActual {0} \n\tEstimated {1}", TrueCost, Engine.Cost(DLeft, DRight, Threads, 1D, JoinImplementationType.Block_VxV));
             this._enviro.IO.WriteLine("IO Calls: {0}", reducer.IOCalls);
             this._enviro.IO.WriteLine("Join Type: {0} : {1}", Engine.BaseJoinAlgorithmType, t);
+            if (xsort.State != 0)
+                this._enviro.IO.WriteLine("Output Data Sort Cost: {0}", xsort.Clicks);
+            if (xdump.State != 0)
+                this._enviro.IO.WriteLine("Output Data Dumped to: {0}", xdump.Path);
             this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);
             this._enviro.IO.WriteLine();
 

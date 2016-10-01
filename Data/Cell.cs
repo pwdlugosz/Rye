@@ -2380,6 +2380,20 @@ namespace Rye.Data
             if (C.NULL == 1)
                 return C;
 
+            if (C.AFFINITY == CellAffinity.INT)
+            {
+
+                if (C.INT <= 0)
+                {
+                    C.NULL = 1;
+                    return C;
+                }
+
+                C.INT = Cell.IntRoot(C.INT);
+                return C;
+
+            }
+
             double d = Math.Sqrt(C.valueDOUBLE);
             if (double.IsInfinity(d) || double.IsNaN(d))
             {
@@ -3071,10 +3085,47 @@ namespace Rye.Data
             else if (Exp == 1)
                 return Base;
 
-            if (Exp % 2 == 1)
-                return IntPower(Base, Exp / 2) * Exp;
+            if ((Exp % 2) == 1)
+                return IntPower(Base * Base, Exp / 2) * Base;
             else
-                return IntPower(Base, Exp / 2);
+                return IntPower(Base * Base, Exp / 2);
+
+        }
+
+        internal static long IntRoot(long Value)
+        {
+
+            if (Value <= 0)
+                return 0;
+
+            long x = (Value / 2) + 1;
+            long y = (x + Value / x) / 2;
+            while (y < x)
+            {
+                x = y;
+                y = (x + Value / x) / 2;
+            }
+
+            return x;
+
+        }
+
+        internal static int HighestBit(long Value)
+        {
+
+            long mask = 1;
+            
+            for (int i = 0; i < 63; i++)
+            {
+
+                if ((mask & Value) == mask)
+                    return i;
+
+                mask = mask << 1;
+                
+            }
+
+            return 0;
 
         }
 

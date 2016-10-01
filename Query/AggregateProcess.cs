@@ -125,7 +125,6 @@ namespace Rye.Query
          * 
          * */
 
-        private List<long> _IDs;
         private RecordWriter _output;
         private ExpressionCollection _By;
         private AggregateCollection _Over;
@@ -133,7 +132,7 @@ namespace Rye.Query
         private ExpressionCollection _Select;
         private long _Clicks = 0;
         private Table _Sink;
-
+        
         public AggregateHashTableConsolidationProcess(Session Session, ExpressionCollection Keys, AggregateCollection Values, RecordWriter Output, 
             ExpressionCollection Select, Register Memory, Table Sink)
             : base(Session)

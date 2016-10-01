@@ -25,6 +25,7 @@ namespace Rye.Libraries
         public const string XL_CREATE = "XL_CREATE";
 
         public const string XL_IMPORT = "XL_IMPORT";
+        public const string XL_IMPORT_FAST = "XL_IMPORT_FAST";
         public const string XL_EXPORT = "XL_EXPORT";
         public const string XL_COPY_PASTE = "XL_COPY_PASTE";
         public const string XL_COPY_PASTE_VALUES = "XL_COPY_PASTE_VALUES";
@@ -54,6 +55,7 @@ namespace Rye.Libraries
             XL_RUN_MACRO,
             XL_SET_VALUE,
             XL_SET_FORMULA,
+            XL_IMPORT_FAST,
         };
 
         private Exchange.MSExcelProvider _xl;
@@ -93,6 +95,8 @@ namespace Rye.Libraries
             this._CompressedSig.Allocate(XL_SET_VALUE, "Set a cell/range to a specific value", "BOOK|The workbook alias name|E|false;SHEET|The worksheet name|E|false;RANGE|The workbook range|E|false;VALUE|The value to set|E|false");
             this._CompressedSig.Allocate(XL_SET_FORMULA, "Sets a formula", "BOOK|The workbook alias name|E|false;SHEET|The worksheet name|E|false;RANGE|The workbook range|E|false;FORMULA|The formula to set|E|false");
 
+            this._CompressedSig.Allocate(XL_IMPORT_FAST, "Imports a table into a workbook", "PATH|The workbook file path|E|false;SHEET|The worksheet name|E|false;RANGE|The workbook range|E|false;DATA|The table to export|T|false");
+            
         }
 
         /*
@@ -140,6 +144,10 @@ namespace Rye.Libraries
 
                 case XL_IMPORT:
                     return this.Method_XL_Import(Parent, Parameters);
+
+                case XL_IMPORT_FAST:
+                    return this.Method_XL_ImportFast(Parent, Parameters);
+
                 case XL_EXPORT:
                     return this.Method_XL_Export(Parent, Parameters);
                 case XL_COPY_PASTE:
@@ -271,7 +279,6 @@ namespace Rye.Libraries
 
         }
 
-
         private Method Method_XL_Import(Method Parent, ParameterCollection Parameters)
         {
 
@@ -290,6 +297,28 @@ namespace Rye.Libraries
             return new LibraryMethod(Parent, XL_IMPORT, Parameters, false, kappa);
 
         }
+
+        private Method Method_XL_ImportFast(Method Parent, ParameterCollection Parameters)
+        {
+
+            Action<ParameterCollection> kappa = (x) =>
+            {
+
+                TabularData data = x.Tables["DATA"];
+                string Path = x.Expressions["PATH"].Evaluate().valueSTRING;
+                string Sheet = x.Expressions["SHEET"].Evaluate().valueSTRING;
+                string Range = x.Expressions["RANGE"].Evaluate().valueSTRING;
+                RecordWriter stream = data.OpenWriter();
+
+                Exchange.MSExcelFast.ImportExcelFast(stream, Path, Sheet, Range);
+
+                stream.Close();
+
+            };
+            return new LibraryMethod(Parent, XL_IMPORT, Parameters, false, kappa);
+
+        }
+
 
         private Method Method_XL_Export(Method Parent, ParameterCollection Parameters)
         {

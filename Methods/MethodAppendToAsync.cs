@@ -77,12 +77,14 @@ namespace Rye.Methods
         public override void EndInvoke()
         {
 
+            // Append the data to the table //
             if (this._RecordCache.Count != 0 && this._IsTable)
             {
 
                 this._tParentData.AddExtent(this._RecordCache);
 
             }
+            // Otherwise push all records into the extent //
             else if (this._RecordCache.Count != 0)
             {
 
@@ -92,6 +94,9 @@ namespace Rye.Methods
                 }
 
             }
+
+            // Invoke the child nodes, which is usually the sort and export nodes //
+            this.InvokeChildren();
 
         }
 
@@ -229,6 +234,9 @@ namespace Rye.Methods
 
             }
 
+            // Invoke the child nodes, which is usually the sort and export nodes //
+            this.InvokeChildren();
+
         }
 
         public override Method CloneOfMe()
@@ -245,6 +253,5 @@ namespace Rye.Methods
         }
 
     }
-
 
 }

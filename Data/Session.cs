@@ -33,6 +33,7 @@ namespace Rye.Data
         private Kernel _kernel;
         private Communicator _comm;
         private string _name_space = DEFAULT_NAMESPACE;
+        private Interpreter.ExpressionVisitor _vis;
 
         public Session(Kernel Driver, Communicator IO, bool AllowAsync)
         {
@@ -53,6 +54,9 @@ namespace Rye.Data
 
             // Add in the base function library //
             this._functions.Allocate("BASE", new BaseFunctionLibrary(this));
+
+            // Build a visitor //
+            this._vis = new Interpreter.ExpressionVisitor(this);
             
         }
 
@@ -99,6 +103,11 @@ namespace Rye.Data
             set { this._name_space = value; }
         }
 
+        public Interpreter.ExpressionVisitor BaseVisitor
+        {
+            get { return this._vis; }
+        }
+
         // Tabular Data //
         public bool TabularDataExists(string DB, string Name)
         {
@@ -117,6 +126,25 @@ namespace Rye.Data
                 return this.GetExtent(Name);
 
             return this.GetTable(DB, Name);
+
+        }
+
+        public void BurnTabularData(string DB, string Name)
+        {
+
+            // Check global //
+            if (this.IsGlobal(DB))
+            {
+
+                if (this._extents.Exists(Name))
+                {
+                    this._extents.Deallocate(Name);
+                }
+
+            }
+
+            // Otherwise, use the kernel to drop the table //
+            this._kernel.RequestDropTable(Header.FilePath(DB, Name, this._kernel.DefaultExtension));
 
         }
 
@@ -217,6 +245,12 @@ namespace Rye.Data
             this._scalars.Reallocate(Name, Value);
         }
 
+        public void BurnScalar(string Name)
+        {
+            if (this._scalars.Exists(Name))
+                this._scalars.Deallocate(Name);
+        }
+
         // Matrix //
         public bool MatrixExists(string Name)
         {
@@ -233,6 +267,12 @@ namespace Rye.Data
             this._matrixes.Reallocate(Name, Value);
         }
 
+        public void BurnMatrix(string Name)
+        {
+            if (this._matrixes.Exists(Name))
+                this._matrixes.Deallocate(Name);
+        }
+
         // Lambda //
         public bool LambdaExists(string Name)
         {
@@ -247,6 +287,12 @@ namespace Rye.Data
         public void SetLambda(string Name, Lambda Value)
         {
             this._lambdas.Reallocate(Name, Value);
+        }
+
+        public void BurnLambda(string Name)
+        {
+            if (this._lambdas.Exists(Name))
+                this._lambdas.Deallocate(Name);
         }
 
         // Functions //

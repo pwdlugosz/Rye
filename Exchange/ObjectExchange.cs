@@ -144,75 +144,6 @@ namespace Rye.Exchange
 
         }
 
-        public static Extent RaizeDataTable(System.Data.DataTable Element)
-        {
-
-            Schema s = new Schema();
-            bool[] IsNull = new bool[Element.Columns.Count];
-            for (int i = 0; i < Element.Columns.Count; i++)
-            {
-
-                Type t = Element.Columns[i].DataType;
-                CellAffinity a = CellAffinity.INT;
-                if (t == typeof(byte) || t == typeof(sbyte) || t == typeof(short) || t == typeof(ushort) || t == typeof(int) || t == typeof(uint) || t == typeof(long) || t == typeof(ulong))
-                {
-                    a = CellAffinity.INT;
-                    IsNull[i] = false;
-                }
-                else if (t == typeof(DateTime))
-                {
-                    a = CellAffinity.DATE_TIME;
-                    IsNull[i] = false;
-                }
-                else if (t == typeof(bool))
-                {
-                    a = CellAffinity.BOOL;
-                    IsNull[i] = false;
-                }
-                else if (t == typeof(string))
-                {
-                    a = CellAffinity.STRING;
-                    IsNull[i] = false;
-                }
-                else if (t == typeof(byte[]))
-                {
-                    a = CellAffinity.BLOB;
-                    IsNull[i] = false;
-                }
-                s.Add(Element.Columns[i].ColumnName, a);
-
-            }
-
-            // Create the dataset //
-            Extent e = new Extent(s);
-
-            // Load the data //
-            foreach (System.Data.DataRow r in Element.Rows)
-            {
-
-                RecordBuilder rb = new RecordBuilder();
-                for (int i = 0; i < Element.Columns.Count; i++)
-                {
-
-                    if (IsNull[i])
-                    {
-                        rb.Add(Cell.NULL_INT);
-                    }
-                    else
-                    {
-                        rb.Add(Cell.TryUnBoxInto(r[i], s.ColumnAffinity(i)));
-                    }
-
-                }
-
-                e.Add(rb.ToRecord());
-
-            }
-
-            return e;
-
-        }
-
         public static Extent RaizeDataTable(System.Data.DataTable Element, int RowOffset, int RowCount, int ColumnOffset, int ColumnCount)
         {
 
@@ -222,42 +153,51 @@ namespace Rye.Exchange
            
             Schema s = new Schema();
             bool[] IsNull = new bool[ColumnCount];
-            for (int i = 0; i < ColumnCount; i++)
+            for (int i = 0; i < Element.Columns.Count; i++)
             {
 
-                Type t = Element.Columns[i + ColumnOffset].DataType;
+                Type t = Element.Columns[i].DataType;
                 CellAffinity a = CellAffinity.INT;
+
+                Console.WriteLine("TYPE: {0}", t);
+
                 if (t == typeof(byte) || t == typeof(sbyte) || t == typeof(short) || t == typeof(ushort) || t == typeof(int) || t == typeof(uint) || t == typeof(long) || t == typeof(ulong))
                 {
                     a = CellAffinity.INT;
                     IsNull[i] = false;
+                    Console.WriteLine("INT");
                 }
-                else if (t == typeof(double) || t == typeof(float))
+                else if (t == typeof(double) || t == typeof(float) || t == typeof(decimal))
                 {
                     a = CellAffinity.DOUBLE;
                     IsNull[i] = false;
+                    Console.WriteLine("DOUBLE");
                 }
                 else if (t == typeof(DateTime))
                 {
                     a = CellAffinity.DATE_TIME;
                     IsNull[i] = false;
+                    Console.WriteLine("DATE_TIME");
                 }
                 else if (t == typeof(bool))
                 {
                     a = CellAffinity.BOOL;
                     IsNull[i] = false;
+                    Console.WriteLine("BOOL");
                 }
                 else if (t == typeof(string))
                 {
                     a = CellAffinity.STRING;
                     IsNull[i] = false;
+                    Console.WriteLine("STRING");
                 }
                 else if (t == typeof(byte[]))
                 {
                     a = CellAffinity.BLOB;
                     IsNull[i] = false;
+                    Console.WriteLine("BLOB");
                 }
-                s.Add(Element.Columns[i + ColumnOffset].ColumnName, a);
+                s.Add(Element.Columns[i].ColumnName, a);
 
             }
 
@@ -291,6 +231,41 @@ namespace Rye.Exchange
             return e;
 
 
+        }
+
+        public static Extent RaizeDataTable(System.Data.DataTable Element)
+        {
+            return RaizeDataTable(Element, 0, Element.Rows.Count, 0, Element.Columns.Count);
+        }
+
+        public static void RaizeDataTable(System.Data.DataTable Element, RecordWriter Writer, int RowOffset, int RowCount, int ColumnOffset, int ColumnCount)
+        {
+
+            RowCount = Math.Min(RowCount, Element.Rows.Count - RowOffset);
+            ColumnCount = Math.Min(ColumnCount, Element.Columns.Count - ColumnOffset);
+
+            if (ColumnCount != Writer.Columns.Count)
+                return;
+
+            // Load the data //
+            for (int i = RowOffset; i < RowOffset + RowCount; i++)
+            {
+
+                System.Data.DataRow r = Element.Rows[i];
+                RecordBuilder rb = new RecordBuilder();
+                for (int j = 0; j < ColumnCount; j++)
+                {
+                    rb.Add(Cell.TryUnBoxInto(r[j + ColumnOffset], Writer.Columns.ColumnAffinity(j)));
+                }
+                Writer.Insert(rb.ToRecord());
+
+            }
+
+        }
+
+        public static void RaizeDataTable(System.Data.DataTable Element, RecordWriter Writer)
+        {
+            RaizeDataTable(Element, Writer, 0, Element.Rows.Count, 0, Element.Columns.Count);
         }
 
     }

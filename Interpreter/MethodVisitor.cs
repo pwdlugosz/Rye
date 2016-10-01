@@ -21,15 +21,16 @@ namespace Rye.Interpreter
         private MatrixExpressionVisitor _mat;
         private Method _master;
         private Session _Session;
+        private bool _IsAsync = false;
         
-        public MethodVisitor(ExpressionVisitor ExpVisitor, MatrixExpressionVisitor MatVisitor, Session Enviro)
+        public MethodVisitor(ExpressionVisitor ExpVisitor, MatrixExpressionVisitor MatVisitor, Session Enviro, bool IsAsync)
             : base()
         {
             this._exp = ExpVisitor;
             this._mat = MatVisitor;
             this._OpenStreams = new Heap<RecordWriter>();
             this._Session = Enviro;
-
+            this._IsAsync = IsAsync;
         }
 
         // Actions //
@@ -108,6 +109,28 @@ namespace Rye.Interpreter
             else
             {
                 node = MethodAppendToAsync.Optimize(this._master, data as Extent, nodes);
+            }
+
+            // Look for the sort statement //
+            if (context.append_method().K_SORT() != null && !this._IsAsync)
+            {
+                Method xsort = this.RenderSortStatement(context.append_method(), data);
+                node.AddChild(xsort);
+            }
+            else if (context.append_method().K_SORT() != null)
+            {
+                this._Session.IO.WriteLine("Warning: cannot process the 'SORT' statement in the 'APPEND' clause in async mode");
+            }
+
+            // Look for the dump statement //
+            if (context.append_method().K_DUMP() != null && !this._IsAsync)
+            {
+                Method xdump = this.RenderDumpStatement(context.append_method(), data);
+                node.AddChild(xdump);
+            }
+            else if (context.append_method().K_DUMP() != null)
+            {
+                this._Session.IO.WriteLine("Warning: cannot process the 'DUMP' statement in the 'APPEND' clause in async mode");
             }
 
             this._master = node;
@@ -506,6 +529,51 @@ namespace Rye.Interpreter
 
         }
         
+        // Append helpers //
+        public Method RenderDumpStatement(RyeParser.Append_methodContext context, TabularData Data)
+        {
+
+            if (context.K_DUMP() == null)
+                return MethodDump.Empty;
+
+            string path = this._exp.ToNode(context.expression()[0]).Evaluate().valueSTRING;
+            char delim = this._exp.ToNode(context.expression()[0]).Evaluate().valueSTRING.First();
+            return new MethodDump(this._master, Data, path, delim, this._Session);
+
+        }
+
+        public Method RenderSortStatement(RyeParser.Append_methodContext context, TabularData Data)
+        {
+
+            if (context.K_SORT() == null)
+                return MethodSort.Empty;
+
+            // Build the sort key //
+            Key k = new Key();
+            ExpressionCollection cols = new ExpressionCollection();
+            ExpressionVisitor exp = new ExpressionVisitor(this._Session);
+            Register r = new Register("T", Data.Columns);
+            exp.AddRegister("T", r);
+
+            int idx = 0;
+            foreach (RyeParser.Sort_unitContext ctx in context.sort_unit())
+            {
+
+                Expression e = exp.ToNode(ctx.expression());
+                cols.Add(e);
+                KeyAffinity ka = KeyAffinity.Ascending;
+                if (ctx.K_DESC() != null)
+                    ka = KeyAffinity.Descending;
+                k.Add(idx, ka);
+
+                idx++;
+
+            }
+
+            return new MethodSort(this._master, Data, cols, r, k);
+
+        }
+
         // Structures //
         public override Method VisitStructure_method_strict(RyeParser.Structure_method_strictContext context)
         {

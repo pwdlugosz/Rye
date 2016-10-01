@@ -114,6 +114,7 @@ namespace Rye.Libraries
         public const string FUNC_LOG = "log";
         public const string FUNC_EXP = "exp";
         public const string FUNC_POWER = "power";
+        public const string FUNC_SQRT = "sqrt";
         public const string FUNC_SIN = "sin";
         public const string FUNC_COS = "cos";
         public const string FUNC_TAN = "tan";
@@ -235,6 +236,7 @@ namespace Rye.Libraries
             FUNC_LOG,
             FUNC_EXP,
             FUNC_POWER,
+            FUNC_SQRT,
             FUNC_SIN,
             FUNC_COS,
             FUNC_TAN,
@@ -381,6 +383,7 @@ namespace Rye.Libraries
                 case FUNC_LOG: return new CellFuncFVLog();
                 case FUNC_EXP: return new CellFuncFVExp();
                 case FUNC_POWER: return new CellFuncFVPower();
+                case FUNC_SQRT: return new CellFuncFVSQRT();
                 case FUNC_SIN: return new CellFuncFVSin();
                 case FUNC_COS: return new CellFuncFVCos();
                 case FUNC_TAN: return new CellFuncFVTan();
