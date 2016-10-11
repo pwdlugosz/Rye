@@ -537,7 +537,7 @@ namespace Rye.Interpreter
                 return MethodDump.Empty;
 
             string path = this._exp.ToNode(context.expression()[0]).Evaluate().valueSTRING;
-            char delim = this._exp.ToNode(context.expression()[0]).Evaluate().valueSTRING.First();
+            char delim = this._exp.ToNode(context.expression()[1]).Evaluate().valueSTRING.First();
             return new MethodDump(this._master, Data, path, delim, this._Session);
 
         }
@@ -596,7 +596,8 @@ namespace Rye.Interpreter
 
             // Render a visitor //
             ExpressionVisitor exp = new ExpressionVisitor(this._Session);
-            exp.SetSecondary(exp.SecondaryName, exp.SecondaryScalars, exp.SecondaryMatrixes);
+            exp.SetSecondary(this._exp.SecondaryName, this._exp.SecondaryScalars, this._exp.SecondaryMatrixes);
+            exp.ImportRegisters(this._exp);
 
             // Create a parameter collection //
             ParameterCollection parameters = new ParameterCollection();

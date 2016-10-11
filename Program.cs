@@ -10,6 +10,7 @@ using Rye.Expressions;
 
 namespace Rye
 {
+
     class Program
     {
 
@@ -28,13 +29,11 @@ namespace Rye
 
             System.Diagnostics.Stopwatch sw = Stopwatch.StartNew();
 
-            
-            Console.WriteLine(Cell.IntRoot(65));
-            
             Console.WriteLine("Run Time: {0}", sw.Elapsed);
             string t = Console.ReadLine();
 
         }
+
 
         public static void DebugRun(string[] args)
         {
@@ -53,6 +52,7 @@ namespace Rye
             enviro.SetMethodLibrary(new Libraries.TableMethodLibrary(enviro));
             enviro.SetMethodLibrary(new Libraries.MSOfficeLibrary(enviro));
             enviro.SetMethodLibrary(new Libraries.SystemMethodLibrary(enviro));
+            enviro.SetMethodLibrary(new Libraries.WebLibrary(enviro));
 
             // Add the function libraries //
             enviro.SetFunctionLibrary(new Libraries.FileFunctionLibrary(enviro));
@@ -99,6 +99,7 @@ namespace Rye
             enviro.SetMethodLibrary(new Libraries.TableMethodLibrary(enviro));
             enviro.SetMethodLibrary(new Libraries.MSOfficeLibrary(enviro));
             enviro.SetMethodLibrary(new Libraries.SystemMethodLibrary(enviro));
+            enviro.SetMethodLibrary(new Libraries.WebLibrary(enviro));
 
             // Add the function libraries //
             enviro.SetFunctionLibrary(new Libraries.FileFunctionLibrary(enviro));

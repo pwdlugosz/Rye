@@ -208,12 +208,16 @@ namespace Rye.Libraries
         public const string MEMORY_DUMP = "MEMORY_DUMP";
         public const string EMPTY_CACHE = "EMPTY_CACHE";
         public const string MARK_TABLE = "MARK_TABLE";
+        public const string SUPRESS = "SUPRESS";
+        public const string SET_SEED = "SET_SEED";
 
         private string[] _Names = new string[]
         {
             MEMORY_DUMP,
             EMPTY_CACHE,
-            MARK_TABLE
+            MARK_TABLE,
+            SUPRESS,
+            SET_SEED
         };
 
         public SystemMethodLibrary(Session Session)
@@ -234,11 +238,15 @@ namespace Rye.Libraries
             {
 
                 case MEMORY_DUMP:
-                    return Methods.ParameterCollectionSigniture.Parse(MEMORY_DUMP, "Provides a dump of what's in memory", null);
+                    return Methods.ParameterCollectionSigniture.Parse(MEMORY_DUMP, "Provides a dump of what's in memory", ParameterCollectionSigniture.ZERO_PARAMETER);
                 case EMPTY_CACHE:
-                    return Methods.ParameterCollectionSigniture.Parse(EMPTY_CACHE, "Empties the current kernel extent page cache", null);
+                    return Methods.ParameterCollectionSigniture.Parse(EMPTY_CACHE, "Empties the current kernel extent page cache", ParameterCollectionSigniture.ZERO_PARAMETER);
                 case MARK_TABLE:
                     return Methods.ParameterCollectionSigniture.Parse(MARK_TABLE, "Loads as much of a table as possible into memory", "DATA|A table to load with the form <DB>.<Name>|t|false");
+                case SUPRESS:
+                    return Methods.ParameterCollectionSigniture.Parse(SUPRESS, "Toggles IO supression on or off", ParameterCollectionSigniture.ZERO_PARAMETER);
+                case SET_SEED:
+                    return Methods.ParameterCollectionSigniture.Parse(SET_SEED, "Sets the seed of the internal Rye random number generator", "SEED|An integer seed|E|false");
 
             }
             throw new ArgumentException(string.Format("Method '{0}' does not exist", Name));
@@ -257,6 +265,10 @@ namespace Rye.Libraries
                     return this.Method_EmptyCache(Parent, Parameters);
                 case MARK_TABLE:
                     return this.Method_MarkTable(Parent, Parameters);
+                case SUPRESS:
+                    return this.Method_Supress(Parent, Parameters);
+                case SET_SEED:
+                    return this.Method_SetSeed(Parent, Parameters);
 
             }
             throw new ArgumentException(string.Format("Method '{0}' does not exist", Name));
@@ -300,6 +312,37 @@ namespace Rye.Libraries
 
             };
             return new LibraryMethod(Parent, MEMORY_DUMP, Parameters, false, kappa);
+
+        }
+
+        private Method Method_Supress(Method Parent, ParameterCollection Parameters)
+        {
+
+            Action<ParameterCollection> kappa = (x) =>
+            {
+                this._Session.IO.Supress = !this._Session.IO.Supress;
+            };
+            return new LibraryMethod(Parent, SUPRESS, Parameters, false, kappa);
+
+        }
+
+        private Method Method_SetSeed(Method Parent, ParameterCollection Parameters)
+        {
+
+            Action<ParameterCollection> kappa = (x) =>
+            {
+
+                Cell c = Parameters.Expressions["SEED"].Evaluate();
+                int Seed = (int)c.valueINT;
+                if (c.Affinity == CellAffinity.STRING || c.Affinity == CellAffinity.BLOB)
+                {
+                    Seed = (int)c.LASH;
+                }
+
+                this._Session.BaseGenerator.Remix(Seed);
+
+            };
+            return new LibraryMethod(Parent, SET_SEED, Parameters, false, kappa);
 
         }
 

@@ -1,40 +1,34 @@
-﻿CONNECT
+﻿
+
+CONNECT
 {
-	TEMP TO 'C:\Users\pwdlu_000\Documents\Rye Projects\Temp';
+	TEMP TO 'C:\Users\pwdlu_000\Documents\Rye Projects\Temp\';
+	FINBASE TO 'C:\Users\pwdlu_000\Documents\Finance\';
 };
 
-CREATE TABLE TEMP.TEST1
+
+CREATE TABLE TEMP.TEST1 PAGE_SIZE = 1
 {
 	KEY AS INT,
-	X_VAL AS DOUBLE,
-	Y_VAL AS DOUBLE
+	VALUE AS DOUBLE
 };
 
-DECLARE
-{
-	TICKS AS INT = 0;
-	X AS DOUBLE = 0;
-};
+DECLARE { I AS INT = 0; };
 
-FOR TICKS = 0 TO 100000
+FOR I = 0 TO 1000000
 DO
 {
-
-	X = RAND(1234321) * 100D - 50D;
-
 	APPEND
 	{
-
 		TEMP.TEST1;
 		RETAIN
-			TICKS AS KEY,
-			X AS VAL_X,
-			X * 0.50 + 50D AS VAL_Y
+			I AS KEY,
+			RAND_NUM() AS VALUE
 		;
-
 	};
-
 };
+
+SYSTEM.EMPTY_CACHE { };
 
 AGGREGATE
 {
@@ -42,29 +36,24 @@ AGGREGATE
 };
 BY
 {
-	KEY % 100 AS GROUPER;
+	KEY % 10 AS KEY;
 };
 OVER
 {
-	COUNT_ALL() AS REC_CNT,
-	SUM(X_VAL) AS X_TOTAL,
-	SUM(Y_VAL) AS Y_TOTAL,
-	AVG(X_VAL) AS X_AVG,
-	AVG(Y_VAL) AS Y_AVG,
-	STDEV(X_VAL) AS X_STDEV,
-	STDEV(Y_VAL) AS Y_STDEV,
-	INTERCEPT(X_VAL, Y_VAL) AS XY_INT,
-	SLOPE(X_VAL, Y_VAL) AS XY_SLOPE
-	;
+	AVG(VALUE) AS AVG_VALUE,
+	MIN(VALUE) AS MIN_VALUE,
+	MAX(VALUE) AS MAX_VALUE;
 };
 APPEND
 {
-	NEW TEMP.TEST1_AGG;
+	NEW TEMP.TEST2 PAGE_SIZE = 1;
 	RETAIN
-		OUT.*
-	;
-	DUMP 'C:\Users\pwdlu_000\Documents\Rye Projects\Flat Files\TEST_AGG.csv', ',';
+		OUT.*;
+	DUMP 'C:\Users\pwdlu_000\Documents\Rye Projects\Temp\Test2.csv', ',';
 };
+
+
+
 
 
 

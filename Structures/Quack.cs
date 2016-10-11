@@ -31,6 +31,16 @@ namespace Rye.Structures
             set;
         }
 
+        public int Count
+        {
+            get { return this._Cache.Count; }
+        }
+
+        public bool IsEmpty
+        {
+            get { return this._Cache.Count == 0; }
+        }
+
         public void Allocate(T Value)
         {
 

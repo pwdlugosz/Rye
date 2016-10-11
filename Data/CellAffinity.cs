@@ -12,12 +12,12 @@ namespace Rye.Data
     /// </summary>
     public enum CellAffinity : byte
     {
-        BOOL,
-        DATE_TIME,
-        INT,
-        DOUBLE,
-        BLOB,
-        STRING
+        BOOL = 0,
+        DATE_TIME = 1,
+        INT = 2,
+        DOUBLE = 3,
+        BLOB = 4,
+        STRING = 5
     }
 
 }

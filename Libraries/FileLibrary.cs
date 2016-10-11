@@ -224,6 +224,7 @@ namespace Rye.Libraries
         public const string EXPORT = "EXPORT";
         public const string DOWNLOAD = "DOWNLOAD";
         public const string MAKE = "MAKE";
+        public const string BUILD_FT = "BUILD_FT";
 
         private static string[] _MethodNames = new string[]
         {
@@ -239,7 +240,8 @@ namespace Rye.Libraries
             IMPORT,
             EXPORT,
             DOWNLOAD,
-            MAKE
+            MAKE,
+            BUILD_FT
         };
 
         private Heap2<string, string> _CompressedSig;
@@ -273,6 +275,7 @@ namespace Rye.Libraries
             this._CompressedSig.Allocate(FileMethodLibrary.EXPORT, "Exports a table into a new file", "DATA|The table to export|T|false;PATH|The path to the exported file|E|false;DELIM|The column delimitor|E|false");
             this._CompressedSig.Allocate(FileMethodLibrary.DOWNLOAD, "Downloads a url to a file", "URL|The URL to download|E|false;PATH|The path to the exported file|E|false");
             this._CompressedSig.Allocate(FileMethodLibrary.MAKE, "Creates a file or directory", "PATH|The path to be created|E|false");
+            this._CompressedSig.Allocate(FileMethodLibrary.BUILD_FT, "Creates a file table", "PATH|The path to the directory being traversed|E|false;NAME|The table create and load with data|E|false");
 
         }
 
@@ -308,6 +311,8 @@ namespace Rye.Libraries
                     return this.Method_Download(Parent, Parameters);
                 case FileMethodLibrary.MAKE:
                     return this.Method_Make(Parent, Parameters);
+                case FileMethodLibrary.BUILD_FT:
+                    return this.Method_FileTable(Parent, Parameters);
 
             }
             throw new ArgumentException(string.Format("Method '{0}' does not exist", Name));
@@ -575,11 +580,17 @@ namespace Rye.Libraries
                 using (Stream writter = File.Create(path))
                 {
 
-                    System.Net.WebRequest req = System.Net.HttpWebRequest.Create(url);
-
-                    using (Stream reader = req.GetResponse().GetResponseStream())
+                    try
                     {
-                        reader.CopyTo(writter);
+                        System.Net.WebRequest req = System.Net.HttpWebRequest.Create(url);
+
+                        using (Stream reader = req.GetResponse().GetResponseStream())
+                        {
+                            reader.CopyTo(writter);
+                        }
+                    }
+                    catch
+                    {
                     }
 
                 }
@@ -615,6 +626,105 @@ namespace Rye.Libraries
             return new LibraryMethod(Parent, EXPORT, Parameters, false, kappa);
 
         }
+
+        private Method Method_FileTable(Method Parent, ParameterCollection Parameters)
+        {
+
+            Action<ParameterCollection> kappa = (x) =>
+            {
+
+                // Get the data parameters //
+                string Path = Parameters.Expressions["PATH"].Evaluate().valueSTRING;
+                string FullTableName = Parameters.Expressions["NAME"].Evaluate().valueSTRING;
+
+                // Create the table and open a writer //
+                TabularData t = this._Session.CreateTabularData(FullTableName, FileMethodLibrary.FTSchema);
+                RecordWriter w = t.OpenUncheckedWriter(t.Columns.GetHashCode());
+                
+                // Build the call stack //
+                Quack<DirectoryInfo> Heap = new Quack<DirectoryInfo>(Quack<DirectoryInfo>.QuackState.FIFO);
+                
+                // Add the parameter sent //
+                Heap.Allocate(new DirectoryInfo(Path));
+                while (!Heap.IsEmpty)
+                {
+
+                    FileMethodLibrary.AppendFileTable(Heap.Deallocate(), w, Heap);
+
+                }
+
+                // Close out the stream //
+                w.Close();
+
+            };
+            return new LibraryMethod(Parent, BUILD_FT, Parameters, false, kappa);
+
+        }
+
+        // File Table Support //
+        private static Schema FTSchema
+        {
+            get
+            {
+
+                Schema s = new Schema();
+                s.Add("PATH", CellAffinity.STRING, 256);
+                s.Add("DIR", CellAffinity.STRING, 128);
+                s.Add("NAME", CellAffinity.STRING, 128);
+                s.Add("EXTENSION", CellAffinity.STRING, 16);
+                s.Add("CREATE_DATE", CellAffinity.DATE_TIME);
+                s.Add("LAST_ACCESS_DATE", CellAffinity.DATE_TIME);
+                s.Add("LAST_WRITE_DATE", CellAffinity.DATE_TIME);
+                s.Add("SIZE", CellAffinity.INT);
+                s.Add("IS_READ_ONLY", CellAffinity.BOOL);
+
+                return s;
+
+            }
+        }
+
+        private static long AppendFileTable(DirectoryInfo LeafNode, RecordWriter Stream, Quack<DirectoryInfo> Roots)
+        {
+
+            long ticks = 0;
+            
+            // Go through each directory in the node, only if the 'Roots' variable is not null //
+            if (Roots != null)
+            {
+
+                foreach (DirectoryInfo d in LeafNode.GetDirectories())
+                {
+                    Roots.Allocate(d);
+                }
+
+            }
+
+            // Go through each file in the directory leaf //
+            foreach (FileInfo f in LeafNode.GetFiles())
+            {
+
+                RecordBuilder rb = new RecordBuilder();
+                rb.Add(f.FullName);
+                rb.Add(f.Directory.FullName);
+                rb.Add(f.Name.Replace(f.Extension,""));
+                rb.Add(f.Extension.Replace(".", ""));
+                rb.Add(f.CreationTime);
+                rb.Add(f.LastAccessTime);
+                rb.Add(f.LastWriteTime);
+                rb.Add(f.Length);
+                rb.Add(f.IsReadOnly);
+
+                Stream.Insert(rb.ToRecord());
+
+                ticks++;
+
+            }
+
+            return ticks;
+
+        }
+
+
 
     }
 

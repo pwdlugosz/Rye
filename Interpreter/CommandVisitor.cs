@@ -169,7 +169,7 @@ namespace Rye.Interpreter
             // get the size //
             long page_size = Extent.DEFAULT_PAGE_SIZE;
             if (context.LITERAL_INT() != null)
-                page_size = long.Parse(context.LITERAL_INT().GetText());
+                page_size = Math.Min(128, long.Parse(context.LITERAL_INT().GetText())) * (1024 * 1024);
             
             // Get the names //
             string sname = context.table_name().IDENTIFIER()[0].GetText();
@@ -177,21 +177,56 @@ namespace Rye.Interpreter
             
             // Check we need to build this //
             bool Table = false;
+            TabularData x;
             if (this._enviro.ConnectionExists(sname))
             {
-                Table t = this._enviro.CreateTable(sname, tname, cols, (int)page_size);
+                x = this._enviro.CreateTable(sname, tname, cols, (int)page_size);
                 Table = true;
             }
             else if (this._enviro.IsGlobal(sname))
             {
-                Extent e = this._enviro.CreateExtent(tname, cols, (int)page_size);
+                x = this._enviro.CreateExtent(tname, cols, (int)page_size);
             }
             else
             {
                 throw new RyeCompileException("Structure or connection with alias '{0}' does not exist", sname);
             }
 
-            this._enviro.IO.WriteLine("{0} table '{1}' created in '{2}'", (Table ? "Disk" : "Value"), tname, sname);
+
+            // Communicate //
+            this._enviro.IO.WriteLine("{0} table '{1}' created in '{2}'", (Table ? "Disk" : "Memory"), tname, sname);
+            
+            // Check the import //
+            if (context.K_READ() != null)
+            {
+
+                ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
+                ExpressionCollection vals = exp.ToNodes(context.expression());
+                string path = vals[0].Evaluate().valueSTRING;
+
+                // Get the deliminator //
+                char delim = '\t';
+                if (vals.Count >= 2)
+                    delim = (vals[1].Evaluate().IsNull ? '\t' : vals[1].Evaluate().valueSTRING.First());
+
+                // Get the escape value //
+                char escape = char.MaxValue;
+                if (vals.Count >= 3)
+                    escape = (vals[2].Evaluate().IsNull ? char.MaxValue : vals[2].Evaluate().valueSTRING.First());
+
+                // Get the skip count //
+                int skip = 0;
+                if (vals.Count >= 4)
+                    skip = (vals[3].Evaluate().IsNull ? 0 : (int)vals[3].Evaluate().valueINT);
+
+                // Import //
+                this._enviro.Kernel.TextPop(x, path, new char[] { delim }, escape, skip);
+
+                // Communicate //
+                this._enviro.IO.WriteLine("Imported '{0}'; {1} record{2}", path, x.RecordCount, x.RecordCount != 1 ? "s" : "");
+
+            }
+            
             this._enviro.IO.WriteLine();
 
             return 1;

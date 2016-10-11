@@ -24,11 +24,39 @@ namespace Rye.Methods
         public MethodSort(Method Parent, TabularData Data, ExpressionCollection Values, Register Memory, Key SortState)
             : base(Parent)
         {
+
+            // Hand the empty case //
+            if (Data == null || Values == null || Memory == null || SortState == null)
+                return;
+
+            // Set the data //
             this._data = Data;
-            this._values = Values;
-            this._key = SortState;
-            this._reg = Memory;
-            this._State = 2;
+            
+            // Try to optimize the sort //
+            Key k = ExpressionCollection.DecompileToKey(Values);
+            if (k.Count == Values.Count)
+            {
+
+                for (int i = 0; i < k.Count; i++)
+                {
+                    k.SetAffinity(i, SortState.Affinity(i));
+                }
+
+                this._key = k;
+                this._State = 1;
+
+            }
+            else
+            {
+
+                // Set teh values //
+                this._values = Values;
+                this._key = SortState;
+                this._reg = Memory;
+                this._State = 2;
+
+            }
+
         }
 
         public MethodSort(Method Parent, TabularData Data, Key Values)

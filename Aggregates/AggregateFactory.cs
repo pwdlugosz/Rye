@@ -58,6 +58,11 @@ namespace Rye.Aggregates
             return new AggregateCovariance(M, N, W);
         }
 
+        public static Aggregate First(Expression M)
+        {
+            return new AggregateFirst(M);
+        }
+
         public static Aggregate Frequency(Filter P)
         {
             return new AggregateFreq(P);
@@ -78,14 +83,29 @@ namespace Rye.Aggregates
             return new AggregateIntercept(M, N, W);
         }
 
+        public static Aggregate Last(Expression M)
+        {
+            return new AggregateLast(M);
+        }
+
         public static Aggregate Max(Expression M)
         {
             return new AggregateMax(M);
         }
 
+        public static Aggregate Max(Expression M, Expression N)
+        {
+            return new AggregateMaxOf(M, N);
+        }
+
         public static Aggregate Min(Expression M)
         {
             return new AggregateMin(M);
+        }
+
+        public static Aggregate Min(Expression M, Expression N)
+        {
+            return new AggregateMinOf(M, N);
         }
 
         public static Aggregate Slope(Expression M, Expression N)

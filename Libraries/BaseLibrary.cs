@@ -138,8 +138,12 @@ namespace Rye.Libraries
         public const string HASH_BASH = "bash";
         public const string HASH_LASH = "lash";
 
-        public const string MUTABLE_RAND = "rand";
-        public const string MUTABLE_RANDINT = "randint";
+        public const string MUTABLE_RANDBOOL = "rand_bool";
+        public const string MUTABLE_RANDDATE = "rand_date";
+        public const string MUTABLE_RANDINT = "rand_int";
+        public const string MUTABLE_RANDNUM = "rand_num";
+        public const string MUTABLE_RANDSTRING = "rand_string";
+        public const string MUTABLE_RANDBLOB = "rand_blob";
 
         public const string VOLATILE_GUID = "guid";
         public const string VOLATILE_NOW = "now";
@@ -174,6 +178,8 @@ namespace Rye.Libraries
         public const string SPECIAL_IF = "if";
         public const string SPECIAL_DATE_BUILD = "date_build";
         public const string SPECIAL_CASE = "case";
+        public const string SPECIAL_MATCH = "match";
+        public const string SPECIAL_LIKE = "like";
 
         #endregion
 
@@ -260,8 +266,12 @@ namespace Rye.Libraries
             HASH_BASH,
             HASH_LASH,
 
-            MUTABLE_RAND,
+            MUTABLE_RANDBOOL,
+            MUTABLE_RANDDATE,
             MUTABLE_RANDINT,
+            MUTABLE_RANDNUM,
+            MUTABLE_RANDBLOB,
+            MUTABLE_RANDSTRING,
 
             VOLATILE_GUID,
             VOLATILE_NOW,
@@ -294,7 +304,9 @@ namespace Rye.Libraries
             TOKEN_FUNC_IF_NULL,
 
             SPECIAL_IF,
-            SPECIAL_DATE_BUILD
+            SPECIAL_DATE_BUILD,
+            SPECIAL_MATCH,
+            SPECIAL_LIKE
 
         };
 
@@ -400,6 +412,8 @@ namespace Rye.Libraries
 
                 case SPECIAL_IF: return new CellFuncIf();
                 case SPECIAL_DATE_BUILD: return new CellDateBuild();
+                case SPECIAL_LIKE: return new CellLike();
+                case SPECIAL_MATCH: return new CellMatch();
 
                 case HASH_MD5: return new CellFuncCHMD5();
                 case HASH_SHA1: return new CellFuncCHSHA1();
@@ -407,8 +421,12 @@ namespace Rye.Libraries
                 case HASH_BASH: return new CellFuncBASH();
                 case HASH_LASH: return new CellFuncLASH();
 
-                case MUTABLE_RAND: return new CellRandom();
-                case MUTABLE_RANDINT: return new CellRandomInt();
+                case MUTABLE_RANDBOOL: return new CellRandomBool(this._Session.BaseGenerator);
+                case MUTABLE_RANDDATE: return new CellRandomDate(this._Session.BaseGenerator);
+                case MUTABLE_RANDINT: return new CellRandomInt(this._Session.BaseGenerator);
+                case MUTABLE_RANDNUM: return new CellRandomNum(this._Session.BaseGenerator);
+                case MUTABLE_RANDSTRING: return new CellRandomString(this._Session.BaseGenerator);
+                case MUTABLE_RANDBLOB: return new CellRandomBLOB(this._Session.BaseGenerator);
 
                 case VOLATILE_GUID: return new CellGUID();
                 case VOLATILE_TICKS: return new CellTicks();

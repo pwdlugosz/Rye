@@ -1,0 +1,86 @@
+﻿
+CONNECT
+{
+	TEMP TO 'C:\Users\pwdlu_000\Documents\Rye Projects\Temp\';
+	FINBASE TO 'C:\Users\pwdlu_000\Documents\Finance\';
+};
+
+DECLARE
+{
+
+	S_URL(TICKER, BEG_DATE, END_DATE) AS LAMBDA 
+	= 
+	'http://chart.finance.yahoo.com/table.csv?s=' + TICKER 
+	+ '&a=' + MONTH(BEG_DATE)
+	+ '&b=' + DAY(BEG_DATE)
+	+ '&c=' + YEAR(BEG_DATE)
+	+ '&d=' + MONTH(END_DATE)
+	+ '&e=' + DAY(END_DATE)
+	+ '&f=' + YEAR(END_DATE)
+	+ '&g=d&ignore=.csv'
+	;
+
+	D_URL(TICKER, BEG_DATE, END_DATE) AS LAMBDA 
+	= 
+	'http://chart.finance.yahoo.com/table.csv?s=' + TICKER 
+	+ '&a=' + MONTH(BEG_DATE)
+	+ '&b=' + DAY(BEG_DATE)
+	+ '&c=' + YEAR(BEG_DATE)
+	+ '&d=' + MONTH(END_DATE)
+	+ '&e=' + DAY(END_DATE)
+	+ '&f=' + YEAR(END_DATE)
+	+ '&g=v&ignore=.csv'
+	;
+
+};
+
+/*
+SELECT
+{
+	FROM FINBASE.TICKERS AS T;
+};
+DECLARE
+{
+	STOCK_URL AS STRING.128 = "";
+	DIVIDEND_URL AS STRING.128 = "";
+	STOCK_PATH AS STRING.128 = "";
+	DIVIDEND_PATH AS STRING.128 = "";
+};
+MAIN
+{
+	
+	STOCK_URL = S_URL(T.TICKER, '2011-01-01'T, NOW());
+	DIVIDEND_URL = D_URL(T.TICKER, '2011-01-01'T, NOW());
+	STOCK_PATH = 'C:\Users\pwdlu_000\Documents\Finance\Stock_Flat_Files\' + T.TICKER + '.csv';
+	DIVIDEND_PATH = 'C:\Users\pwdlu_000\Documents\Finance\Dividend_Flat_Files\' + T.TICKER + '.csv';
+
+	FILE.DOWNLOAD
+	{
+		URL = STOCK_URL;
+		PATH = STOCK_PATH;
+	};
+
+	FILE.DOWNLOAD
+	{
+		URL = DIVIDEND_URL;
+		PATH = DIVIDEND_PATH;
+	};
+
+	PRINT '-----' + T.TICKER + '-----';
+
+	APPEND
+	{
+		NEW FINBASE.DOWNLOADS;
+		RETAIN
+			T.TICKER,
+			STOCK_URL,
+			STOCK_PATH,
+			DIVIDEND_URL,
+			DIVIDEND_PATH
+			;
+	};
+
+};
+
+*/
+

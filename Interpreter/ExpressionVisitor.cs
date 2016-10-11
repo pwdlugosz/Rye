@@ -129,10 +129,39 @@ namespace Rye.Interpreter
         public Heap<Cell> GetScalarHeap(RyeParser.Generic_nameContext context)
         {
 
-            string libname = this._SecondaryName;
+            // Specifically named //
             if (context.IDENTIFIER().Length == 2)
-                libname = context.IDENTIFIER()[0].GetText();
-            return this.GetScalarHeap(libname);
+            {
+
+                string hname = context.IDENTIFIER()[0].GetText();
+                if (this._Session.IsGlobal(hname))
+                    return this._Session.Scalars;
+                else if (string.Compare(this._SecondaryName ?? "@@@@", hname) == 0)
+                    return this._SecondaryScalars;
+                else
+                    throw new ArgumentException(string.Format("'{0}' does not exist", hname));
+
+            }
+            else
+            {
+
+                string sname = context.IDENTIFIER()[0].GetText();
+
+                // Check secondary first //
+                if (this._SecondaryScalars != null)
+                {
+
+                    if (this._SecondaryScalars.Exists(sname))
+                        return this._SecondaryScalars;
+
+                }
+
+                if (this._Session.Scalars.Exists(sname))
+                    return this._Session.Scalars;
+
+                throw new ArgumentException(string.Format("'{0}' does not exist", sname));
+
+            }
 
         }
 
@@ -151,10 +180,39 @@ namespace Rye.Interpreter
         public Heap<CellMatrix> GetMatrixHeap(RyeParser.Generic_nameContext context)
         {
 
-            string libname = this._SecondaryName;
+            // Specifically named //
             if (context.IDENTIFIER().Length == 2)
-                libname = context.IDENTIFIER()[1].GetText();
-            return this.GetMatrixHeap(libname);
+            {
+
+                string hname = context.IDENTIFIER()[0].GetText();
+                if (this._Session.IsGlobal(hname))
+                    return this._Session.Matrixes;
+                else if (string.Compare(this._SecondaryName ?? "@@@@", hname) == 0)
+                    return this._SecondaryMatrixes;
+                else
+                    throw new ArgumentException(string.Format("'{0}' does not exist", hname));
+
+            }
+            else
+            {
+
+                string sname = context.IDENTIFIER()[0].GetText();
+
+                // Check secondary first //
+                if (this._SecondaryMatrixes != null)
+                {
+
+                    if (this._SecondaryMatrixes.Exists(sname))
+                        return this._SecondaryMatrixes;
+
+                }
+
+                if (this._Session.Matrixes.Exists(sname))
+                    return this._Session.Matrixes;
+
+                throw new ArgumentException(string.Format("'{0}' does not exist", sname));
+
+            }
 
         }
 
@@ -785,6 +843,27 @@ namespace Rye.Interpreter
 
         }
 
+        public override Expression VisitExpressionType(RyeParser.ExpressionTypeContext context)
+        {
+
+            Cell c = Cell.NULL_INT;
+            if (context.type().T_BOOL() != null)
+                c = new Cell((long)CellAffinity.BOOL);
+            else if (context.type().T_DATE() != null)
+                c = new Cell((long)CellAffinity.DATE_TIME);
+            else if (context.type().T_INT() != null)
+                c = new Cell((long)CellAffinity.INT);
+            else if (context.type().T_DOUBLE() != null)
+                c = new Cell((long)CellAffinity.DOUBLE);
+            else if (context.type().T_BLOB() != null)
+                c = new Cell((long)CellAffinity.BLOB);
+            else if (context.type().T_STRING() != null)
+                c = new Cell((long)CellAffinity.STRING);
+
+            return new ExpressionValue(this.MasterNode, c);
+
+        }
+
         // To methods //
         public Expression ToNode(RyeParser.ExpressionContext context)
         {
@@ -887,6 +966,10 @@ namespace Rye.Interpreter
                     else r = CellReductions.Covar(nodes[0], nodes[1]);
                     break;
 
+                case "first":
+                    r = CellReductions.First(nodes[0]);
+                    break;
+
                 case "freq":
                     if (nodes.Count == 2) r = CellReductions.Frequency(new Filter(nodes[1]), nodes[0]);
                     else r = CellReductions.Frequency(new Filter(nodes[0]));
@@ -897,12 +980,22 @@ namespace Rye.Interpreter
                     else r = CellReductions.Intercept(nodes[0], nodes[1]);
                     break;
 
+                case "last":
+                    r = CellReductions.Last(nodes[0]);
+                    break;
+
                 case "max":
-                    r = CellReductions.Max(nodes[0]);
+                    if (nodes.Count == 2)
+                        r = CellReductions.Max(nodes[0], nodes[1]);
+                    else
+                        r = CellReductions.Max(nodes[0]);
                     break;
 
                 case "min":
-                    r = CellReductions.Min(nodes[0]);
+                    if (nodes.Count == 2)
+                        r = CellReductions.Min(nodes[0], nodes[1]);
+                    else
+                        r = CellReductions.Min(nodes[0]);
                     break;
 
                 case "slope":
@@ -1019,7 +1112,19 @@ namespace Rye.Interpreter
                 exp.AddRegister(this._registers.Name(i), this._registers[i]);
             }
 
+
+
             return exp;
+
+        }
+
+        public void ImportRegisters(ExpressionVisitor Caller)
+        {
+
+            for (int i = 0; i < Caller._registers.Count; i++)
+            {
+                this.AddRegister(Caller._registers.Name(i), Caller._registers[i]);
+            }
 
         }
 

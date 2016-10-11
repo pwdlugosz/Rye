@@ -8,8 +8,10 @@ SET_REDUCTIONS
 	| C O U N T '_' A L L 
 	| C O U N T '_' N U L L 
 	| C O V A R 
+	| F I R S T
 	| F R E Q 
-	| I N T E R C E P T 
+	| I N T E R C E P T
+	| L A S T 
 	| M A X 
 	| M I N 
 	| S L O P E 
@@ -102,6 +104,7 @@ K_NOT : N O T;
 K_OF : O F;
 K_ON : O N;
 K_OVER : O V E R;
+K_PAGE_SIZE : P A G E '_' S I Z E;
 K_PARTITIONS : P A R T I T I O N S | T H R E A D S;
 K_PRINT : P R I N T;
 K_READ : R E A D | S E L E C T;
@@ -126,7 +129,7 @@ K_WHILE : W H I L E;
 T_BLOB : B L O B;
 T_BOOL : B O O L;
 T_DATE : D A T E;
-T_DOUBLE : D O U B L E;
+T_DOUBLE : D O U B L E | N U M;
 T_INT : I N T;
 T_STRING : S T R I N G;
 

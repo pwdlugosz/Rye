@@ -20,7 +20,7 @@ namespace Rye.Data
         private const string DEFAULT_NAMESPACE = "GLOBAL";
         private const string TEMP_DB = "TEMP";
         private const int SYS_REF = 0;
-        public const string VERSION = "0.0.2";
+        public const string VERSION = "0.0.3";
 
         // Private variables //
         private Heap<Extent> _extents;
@@ -34,6 +34,7 @@ namespace Rye.Data
         private Communicator _comm;
         private string _name_space = DEFAULT_NAMESPACE;
         private Interpreter.ExpressionVisitor _vis;
+        private RandomCell _generator;
 
         public Session(Kernel Driver, Communicator IO, bool AllowAsync)
         {
@@ -57,6 +58,9 @@ namespace Rye.Data
 
             // Build a visitor //
             this._vis = new Interpreter.ExpressionVisitor(this);
+
+            // RNG //
+            this._generator = new RandomCell();
             
         }
 
@@ -89,6 +93,11 @@ namespace Rye.Data
         public Heap<CellMatrix> Matrixes
         {
             get { return this._matrixes; }
+        }
+
+        public RandomCell BaseGenerator
+        {
+            get { return this._generator; }
         }
 
         // Support //
@@ -145,6 +154,29 @@ namespace Rye.Data
 
             // Otherwise, use the kernel to drop the table //
             this._kernel.RequestDropTable(Header.FilePath(DB, Name, this._kernel.DefaultExtension));
+
+        }
+
+        public TabularData CreateTabularData(string DB, string Name, Schema Columns, long PageSize)
+        {
+
+            if (this.IsGlobal(DB))
+                return this.CreateExtent(Name, Columns, (int)PageSize);
+            else if (this.ConnectionExists(DB))
+                return this.CreateTable(DB, Name, Columns, PageSize);
+            else
+                throw new Rye.Interpreter.RyeCompileException("Connection '{0}' does not exist", DB);
+
+        }
+
+        public TabularData CreateTabularData(string FullName, Schema Columns)
+        {
+
+            string[] args = FullName.Split('.');
+            string db = (args.Length == 1 ? this.GlobalName : args[0]);
+            string name = args.Last();
+
+            return this.CreateTabularData(db, name, Columns, TabularData.DEFAULT_PAGE_SIZE);
 
         }
 
@@ -475,6 +507,12 @@ namespace Rye.Data
         {
         }
 
+        public bool Supress
+        {
+            get;
+            set;
+        }
+
         public abstract void Write(string Message, params object[] Paramters);
 
         public virtual void WriteLine(string Message, params object[] Parameters)
@@ -524,12 +562,20 @@ namespace Rye.Data
 
         public override void Write(string Message, params object[] Paramters)
         {
+
+            if (this.Supress)
+                return;
             Console.Write(Message,Paramters);
+
         }
 
         public override void WriteLine(string Message)
         {
+
+            if (this.Supress)
+                return;
             Console.WriteLine(Message);
+
         }
 
         public override void ShutDown()
@@ -557,12 +603,16 @@ namespace Rye.Data
 
         public override void Write(string Message, params object[] Paramters)
         {
+            if (this.Supress)
+                return;
             Console.Write(Message,Paramters);
             this._FileLog.WriteLine(Message, Paramters);
         }
 
         public override void WriteLine(string Message)
         {
+            if (this.Supress)
+                return;
             Console.WriteLine(Message);
             this._FileLog.WriteLine(Message);
         }
@@ -576,7 +626,7 @@ namespace Rye.Data
         public static string RandomLogFile()
         {
 
-            string Dir = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\Rye Projects\Log Files\";
+            string Dir = Kernel.RyeLogDir;
             DateTime now = DateTime.Now;
             string Name = string.Format("Log_{0}{1}{2}_{3}{4}{5}.txt", now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Millisecond);
             return Dir + Name;

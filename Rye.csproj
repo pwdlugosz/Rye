@@ -75,16 +75,40 @@
       <HintPath>..\packages\SharpZipLib.0.86.0\lib\20\ICSharpCode.SharpZipLib.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Interop.SHDocVw, Version=1.1.0.0, Culture=neutral, PublicKeyToken=db7cfd3acb5ad44e, processorArchitecture=MSIL">
+      <HintPath>..\packages\WatiN.2.1.0\lib\net40\Interop.SHDocVw.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.mshtml, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\packages\WatiN.2.1.0\lib\net40\Microsoft.mshtml.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
+    <Reference Include="WatiN.Core, Version=2.1.0.1196, Culture=neutral, PublicKeyToken=db7cfd3acb5ad44e, processorArchitecture=MSIL">
+      <HintPath>..\packages\WatiN.2.1.0\lib\net40\WatiN.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="WebDriver, Version=2.53.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Selenium.WebDriver.2.53.1\lib\net40\WebDriver.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="WebDriver.Support, Version=2.53.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Selenium.Support.2.53.1\lib\net40\WebDriver.Support.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Aggregates\Aggregate.cs" />
@@ -117,6 +141,7 @@
     <Compile Include="Data\Kernel.cs" />
     <Compile Include="Data\Key.cs" />
     <Compile Include="Data\KeyAffinity.cs" />
+    <Compile Include="Data\RandomCell.cs" />
     <Compile Include="Data\Record.cs" />
     <Compile Include="Data\RecordComparer.cs" />
     <Compile Include="Data\RecordWriter.cs" />
@@ -164,6 +189,7 @@
     <Compile Include="Libraries\FinanceLibrary.cs" />
     <Compile Include="Libraries\MSOfficeLibrary.cs" />
     <Compile Include="Libraries\SystemLibrary.cs" />
+    <Compile Include="Libraries\WebLibrary.cs" />
     <Compile Include="MatrixExpressions\MatrixExpression.cs" />
     <Compile Include="MatrixExpressions\MatrixExpressionAdd.cs" />
     <Compile Include="MatrixExpressions\MatrixExpressionAddScalar.cs" />
@@ -237,6 +263,7 @@
     <None Include="Scripts\AggregateTesting.rye" />
     <None Include="Scripts\CallOptionBlackScholesSimulator.rye" />
     <None Include="Scripts\ExpressionTesting.rye" />
+    <None Include="Scripts\MassDownloader.rye" />
     <None Include="Scripts\MatrixTesting.rye" />
     <None Include="Scripts\Primes.rye" />
     <None Include="Scripts\QueryTesting.rye" />
@@ -335,8 +362,12 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Antlr4.4.5-alpha003\build\Antlr4.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Antlr4.4.5-alpha003\build\Antlr4.props'))" />
     <Error Condition="!Exists('..\packages\Antlr4.4.5-alpha003\build\Antlr4.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Antlr4.4.5-alpha003\build\Antlr4.targets'))" />
+    <Error Condition="!Exists('..\packages\Selenium.WebDriver.IEDriver.2.53.1.1\build\Selenium.WebDriver.IEDriver.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Selenium.WebDriver.IEDriver.2.53.1.1\build\Selenium.WebDriver.IEDriver.targets'))" />
+    <Error Condition="!Exists('..\packages\Selenium.WebDriver.ChromeDriver.2.24.0.0\build\Selenium.WebDriver.ChromeDriver.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Selenium.WebDriver.ChromeDriver.2.24.0.0\build\Selenium.WebDriver.ChromeDriver.targets'))" />
   </Target>
   <Import Project="..\packages\Antlr4.4.5-alpha003\build\Antlr4.targets" Condition="Exists('..\packages\Antlr4.4.5-alpha003\build\Antlr4.targets')" />
+  <Import Project="..\packages\Selenium.WebDriver.IEDriver.2.53.1.1\build\Selenium.WebDriver.IEDriver.targets" Condition="Exists('..\packages\Selenium.WebDriver.IEDriver.2.53.1.1\build\Selenium.WebDriver.IEDriver.targets')" />
+  <Import Project="..\packages\Selenium.WebDriver.ChromeDriver.2.24.0.0\build\Selenium.WebDriver.ChromeDriver.targets" Condition="Exists('..\packages\Selenium.WebDriver.ChromeDriver.2.24.0.0\build\Selenium.WebDriver.ChromeDriver.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

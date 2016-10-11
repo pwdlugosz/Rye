@@ -47,10 +47,11 @@ connect_unit
 
 // ------------------------------------------ Create Table ------------------------------------------ //
 command_create
-	: K_CREATE (K_TABLE)? table_name (K_SIZE LITERAL_INT)? 
+	: K_CREATE (K_TABLE)? table_name (K_PAGE_SIZE ASSIGN LITERAL_INT)? 
 	LCURL 
-		create_unit (COMMA create_unit)* 
+		create_unit (COMMA create_unit)* SEMI_COLON?
 	RCURL SEMI_COLON
+	(K_READ LCURL K_FROM expression (COMMA expression)* SEMI_COLON RCURL SEMI_COLON)?
 	;
 create_unit
 	: IDENTIFIER K_AS type
@@ -209,7 +210,7 @@ exec_unit
 // Append table method //
 append_method
 	: K_APPEND 
-		LCURL (K_NEW)? table_name (K_SIZE LITERAL_INT)? SEMI_COLON 
+		LCURL (K_NEW)? table_name (K_PAGE_SIZE ASSIGN LITERAL_INT)? SEMI_COLON 
 		K_RETAIN expression_or_wildcard_set SEMI_COLON 
 		(K_SORT sort_unit (COMMA sort_unit)* SEMI_COLON)?
 		(K_DUMP expression COMMA expression SEMI_COLON)?
@@ -364,6 +365,7 @@ expression
 	| expression CAST type  																			# Cast
 	| variable																							# ExpressionVariable
 	| cell																								# Static
+	| type																								# ExpressionType
 	| expression NULL_OP expression																		# IfNullOp
 	| expression IF_OP expression (ELSE_OP expression)?													# IfOp
 	| K_CASE (K_WHEN expression K_THEN expression)+ (K_ELSE expression)? K_END							# CaseOp

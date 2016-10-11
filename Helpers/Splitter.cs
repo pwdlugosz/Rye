@@ -142,6 +142,10 @@ namespace Rye.Helpers
             return ToRecord(Text, Columns, Delims, char.MaxValue);
         }
 
+        // Extract //
+        
+
+
     }
 
 }

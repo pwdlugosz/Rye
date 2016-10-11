@@ -36,6 +36,7 @@ namespace Rye.Data
 
                 case "DOUBLE":
                 case "NUM64":
+                case "NUM":
                 case "D":
                     return CellAffinity.DOUBLE;
 
@@ -206,6 +207,7 @@ namespace Rye.Data
             return CellAffinity.INT;
 
         }
+
 
     }
 

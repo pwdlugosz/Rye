@@ -115,11 +115,13 @@ namespace Rye.Interpreter
         public static TabularData RenderData(Session Enviro, ExpressionCollection Nodes, RyeParser.ActAppendContext context)
         {
 
+            // Get the Page Size //
+            long size = (context.append_method().K_PAGE_SIZE() == null ? Extent.DEFAULT_PAGE_SIZE : long.Parse(context.append_method().LITERAL_INT().GetText())) * 1024 * 1024;
+                
             // Check if we need to create the table or just open it //
             if (context.append_method().K_NEW() == null)
             {
 
-                long size = (context.append_method().K_SIZE() == null ? Extent.DEFAULT_PAGE_SIZE : long.Parse(context.append_method().LITERAL_INT().GetText()));
                 TabularData t = CallData(Enviro, context.append_method().table_name());
                 if (t.Columns.Count != Nodes.Columns.Count)
                     throw new RyeCompileException("Attempting to insert {0} columns into {1}", Nodes.Columns.Count, t.Columns.Count);
@@ -134,12 +136,12 @@ namespace Rye.Interpreter
             // Check if disk based //
             if (Enviro.ConnectionExists(db_name))
             {
-                return Enviro.CreateTable(db_name, t_name, Nodes.Columns, (int)Table.DEFAULT_PAGE_SIZE);
+                return Enviro.CreateTable(db_name, t_name, Nodes.Columns, (int)size);
             }
             // Check if memory based //
             else if (Enviro.IsGlobal(db_name))
             {
-                return Enviro.CreateExtent(t_name, Nodes.Columns, (int)Table.DEFAULT_PAGE_SIZE);
+                return Enviro.CreateExtent(t_name, Nodes.Columns, (int)size);
             }
 
             throw new RyeCompileException("'{0}.{1}' does not exist as either a structure or a disk connection", db_name, t_name);
@@ -149,6 +151,9 @@ namespace Rye.Interpreter
         public static TabularData RenderData(Session Enviro, ExpressionCollection Nodes, RyeParser.Append_methodContext context)
         {
 
+            // Get the Page Size //
+            long size = (context.K_PAGE_SIZE() == null ? Extent.DEFAULT_PAGE_SIZE : long.Parse(context.LITERAL_INT().GetText())) * 1024 * 1024;
+             
             // Check if we need to create the table or just open it //
             if (context.K_NEW() == null)
             {
@@ -166,12 +171,12 @@ namespace Rye.Interpreter
             // Check if disk based //
             if (Enviro.ConnectionExists(db_name))
             {
-                return Enviro.CreateTable(db_name, t_name, Nodes.Columns, (int)Table.DEFAULT_PAGE_SIZE);
+                return Enviro.CreateTable(db_name, t_name, Nodes.Columns, (int)size);
             }
             // Check if memory based //
             else if (Enviro.IsGlobal(db_name))
             {
-                return Enviro.CreateExtent(t_name, Nodes.Columns, (int)Table.DEFAULT_PAGE_SIZE);
+                return Enviro.CreateExtent(t_name, Nodes.Columns, (int)size);
             }
 
             throw new RyeCompileException("'{0}.{1}' does not exist as either a structure or a disk connection", db_name, t_name);
