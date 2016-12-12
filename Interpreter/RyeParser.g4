@@ -25,14 +25,7 @@ command
 	| command_connect
 	| command_disconnect
 	| command_sort
-	| command_debug
 	;
-
-// Loads //
-
-// Debug //
-command_debug
-	: DEBUG_DUMP table_name COMMA expression SEMI_COLON;
 
 // ------------------------------------------ Connect / Disconnect ------------------------------------------ //
 command_connect
@@ -47,11 +40,11 @@ connect_unit
 
 // ------------------------------------------ Create Table ------------------------------------------ //
 command_create
-	: K_CREATE (K_TABLE)? table_name (K_PAGE_SIZE ASSIGN LITERAL_INT)? 
+	: K_CREATE (K_TABLE)? table_name (page_size)? 
 	LCURL 
 		create_unit (COMMA create_unit)* SEMI_COLON?
 	RCURL SEMI_COLON
-	(K_READ LCURL K_FROM expression (COMMA expression)* SEMI_COLON RCURL SEMI_COLON)?
+	(K_READ LCURL K_FROM expression (COMMA expression)* SEMI_COLON RCURL SEMI_COLON)? // path,delim,escape,skip
 	;
 create_unit
 	: IDENTIFIER K_AS type
@@ -201,7 +194,7 @@ method
 
 // Execute method //
 exec_method
-	: K_EXEC LCURL K_SCRIPT ASSIGN expression SEMI_COLON (exec_unit SEMI_COLON)* RCURL SEMI_COLON
+	: K_EXEC LCURL K_SCRIPT ASSIGN expression SEMI_COLON (K_NO_PRINT SEMI_COLON)? (exec_unit SEMI_COLON)* RCURL SEMI_COLON
 	;
 exec_unit
 	: PARAMETER ASSIGN expression
@@ -210,7 +203,7 @@ exec_unit
 // Append table method //
 append_method
 	: K_APPEND 
-		LCURL (K_NEW)? table_name (K_PAGE_SIZE ASSIGN LITERAL_INT)? SEMI_COLON 
+		LCURL (K_NEW)? table_name (page_size)? SEMI_COLON 
 		K_RETAIN expression_or_wildcard_set SEMI_COLON 
 		(K_SORT sort_unit (COMMA sort_unit)* SEMI_COLON)?
 		(K_DUMP expression COMMA expression SEMI_COLON)?
@@ -408,6 +401,11 @@ cell
 	| LITERAL_STRING		# CellLiteralString
 	| LITERAL_BLOB			# CellLiteralBLOB
 	| LITERAL_NULL			# CellNull
+	;
+
+// Page Size //
+page_size
+	: K_PAGE_SIZE ASSIGN LITERAL_INT (SUNIT_B | SUNIT_KB | SUNIT_MB)?
 	;
 
 // Functions //

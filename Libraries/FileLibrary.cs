@@ -273,7 +273,7 @@ namespace Rye.Libraries
             this._CompressedSig.Allocate(FileMethodLibrary.COPY, "Copies a file to another location", "FROM_PATH|The original file to copy|E|false;TO_PATH|The path to put the copy in|E|false");
             this._CompressedSig.Allocate(FileMethodLibrary.IMPORT, "Loads a file into an existing table", "DATA|The table to load|T|false;PATH|The flat file location|E|false;DELIM|The column delimitor|E|false;ESCAPE|The escape sequence character|E|true;SKIP|The number of lines to skip|E|true");
             this._CompressedSig.Allocate(FileMethodLibrary.EXPORT, "Exports a table into a new file", "DATA|The table to export|T|false;PATH|The path to the exported file|E|false;DELIM|The column delimitor|E|false");
-            this._CompressedSig.Allocate(FileMethodLibrary.DOWNLOAD, "Downloads a url to a file", "URL|The URL to download|E|false;PATH|The path to the exported file|E|false");
+            this._CompressedSig.Allocate(FileMethodLibrary.DOWNLOAD, "Downloads a url to a file", "URL|The URL to download|E|false;PATH|The path to the exported file|E|false;POST|The post string|E|true");
             this._CompressedSig.Allocate(FileMethodLibrary.MAKE, "Creates a file or directory", "PATH|The path to be created|E|false");
             this._CompressedSig.Allocate(FileMethodLibrary.BUILD_FT, "Creates a file table", "PATH|The path to the directory being traversed|E|false;NAME|The table create and load with data|E|false");
 
@@ -543,7 +543,8 @@ namespace Rye.Libraries
                 TabularData Data = x.Tables["DATA"];
                 string Path = x.Expressions["PATH"].Evaluate().valueSTRING;
                 char Delim = (x.Expressions["DELIM"] == null ? '\t' : x.Expressions["DELIM"].Evaluate().valueSTRING.First());
-                this._Session.Kernel.TextDump(Data, Path, Delim);
+                char Escape = (!x.Expressions.Exists("ESCAPE") ? char.MinValue : x.Expressions["ESCAPE"].Evaluate().valueSTRING.First());
+                this._Session.Kernel.TextDump(Data, Path, Delim, Escape);
 
             };
             return new LibraryMethod(Parent, EXPORT, Parameters, false, kappa);
@@ -576,23 +577,15 @@ namespace Rye.Libraries
 
                 string url = Parameters.Expressions["URL"].Evaluate().valueSTRING;
                 string path = Parameters.Expressions["PATH"].Evaluate().valueSTRING;
+                string post = Parameters.Exists("POST") ? Parameters.Expressions["POST"].Evaluate().valueSTRING : null;
 
-                using (Stream writter = File.Create(path))
+                if (post == null)
                 {
-
-                    try
-                    {
-                        System.Net.WebRequest req = System.Net.HttpWebRequest.Create(url);
-
-                        using (Stream reader = req.GetResponse().GetResponseStream())
-                        {
-                            reader.CopyTo(writter);
-                        }
-                    }
-                    catch
-                    {
-                    }
-
+                    WebSupport.HTTP_Request_Get(url, path);
+                }
+                else
+                {
+                    WebSupport.HTTP_Request_Post(url, path, post);
                 }
 
             };
@@ -724,9 +717,93 @@ namespace Rye.Libraries
 
         }
 
+    }
+
+    public static class WebSupport
+    {
+
+        public static void HTTP_Request_Get(string URL, string Path)
+        {
+
+            try
+            {
+                    
+                // Open a writer
+                using (Stream writter = File.Create(Path))
+                {
+
+                    // Create the web request
+                    System.Net.WebRequest req = System.Net.HttpWebRequest.Create(URL);
+
+                    // Dump to the output writer
+                    using (Stream reader = req.GetResponse().GetResponseStream())
+                    {
+                        reader.CopyTo(writter);
+                    }
+
+
+                }
+
+            }
+            catch
+            {
+
+            }
+
+            
+
+        }
+
+        public static void HTTP_Request_Post(string URL, string Path, string PostString)
+        {
+
+
+            try
+            {
+
+                // Open a writer
+                using (Stream writter = File.Create(Path))
+                {
+
+                    // Create the web request
+                    System.Net.WebRequest req = System.Net.HttpWebRequest.Create(URL);
+
+                    // Set the posting attributes //
+                    req.Method = "POST";
+                    req.ContentType = "application/x-www-form-urlencoded";
+
+                    // Set the posting variables //
+                    byte[] hash = System.Text.Encoding.ASCII.GetBytes(PostString);
+                    req.ContentLength = hash.Length;
+
+                    // Write the post data to a stream //
+                    using (Stream post = req.GetRequestStream())
+                    {
+                        post.Write(hash, 0, hash.Length);
+                    }
+
+                    // Dump to the output writer
+                    using (Stream reader = req.GetResponse().GetResponseStream())
+                    {
+                        reader.CopyTo(writter);
+                    }
+
+                }
+
+            }
+            catch
+            {
+
+            }
+
+
+
+        }
 
 
     }
+
+
 
 
 }

@@ -21,6 +21,7 @@ namespace Rye.Data
         public const int OFFSET_SIZE = 3;
         public const int RECORD_LEN = 4;
         public const int MAX_COLUMNS = 1024;
+        public const int MAX_COLUMN_NAME_LEN = 32;
 
         /* Sizing variables:
          * -- Represent the maxium size of the data on disk, not in memory
@@ -335,6 +336,10 @@ namespace Rye.Data
         /// <param name="Size">The size in bytes; this will be ignored if the affinity is not variable (not string or blob)</param>
         public void Add(string Name, CellAffinity Affinity, bool Nullable, int Size)
         {
+
+            // Check the name size //
+            if (Name.Length > MAX_COLUMN_NAME_LEN)
+                Name = Name.Substring(0, MAX_COLUMN_NAME_LEN);
 
             // Check if exists //
             if (this.Contains(Name))
@@ -891,6 +896,41 @@ namespace Rye.Data
             string text = "name string.64, type int, isnull bool, size int";
             return new Schema(text);
         }
+
+        public static Schema FromString(string Names, string Types)
+        {
+
+            string[] NameArray = Names.Split(',');
+            string[] TypeArray = Types.Split(',');
+
+            if (NameArray.Length != TypeArray.Length)
+                throw new ArgumentException("The name and type tags have different counts");
+
+            Schema columns = new Schema();
+
+            for (int i = 0; i < NameArray.Length; i++)
+            {
+
+                string[] x = TypeArray[i].Split('.');
+                CellAffinity t = CellAffinityHelper.Parse(x[0]);
+                int size = 8;
+                if (t == CellAffinity.STRING && x.Length == 2)
+                    size = int.Parse(x[1]);
+                else if (t == CellAffinity.STRING)
+                    size = Schema.DEFAULT_STRING_SIZE;
+                else if (t == CellAffinity.BLOB && x.Length == 2)
+                    size = int.Parse(x[1]);
+                else if (t == CellAffinity.BLOB)
+                    size = Schema.DEFAULT_BLOB_SIZE;
+
+                columns.Add(NameArray[i], t, size);
+
+            }
+
+            return columns;
+
+        }
+
 
     }
 

@@ -61,7 +61,6 @@ namespace Rye.Query
         private List<Q> _Nodes;
         private QueryConsolidation<Q> _Consolidator;
         private List<PreProcessor> _PreProcessorNodes;
-        private bool _RunFinalizer = true;
         private Methods.MethodDo _PreProcessor;
         private Methods.MethodDo _PostProcessor;
         

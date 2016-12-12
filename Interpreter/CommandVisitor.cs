@@ -47,7 +47,6 @@ namespace Rye.Interpreter
             //this._enviro.IO.WriteLine(m.Message());
             this._enviro.IO.WriteLine();
 
-
             return 1;
 
         }
@@ -167,9 +166,7 @@ namespace Rye.Interpreter
             }
 
             // get the size //
-            long page_size = Extent.DEFAULT_PAGE_SIZE;
-            if (context.LITERAL_INT() != null)
-                page_size = Math.Min(128, long.Parse(context.LITERAL_INT().GetText())) * (1024 * 1024);
+            long page_size = CompilerHelper.RenderPageSize(this._enviro, context.page_size());
             
             // Get the names //
             string sname = context.table_name().IDENTIFIER()[0].GetText();
@@ -192,9 +189,8 @@ namespace Rye.Interpreter
                 throw new RyeCompileException("Structure or connection with alias '{0}' does not exist", sname);
             }
 
-
             // Communicate //
-            this._enviro.IO.WriteLine("{0} table '{1}' created in '{2}'", (Table ? "Disk" : "Memory"), tname, sname);
+            this._enviro.IO.WriteLine("{0} table '{1}' created in '{2}' with page size {3}", (Table ? "Disk" : "Memory"), tname, sname, CompilerHelper.UnParsePageSize(page_size));
             
             // Check the import //
             if (context.K_READ() != null)
@@ -223,7 +219,7 @@ namespace Rye.Interpreter
                 this._enviro.Kernel.TextPop(x, path, new char[] { delim }, escape, skip);
 
                 // Communicate //
-                this._enviro.IO.WriteLine("Imported '{0}'; {1} record{2}", path, x.RecordCount, x.RecordCount != 1 ? "s" : "");
+                this._enviro.IO.WriteLine("\tImported '{0}'; {1} record{2}", path, x.RecordCount, x.RecordCount != 1 ? "s" : "");
 
             }
             

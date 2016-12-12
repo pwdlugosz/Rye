@@ -33,6 +33,16 @@ namespace Rye.Libraries
         public const string BS_PUT_PSI = "BS_PUT_PSI";
         public const string BS_PUT_VOL = "BS_PUT_VOL";
 
+        public const string BS_PR_LT = "BS_PR_LT";
+        public const string BS_PR_GT = "BS_PR_GT";
+        public const string BS_AVG_LT = "BS_AVG_LT";
+        public const string BS_AVG_GT = "BS_AVG_GT";
+        public const string BS_RAND = "BS_RAND";
+
+        public const string LN_AVG_LT = "LN_AVG_LT";
+        public const string LN_AVG_GT = "LN_AVG_GT";
+        public const string LN_RAND = "LN_RAND";
+
         private string[] _Names = new string[]
         {
             BS_CALL,
@@ -53,9 +63,19 @@ namespace Rye.Libraries
             BS_PUT_PSI,
             BS_PUT_VOL,
 
+            BS_PR_LT,
+            BS_PR_GT,
+            BS_AVG_LT,
+            BS_AVG_GT,
+            BS_RAND,
+
             NPDF,
             NDIST,
-            NINV
+            NINV,
+
+            LN_AVG_LT,
+            LN_AVG_GT,
+            LN_RAND
 
         };
 
@@ -79,6 +99,7 @@ namespace Rye.Libraries
                 case BS_CALL_THETA:
                 case BS_CALL_VEGA:
                 case BS_CALL_VOL:
+
                 case BS_PUT:
                 case BS_PUT_DELTA:
                 case BS_PUT_GAMMA:
@@ -87,6 +108,11 @@ namespace Rye.Libraries
                 case BS_PUT_THETA:
                 case BS_PUT_VEGA:
                 case BS_PUT_VOL:
+
+                case BS_PR_GT:
+                case BS_PR_LT:
+                case BS_AVG_GT:
+                case BS_AVG_LT:
                     return new Expressions.CellFunctionFixedShell(Name, 6, CellAffinity.DOUBLE, (x) => { return Wrapper(Name, x); });
 
                 case NPDF:
@@ -95,6 +121,16 @@ namespace Rye.Libraries
                     return new Expressions.CellFunctionFixedShell(NDIST, 1, CellAffinity.DOUBLE, (x) => { return new Cell(NormalCDF(x[0].valueDOUBLE)); });
                 case NINV:
                     return new Expressions.CellFunctionFixedShell(NINV, 1, CellAffinity.DOUBLE, (x) => { return new Cell(NormalINV(x[0].valueDOUBLE)); });
+
+                case BS_RAND:
+                    return new Expressions.CellFunctionFixedShell(BS_RAND, 5, CellAffinity.DOUBLE, (x) => { return new Cell(BSRandomAsset(x[0].valueDOUBLE, x[1].valueDOUBLE, x[2].valueDOUBLE, x[3].valueDOUBLE, x[4].valueDOUBLE, this._Session.BaseGenerator.NextDoubleGauss().DOUBLE)); });
+
+                case LN_AVG_LT:
+                    return new Expressions.CellFunctionFixedShell(LN_AVG_LT, 3, CellAffinity.DOUBLE, (x) => { return new Cell(LogNormalExpectedLT(x[0].valueDOUBLE, x[1].valueDOUBLE, x[2].valueDOUBLE)); });
+                case LN_AVG_GT:
+                    return new Expressions.CellFunctionFixedShell(LN_AVG_GT, 3, CellAffinity.DOUBLE, (x) => { return new Cell(LogNormalExpectedGT(x[0].valueDOUBLE, x[1].valueDOUBLE, x[2].valueDOUBLE)); });
+                case LN_RAND:
+                    return new Expressions.CellFunctionFixedShell(LN_RAND, 2, CellAffinity.DOUBLE, (x) => { return new Cell(LogNormalRandom(x[0].valueDOUBLE, x[1].valueDOUBLE, this._Session.BaseGenerator.NextDoubleGauss().DOUBLE)); });
 
             }
 
@@ -153,6 +189,15 @@ namespace Rye.Libraries
                 case BS_PUT_VOL:
                     return new Cell(BSPutImpliedVolatility(Values[0].valueDOUBLE, Values[1].valueDOUBLE, Values[2].valueDOUBLE, Values[3].valueDOUBLE, Values[4].valueDOUBLE, Values[5].valueDOUBLE));
             
+                case BS_AVG_GT:
+                    return new Cell(BSExpectedGreaterThan(Values[0].valueDOUBLE, Values[1].valueDOUBLE, Values[2].valueDOUBLE, Values[3].valueDOUBLE, Values[4].valueDOUBLE, Values[5].valueDOUBLE));
+                case BS_AVG_LT:
+                    return new Cell(BSExpectedLessThan(Values[0].valueDOUBLE, Values[1].valueDOUBLE, Values[2].valueDOUBLE, Values[3].valueDOUBLE, Values[4].valueDOUBLE, Values[5].valueDOUBLE));
+                case BS_PR_GT:
+                    return new Cell(BSProbabilityGreaterThan(Values[0].valueDOUBLE, Values[1].valueDOUBLE, Values[2].valueDOUBLE, Values[3].valueDOUBLE, Values[4].valueDOUBLE, Values[5].valueDOUBLE));
+                case BS_PR_LT:
+                    return new Cell(BSProbabilityLessThan(Values[0].valueDOUBLE, Values[1].valueDOUBLE, Values[2].valueDOUBLE, Values[3].valueDOUBLE, Values[4].valueDOUBLE, Values[5].valueDOUBLE));
+                
             }
 
             throw new ArgumentException(string.Format("Function '{0}' does not exist", Name));
@@ -324,7 +369,7 @@ namespace Rye.Libraries
 
             double d1 = (Math.Log(S / K) + (R - D + 0.5 * Sigma * Sigma) * T) / (Sigma * Math.Sqrt(T));
             double d2 = d1 - Sigma * Math.Sqrt(T);
-            return K * Math.Exp(-R * T) * NormalCDF(-d2) - S * Math.Exp(-D * T) * NormalCDF(-d1);
+            return K * Math.Exp(-R * T) * (1 - NormalCDF(d2)) - S * Math.Exp(-D * T) * (1 - NormalCDF(d1));
 
         }
 
@@ -458,6 +503,41 @@ namespace Rye.Libraries
 
         }
 
+        // Supplemental //
+        public static double BSExpectedGreaterThan(double S, double K, double R, double D, double Sigma, double T)
+        {
+            double d1 = (Math.Log(S / K) + (R - D + 0.5 * Sigma * Sigma) * T) / (Sigma * Math.Sqrt(T));
+            double d2 = d1 - Sigma * Math.Sqrt(T);
+            return S * Math.Exp(-D * T) * NormalCDF(d1) / NormalCDF(d2);
+        }
+
+        public static double BSExpectedLessThan(double S, double K, double R, double D, double Sigma, double T)
+        {
+            double d1 = (Math.Log(S / K) + (R - D + 0.5 * Sigma * Sigma) * T) / (Sigma * Math.Sqrt(T));
+            double d2 = d1 - Sigma * Math.Sqrt(T);
+            return S * Math.Exp(-D * T) * NormalCDF(-d1) / NormalCDF(-d2);
+        }
+
+        public static double BSProbabilityGreaterThan(double S, double K, double R, double D, double Sigma, double T)
+        {
+            double d1 = (Math.Log(S / K) + (R - D + 0.5 * Sigma * Sigma) * T) / (Sigma * Math.Sqrt(T));
+            double d2 = d1 - Sigma * Math.Sqrt(T);
+            return NormalCDF(d2);
+        }
+
+        public static double BSProbabilityLessThan(double S, double K, double R, double D, double Sigma, double T)
+        {
+            double d1 = (Math.Log(S / K) + (R - D + 0.5 * Sigma * Sigma) * T) / (Sigma * Math.Sqrt(T));
+            double d2 = d1 - Sigma * Math.Sqrt(T);
+            return NormalCDF(-d2);
+        }
+
+        public static double BSRandomAsset(double S, double R, double D, double Sigma, double T, double Z)
+        {
+            double x = (R - D - 0.5 * Sigma * Sigma) * T + Sigma * Math.Sqrt(T) * Z;
+            return S * Math.Exp(x);
+        }
+
         // Normal //
         /// <summary>
         /// Computes the normal distribution probability density function
@@ -468,7 +548,7 @@ namespace Rye.Libraries
         {
 
             // Variables //
-            double t = Math.Exp(-x * x * 0.50);
+            double t = Math.Exp(-(x * x) * 0.50);
             t = t / Math.Sqrt(2 * Math.PI);
 
             // Return //
@@ -485,11 +565,14 @@ namespace Rye.Libraries
         {
 
             // Variables //
+            bool Inv = (x < 0);
+            x = Math.Abs(x);
             double[] b = { 0.2316419, 0.319381530, -0.356563782, 1.781477937, -1.821255978, 1.330274429 };
             double t = 1 / (1 + b[0] * x);
 
             // Set c //
-            return 1 - NormalPDF(x) * (b[1] * t + b[2] * t * t + b[3] * t * t * t + b[4] * t * t * t * t + b[5] * t * t * t * t * t);
+            double z = 1 - NormalPDF(x) * (b[1] * t + b[2] * t * t + b[3] * t * t * t + b[4] * t * t * t * t + b[5] * t * t * t * t * t);
+            return (Inv ? 1 - z : z);
 
         }
 
@@ -518,11 +601,35 @@ namespace Rye.Libraries
                 ep = (p - NormalCDF(x));
                 if (Math.Abs(ep) <= e) break;
                 x += (ep) / (dx);
-
             }
 
             return x;
 
+        }
+
+        // Log-Normal //
+        public static double LogNormalExpectedLT(double x, double mu, double sigma)
+        {
+            double a1 = (x - mu - sigma * sigma) / sigma;
+            double a2 = (x - mu) / sigma;
+            double z1 = NormalCDF(a1);
+            double z2 = NormalCDF(a2);
+            return Math.Exp(mu + 0.5 * sigma * sigma) * z1 / z2;
+        }
+
+        public static double LogNormalExpectedGT(double x, double mu, double sigma)
+        {
+            double a1 = (x - mu - sigma * sigma) / sigma;
+            double a2 = (x - mu) / sigma;
+            double z1 = 1 - NormalCDF(a1);
+            double z2 = 1 - NormalCDF(a2);
+            return Math.Exp(mu + 0.5 * sigma * sigma) * z1 / z2;
+        }
+
+        public static double LogNormalRandom(double mu, double sigma, double Z)
+        {
+            double x = (mu - 0.5 * sigma * sigma) + sigma * Z;
+            return Math.Exp(x);
         }
 
 

@@ -115,6 +115,10 @@ namespace Rye.Query
             // Create a bool trip flag for the first record //
             bool first = true;
 
+            // Check if we are at the end of the stream //
+            if (stream.EndOfData)
+                return;
+
             // Set the initial register for the where clause //
             this._main.Value = stream.Read();
 

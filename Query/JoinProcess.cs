@@ -746,8 +746,8 @@ namespace Rye.Query
                 throw new ArgumentNullException("The left null map cannot be null if this is a left\anti-left\anti-inner\full join");
 
             // If either table is empty, just return //
-            if (LeftTable.Count == 0 || RightTable.Count == 0)
-                return 0L;
+            //if (LeftTable.Count == 0 || RightTable.Count == 0)
+            //    return 0L;
 
             // Check the sort //
             //this.CheckSort(LeftTable, JoinPredicate.LeftKey);
@@ -859,8 +859,8 @@ namespace Rye.Query
                 throw new ArgumentException("The RecordWriter and ExpressionCollection passed have invalid lengths");
             
             // If either table is empty, just return //
-            if (LeftVolume.RecordCount == 0 || RightVolume.RecordCount == 0)
-                return 0L;
+            //if (LeftVolume.RecordCount == 0 || RightVolume.RecordCount == 0)
+            //    return 0L;
             
             // Check the sort //
             //this.CheckSort(LeftVolume, JoinPredicate.LeftKey);
@@ -994,8 +994,8 @@ namespace Rye.Query
                 throw new ArgumentException("The RecordWriter and ExpressionCollection passed have invalid lengths");
 
             // If either table is empty, just return //
-            if (LeftVolume.RecordCount == 0 || RightVolume.RecordCount == 0)
-                return 0L;
+            //if (LeftVolume.RecordCount == 0 || RightVolume.RecordCount == 0)
+            //    return 0L;
 
             // Sort //
             //this.CheckSort(LeftVolume, JoinPredicate.LeftKey);

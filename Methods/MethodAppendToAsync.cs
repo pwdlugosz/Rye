@@ -29,7 +29,7 @@ namespace Rye.Methods
 
             this._tParentData = UseParentData;
             this._eParentData = null;
-            this._RecordCache = new Extent(UseParentData.Columns);
+            this._RecordCache = UseParentData.PopLastOrGrow();
             this._RecordCache.Header.PageSize = UseParentData.Header.PageSize;
             this._Fields = UseFields;
             this._IsTable = true;
@@ -60,7 +60,7 @@ namespace Rye.Methods
             if (this._RecordCache.IsFull && this._IsTable)
             {
                 this._tParentData.AddExtent(this._RecordCache);
-                this._RecordCache = new Extent(this._tParentData.Columns);
+                this._RecordCache = this._tParentData.Grow();
                 this._RecordCache.Header.PageSize = this._tParentData.Header.PageSize;
             }
             else if (this._RecordCache.IsFull)
@@ -81,7 +81,7 @@ namespace Rye.Methods
             if (this._RecordCache.Count != 0 && this._IsTable)
             {
 
-                this._tParentData.AddExtent(this._RecordCache);
+                this._tParentData.SetExtent(this._RecordCache);
 
             }
             // Otherwise push all records into the extent //
@@ -151,13 +151,12 @@ namespace Rye.Methods
             : base(Parent)
         {
 
-
             if (UseParentData.Columns.Count != UseFields.Columns.Count)
                 throw new ArgumentException("Output table and fields passed are not compatible");
 
             this._tParentData = UseParentData;
             this._eParentData = null;
-            this._RecordCache = new Extent(UseParentData.Columns);
+            this._RecordCache = UseParentData.PopLastOrGrow();
             this._RecordCache.Header.PageSize = UseParentData.Header.PageSize;
             this._Fields = UseFields;
             this._IsTable = true;
@@ -198,7 +197,7 @@ namespace Rye.Methods
             if (this._IsFull && this._IsTable)
             {
                 this._tParentData.AddExtent(this._RecordCache);
-                this._RecordCache = new Extent(this._tParentData.Columns);
+                this._RecordCache = this._tParentData.Grow();
                 this._RecordCache.Header.PageSize = this._tParentData.Header.PageSize;
                 this._CurrentCount = 0;
                 this._MaxCount = (int)this._RecordCache.MaxRecordEstimate;
@@ -221,7 +220,7 @@ namespace Rye.Methods
             if (this._RecordCache.Count != 0 && this._IsTable)
             {
 
-                this._tParentData.AddExtent(this._RecordCache);
+                this._tParentData.SetExtent(this._RecordCache);
 
             }
             else if (this._RecordCache.Count != 0)

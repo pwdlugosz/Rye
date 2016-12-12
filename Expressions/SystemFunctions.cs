@@ -1072,7 +1072,7 @@ namespace Rye.Expressions
             if (c.AFFINITY != CellAffinity.DOUBLE)
                 c.AFFINITY = CellAffinity.DOUBLE;
 
-            //c.DOUBLE = Equus.Numerics.SpecialFunctions.NormalCDF(c.DOUBLE);
+            c.DOUBLE = FinanceFunctionLibrary.NormalCDF(c.DOUBLE);
 
             return c;
 
@@ -1467,6 +1467,22 @@ namespace Rye.Expressions
 
     }
 
+    public sealed class CellFuncFVExtreme : CellFuncFixedVariable
+    {
+
+        public CellFuncFVExtreme()
+            : base(BaseFunctionLibrary.FUNC_EXTREME, -1)
+        {
+        }
+
+        public override Cell Evaluate(params Cell[] Data)
+        {
+            return Cell.Extreme(Data);
+        }
+
+
+    }
+
     public sealed class CellFuncFVAbs : CellFuncFixedVariable
     {
 
@@ -1520,6 +1536,8 @@ namespace Rye.Expressions
 
         public override Cell Evaluate(params Cell[] Data)
         {
+            if (Data[0].IsNull) 
+                return Cell.NULL_BLOB;
             byte[] b = this._hasher.ComputeHash(Data[0].valueBLOB);
             return new Cell(b);
         }
@@ -1748,7 +1766,12 @@ namespace Rye.Expressions
 
         public override Cell Evaluate(params Cell[] Data)
         {
+
+            if (Data[0].AFFINITY == CellAffinity.STRING)
+                return CellParser.Parse(Data[0].valueSTRING, this._Return);
+
             return Cell.Cast(Data[0], this._Return);
+
         }
 
         public override CellAffinity ReturnAffinity(params CellAffinity[] Data)
@@ -1779,6 +1802,9 @@ namespace Rye.Expressions
 
             string Text = Data[0].valueSTRING;
             string Patern = Data[1].valueSTRING;
+
+            if (Data[0].IsNull || Data[1].IsNull)
+                return Cell.NULL_BOOL;
 
             bool x = false, y = false, z = false;
 
@@ -1847,180 +1873,23 @@ namespace Rye.Expressions
 
     #endregion
 
-    // Mutable or instance level functions //
-    #region MutableFunctions
+    // Window Functions //
+    #region WindowFunctions
 
-    public sealed class CellRandomBool : CellFunction
+    public sealed class MovingAverage : CellFunction
     {
 
-        private RandomCell _rng;
+        private Queue<Cell> _X;
+        private Queue<Cell> _W;
+        private Cell _SumX;
+        private Cell _SumW;
+        private int _LagCount = -1;
+        private Cell _DefaultW = new Cell(1D);
 
-        public CellRandomBool(RandomCell RNG)
-            : base(BaseFunctionLibrary.MUTABLE_RANDBOOL, -1, true)
+        public MovingAverage()
+            : base("MOVING_AVG", -1, false)
         {
-
-            this.IsVolatile = true;
-            this._rng = RNG;
-
-        }
-
-        public override Cell Evaluate(params Cell[] Data)
-        {
-
-            if (Data.Length == 1)
-                return this._rng.NextBool(Data[0].valueDOUBLE);
-            
-            return this._rng.NextBool();
-
-        }
-
-        public override CellAffinity ReturnAffinity(params CellAffinity[] Data)
-        {
-            return CellAffinity.BOOL;
-        }
-
-        public override string Unparse(string[] Text)
-        {
-            if (Text.Length == 0)
-                return "RAND_BOOL()";
-            return "RAND_BOOL(" + Text[0] + ")";
-        }
-
-    }
-
-    public sealed class CellRandomDate : CellFunction
-    {
-
-        private RandomCell _rng;
-
-        public CellRandomDate(RandomCell RNG)
-            : base(BaseFunctionLibrary.MUTABLE_RANDINT, -1, true)
-        {
-
-            this.IsVolatile = true;
-            this._rng = RNG;
-
-        }
-
-        public override Cell Evaluate(params Cell[] Data)
-        {
-
-            if (Data.Length == 1)
-            {
-
-                DateTime a = Data[0].valueDATE_TIME;
-                DateTime b = DateTime.Now;
-                if (a.Ticks < b.Ticks)
-                {
-                    DateTime c = a;
-                    a = b;
-                    b = c;
-                }
-
-                return this._rng.NextDate(a, b);
-
-            }
-            else if (Data.Length == 2)
-            {
-
-                DateTime a = Data[0].valueDATE_TIME;
-                DateTime b = Data[1].valueDATE_TIME;
-                if (a.Ticks < b.Ticks)
-                {
-                    DateTime c = a;
-                    a = b;
-                    b = c;
-                }
-                return this._rng.NextDate(a,b);
-
-            }
-
-            return this._rng.NextDate();
-
-        }
-
-        public override CellAffinity ReturnAffinity(params CellAffinity[] Data)
-        {
-            return CellAffinity.DATE_TIME;
-        }
-
-        public override string Unparse(string[] Text)
-        {
-            if (Text.Length == 0)
-                return "RAND_DATE()";
-            return "RAND_DATE(" + Text[0] + ")";
-        }
-
-
-    }
-
-    public sealed class CellRandomInt : CellFunction
-    {
-
-        private RandomCell _rng;
-
-        public CellRandomInt(RandomCell RNG)
-            : base(BaseFunctionLibrary.MUTABLE_RANDINT, -1, true)
-        {
-
-            this.IsVolatile = true;
-            this._rng = RNG;
-
-        }
-
-        public override Cell Evaluate(params Cell[] Data)
-        {
-
-            if (Data.Length == 1)
-                return this._rng.NextLong(0, Data[0].valueINT);
-            else if (Data.Length == 2)
-                return this._rng.NextLong(Data[0].valueINT, Data[1].valueINT);
-            
-            return this._rng.NextLong();
-
-        }
-
-        public override CellAffinity ReturnAffinity(params CellAffinity[] Data)
-        {
-            return CellAffinity.INT;
-        }
-
-        public override string Unparse(string[] Text)
-        {
-            if (Text.Length == 0)
-                return "RAND_INT()";
-            return "RAND_INT(" + Text[0] + ")";
-        }
-
-
-    }
-
-    public sealed class CellRandomNum : CellFunction
-    {
-
-        private RandomCell _rng;
-
-        public CellRandomNum(RandomCell RNG)
-            : base(BaseFunctionLibrary.MUTABLE_RANDNUM, -1, true)
-        {
-
-            this.IsVolatile = true;
-            this._rng = RNG;
-
-        }
-
-        public override Cell Evaluate(params Cell[] Data)
-        {
-
-            if (Data.Length == 1 || Data.Length == 2)
-            {
-                double a = Data[0].valueDOUBLE;
-                double b = (Data.Length == 2 ? Data[1].valueDOUBLE : 0d);
-                return this._rng.NextDouble(Math.Min(a, b), Math.Max(a, b));
-            }
-
-            return this._rng.NextDouble();
-
+          
         }
 
         public override CellAffinity ReturnAffinity(params CellAffinity[] Data)
@@ -2030,145 +1899,56 @@ namespace Rye.Expressions
 
         public override string Unparse(string[] Text)
         {
-            if (Text.Length == 0)
-                return "RAND_NUM()";
-            return "RAND_NUM(" + Text[0] + ")";
-        }
-
-
-    }
-
-    public sealed class CellRandomString : CellFunction
-    {
-
-        private RandomCell _rng;
-
-        public CellRandomString(RandomCell RNG)
-            : base(BaseFunctionLibrary.MUTABLE_RANDSTRING, -1, true)
-        {
-
-            this.IsVolatile = true;
-            this._rng = RNG;
-
-        }
-
-        public override Cell Evaluate(params Cell[] Data)
-        {
-
             
-            /* 
-             * 
-             * Data parmater 2:
-             * 
-             * if null, then null
-             * 
-             * if string, use as corpus, otherwise use the int value:
-             * 
-             * 0 = utf8
-             * 1 = utf8
-             * 2 = utf7
-             * 3 = ASCII printable
-             * 4 = ASCII printable, no spaces
-             * 5 = upper/lower letters and numbers
-             * 6 = upper letters + numbers
-             * 7 = lower letters + numbers
-             * 8 = upper letters
-             * 9 = lower letters
-             * 10 = numbers
-             * 
-             * 
-             * 
-             */
-
-            int len = (Data.Length == 0 ? 16 : (int)Data[0].valueINT);
-
-            if (Data.Length <= 1)
-                return this._rng.NextStringASCIIPrintable(len);
-
-            if (Data[1].IsNull)
-                return Cell.NULL_STRING;
-
-            if (Data[1].Affinity == CellAffinity.STRING)
-                return this._rng.NextString(len, Data[1].valueSTRING);
-
-            int type = (int)Data[1].valueINT;
-            if (type < 0 || type > 10)
-                type = 0;
-
-            switch (type)
+            StringBuilder sb = new StringBuilder();
+            sb.Append(this.NameSig);
+            sb.Append("(");
+            for (int i = 0; i < Text.Length; i++)
             {
-                case 0: return this._rng.NextUTF16String(len);
-                case 1: return this._rng.NextUTF8String(len);
-                case 2: return this._rng.NextUTF7String(len);
-                case 3: return this._rng.NextStringASCIIPrintable(len);
-                case 4: return this._rng.NextStringASCIIPrintableNoSpace(len);
-                case 5: return this._rng.NextStringUpperLowerNumText(len);
-                case 6: return this._rng.NextStringUpperNumText(len);
-                case 7: return this._rng.NextStringLowerNumText(len);
-                case 8: return this._rng.NextStringUpperText(len);
-                case 9: return this._rng.NextStringLowerText(len);
-                case 10: return this._rng.NextStringNum(len);
+
+                sb.Append(Text[i]);
+
+                if (i != Text.Length - 1)
+                    sb.Append(',');
+                
+            }
+            sb.Append(")");
+            return sb.ToString();
+
+        }
+
+        public override Cell Evaluate(Cell[] Data)
+        {
+
+            this._LagCount = (int)Data[0].valueINT;
+            if (this._LagCount >= this._X.Count)
+            {
+                this._SumX -= this._X.Dequeue();
+                this._SumW -= this._W.Dequeue();
             }
 
-            return this._rng.NextStringASCIIPrintable(len);
+            this._X.Enqueue(Data[1]);
+            this._SumX += Data[1];
 
-        }
+            if (Data.Length >= 2)
+            {
+                this._W.Enqueue(Data[2]);
+                this._SumW += Data[2];
+            }
+            else
+            {
+                this._W.Enqueue(this._DefaultW);
+                this._SumW += this._DefaultW;
+            }
 
-        public override CellAffinity ReturnAffinity(params CellAffinity[] Data)
-        {
-            return CellAffinity.STRING;
-        }
+            if (this._LagCount >= this._X.Count)
+                return Cell.NULL_DOUBLE;
 
-        public override string Unparse(string[] Text)
-        {
-            if (Text.Length == 0)
-                return "RAND_STRING()";
-            return "RAND_STRING(" + Text[0] + ")";
+            return this._SumX / this._SumW;
+
         }
 
     }
-
-    public sealed class CellRandomBLOB : CellFunction
-    {
-
-        private RandomCell _rng;
-
-        public CellRandomBLOB(RandomCell RNG)
-            : base(BaseFunctionLibrary.MUTABLE_RANDSTRING, -1, true)
-        {
-
-            this.IsVolatile = true;
-            this._rng = RNG;
-
-        }
-
-        public override Cell Evaluate(params Cell[] Data)
-        {
-
-            int len = (Data.Length == 0 ? 16 : (int)Data[0].valueINT);
-            return this._rng.NextStringASCIIPrintable(len);
-
-        }
-
-        public override CellAffinity ReturnAffinity(params CellAffinity[] Data)
-        {
-            return CellAffinity.BLOB;
-        }
-
-        public override string Unparse(string[] Text)
-        {
-            if (Text.Length == 0)
-                return "RAND_BLOB()";
-            return "RAND_BLOB(" + Text[0] + ")";
-        }
-
-    }
-
-
-    #endregion
-
-    // Window Functions //
-    #region WindowFunctions
 
     /*
     public static class CellCollectionFunctions
@@ -2630,9 +2410,362 @@ namespace Rye.Expressions
 
     }
 
+    public sealed class CellRandomBool : CellFunction
+    {
+
+        private RandomCell _rng;
+
+        public CellRandomBool(RandomCell RNG)
+            : base(BaseFunctionLibrary.MUTABLE_RANDBOOL, -1, true)
+        {
+
+            this.IsVolatile = true;
+            this._rng = RNG;
+
+        }
+
+        public override Cell Evaluate(params Cell[] Data)
+        {
+
+            if (Data.Length == 1)
+                return this._rng.NextBool(Data[0].valueDOUBLE);
+
+            return this._rng.NextBool();
+
+        }
+
+        public override CellAffinity ReturnAffinity(params CellAffinity[] Data)
+        {
+            return CellAffinity.BOOL;
+        }
+
+        public override string Unparse(string[] Text)
+        {
+            if (Text.Length == 0)
+                return "RAND_BOOL()";
+            return "RAND_BOOL(" + Text[0] + ")";
+        }
+
+    }
+
+    public sealed class CellRandomDate : CellFunction
+    {
+
+        private RandomCell _rng;
+
+        public CellRandomDate(RandomCell RNG)
+            : base(BaseFunctionLibrary.MUTABLE_RANDINT, -1, true)
+        {
+
+            this.IsVolatile = true;
+            this._rng = RNG;
+
+        }
+
+        public override Cell Evaluate(params Cell[] Data)
+        {
+
+            if (Data.Length == 1)
+            {
+
+                DateTime a = Data[0].valueDATE_TIME;
+                DateTime b = DateTime.Now;
+                if (a.Ticks < b.Ticks)
+                {
+                    DateTime c = a;
+                    a = b;
+                    b = c;
+                }
+
+                return this._rng.NextDate(a, b);
+
+            }
+            else if (Data.Length == 2)
+            {
+
+                DateTime a = Data[0].valueDATE_TIME;
+                DateTime b = Data[1].valueDATE_TIME;
+                if (a.Ticks < b.Ticks)
+                {
+                    DateTime c = a;
+                    a = b;
+                    b = c;
+                }
+                return this._rng.NextDate(a, b);
+
+            }
+
+            return this._rng.NextDate();
+
+        }
+
+        public override CellAffinity ReturnAffinity(params CellAffinity[] Data)
+        {
+            return CellAffinity.DATE_TIME;
+        }
+
+        public override string Unparse(string[] Text)
+        {
+            if (Text.Length == 0)
+                return "RAND_DATE()";
+            return "RAND_DATE(" + Text[0] + ")";
+        }
+
+
+    }
+
+    public sealed class CellRandomInt : CellFunction
+    {
+
+        private RandomCell _rng;
+
+        public CellRandomInt(RandomCell RNG)
+            : base(BaseFunctionLibrary.MUTABLE_RANDINT, -1, true)
+        {
+
+            this.IsVolatile = true;
+            this._rng = RNG;
+
+        }
+
+        public override Cell Evaluate(params Cell[] Data)
+        {
+
+            if (Data.Length == 1)
+                return this._rng.NextLong(0, Data[0].valueINT);
+            else if (Data.Length == 2)
+                return this._rng.NextLong(Data[0].valueINT, Data[1].valueINT);
+
+            return this._rng.NextLong();
+
+        }
+
+        public override CellAffinity ReturnAffinity(params CellAffinity[] Data)
+        {
+            return CellAffinity.INT;
+        }
+
+        public override string Unparse(string[] Text)
+        {
+            if (Text.Length == 0)
+                return "RAND_INT()";
+            return "RAND_INT(" + Text[0] + ")";
+        }
+
+
+    }
+
+    public sealed class CellRandomNum : CellFunction
+    {
+
+        private RandomCell _rng;
+
+        public CellRandomNum(RandomCell RNG)
+            : base(BaseFunctionLibrary.MUTABLE_RANDNUM, -1, true)
+        {
+
+            this.IsVolatile = true;
+            this._rng = RNG;
+
+        }
+
+        public override Cell Evaluate(params Cell[] Data)
+        {
+
+            if (Data.Length == 1 || Data.Length == 2)
+            {
+                double a = Data[0].valueDOUBLE;
+                double b = (Data.Length == 2 ? Data[1].valueDOUBLE : 0d);
+                return this._rng.NextDouble(Math.Min(a, b), Math.Max(a, b));
+            }
+
+            return this._rng.NextDouble();
+
+        }
+
+        public override CellAffinity ReturnAffinity(params CellAffinity[] Data)
+        {
+            return CellAffinity.DOUBLE;
+        }
+
+        public override string Unparse(string[] Text)
+        {
+            if (Text.Length == 0)
+                return "RAND_NUM()";
+            return "RAND_NUM(" + Text[0] + ")";
+        }
+
+    }
+
+    public sealed class CellRandomVar : CellFunction
+    {
+
+        private RandomCell _rng;
+
+        public CellRandomVar(RandomCell RNG)
+            : base(BaseFunctionLibrary.MUTABLE_RANDVAR, -1, true)
+        {
+
+            this.IsVolatile = true;
+            this._rng = RNG;
+
+        }
+
+        public override Cell Evaluate(params Cell[] Data)
+        {
+
+            string dist = Data[0].valueSTRING.ToUpper();
+
+            if (dist == "NORMAL" || dist == "GAUSS")
+                return this._rng.NextDoubleGauss();
+
+            return this._rng.NextDouble();
+
+        }
+
+        public override CellAffinity ReturnAffinity(params CellAffinity[] Data)
+        {
+            return CellAffinity.DOUBLE;
+        }
+
+        public override string Unparse(string[] Text)
+        {
+            if (Text.Length == 0)
+                return "RAND_VAR()";
+            return "RAND_VAR(" + Text[0] + ")";
+        }
+
+    }
+
+    public sealed class CellRandomString : CellFunction
+    {
+
+        private RandomCell _rng;
+
+        public CellRandomString(RandomCell RNG)
+            : base(BaseFunctionLibrary.MUTABLE_RANDSTRING, -1, true)
+        {
+
+            this.IsVolatile = true;
+            this._rng = RNG;
+
+        }
+
+        public override Cell Evaluate(params Cell[] Data)
+        {
+
+
+            /* 
+             * 
+             * Data parmater 2:
+             * 
+             * if null, then null
+             * 
+             * if string, use as corpus, otherwise use the int value:
+             * 
+             * 0 = utf8
+             * 1 = utf8
+             * 2 = utf7
+             * 3 = ASCII printable
+             * 4 = ASCII printable, no spaces
+             * 5 = upper/lower letters and numbers
+             * 6 = upper letters + numbers
+             * 7 = lower letters + numbers
+             * 8 = upper letters
+             * 9 = lower letters
+             * 10 = numbers
+             * 
+             * 
+             * 
+             */
+
+            int len = (Data.Length == 0 ? 16 : (int)Data[0].valueINT);
+
+            if (Data.Length <= 1)
+                return this._rng.NextStringASCIIPrintable(len);
+
+            if (Data[1].IsNull)
+                return Cell.NULL_STRING;
+
+            if (Data[1].Affinity == CellAffinity.STRING)
+                return this._rng.NextString(len, Data[1].valueSTRING);
+
+            int type = (int)Data[1].valueINT;
+            if (type < 0 || type > 10)
+                type = 0;
+
+            switch (type)
+            {
+                case 0: return this._rng.NextUTF16String(len);
+                case 1: return this._rng.NextUTF8String(len);
+                case 2: return this._rng.NextUTF7String(len);
+                case 3: return this._rng.NextStringASCIIPrintable(len);
+                case 4: return this._rng.NextStringASCIIPrintableNoSpace(len);
+                case 5: return this._rng.NextStringUpperLowerNumText(len);
+                case 6: return this._rng.NextStringUpperNumText(len);
+                case 7: return this._rng.NextStringLowerNumText(len);
+                case 8: return this._rng.NextStringUpperText(len);
+                case 9: return this._rng.NextStringLowerText(len);
+                case 10: return this._rng.NextStringNum(len);
+            }
+
+            return this._rng.NextStringASCIIPrintable(len);
+
+        }
+
+        public override CellAffinity ReturnAffinity(params CellAffinity[] Data)
+        {
+            return CellAffinity.STRING;
+        }
+
+        public override string Unparse(string[] Text)
+        {
+            if (Text.Length == 0)
+                return "RAND_STRING()";
+            return "RAND_STRING(" + Text[0] + ")";
+        }
+
+    }
+
+    public sealed class CellRandomBLOB : CellFunction
+    {
+
+        private RandomCell _rng;
+
+        public CellRandomBLOB(RandomCell RNG)
+            : base(BaseFunctionLibrary.MUTABLE_RANDSTRING, -1, true)
+        {
+
+            this.IsVolatile = true;
+            this._rng = RNG;
+
+        }
+
+        public override Cell Evaluate(params Cell[] Data)
+        {
+
+            int len = (Data.Length == 0 ? 16 : (int)Data[0].valueINT);
+            return this._rng.NextStringASCIIPrintable(len);
+
+        }
+
+        public override CellAffinity ReturnAffinity(params CellAffinity[] Data)
+        {
+            return CellAffinity.BLOB;
+        }
+
+        public override string Unparse(string[] Text)
+        {
+            if (Text.Length == 0)
+                return "RAND_BLOB()";
+            return "RAND_BLOB(" + Text[0] + ")";
+        }
+
+    }
+
     #endregion
 
-    // Optimization helpers hidden form Dressage //
+    // Optimization helpers hidden //
     #region HiddenFunctions
 
     public sealed class AndMany : CellFunction

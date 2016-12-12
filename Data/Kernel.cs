@@ -6,20 +6,16 @@ using System.Threading.Tasks;
 using System.IO;
 using Rye.Helpers;
 using Rye.Query;
+using Rye.Structures;
 
 namespace Rye.Data
 {
-    
+
     public sealed class Kernel
     {
 
-        private int _DISK_READS = 0;
-        private int _DISK_WRITES = 0;
-        private int _VIRTUAL_READS = 0;
-        private int _VIRTUAL_WRITES = 0;
-
-        private Dictionary<string, Extent> _ExtentCache = new Dictionary<string, Extent>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, Table> _TableCache = new Dictionary<string, Table>(StringComparer.OrdinalIgnoreCase);
+        private TablixBuffer<Extent> _ExtentBuffer = new TablixBuffer<Extent>();
+        private TablixBuffer<Table> _TableBuffer = new TablixBuffer<Table>();
 
         private DataSerializationProvider _Provider = new BasicDataSerializationProvider();
 
@@ -28,60 +24,35 @@ namespace Rye.Data
         public Kernel(string TempDB)
         {
             this._TempDir = TempDB;
+            this.BaseIO = new CommandLineCommunicator();
+        }
+
+        // System Variables //
+        public Communicator BaseIO
+        {
+            get;
+            set;
         }
 
         // Meta Data //
         public int DiskReads
         {
-            get { return _DISK_READS; }
+            get { return this._Provider.Reads; }
         }
 
         public int DiskWrites
         {
-            get { return _DISK_WRITES; }
+            get { return this._Provider.Writes; }
         }
 
         public int VirtualReads
         {
-            get { return this._VIRTUAL_READS; }
+            get { return this._ExtentBuffer.Reads + this._TableBuffer.Reads; }
         }
 
         public int VirtualWrites
         {
-            get { return this._VIRTUAL_WRITES; }
-        }
-
-        public long MaxMemory
-        {
-            get
-            {
-                return this._MaxMemory;
-            }
-            set
-            {
-                if (value < 0)
-                    this._MaxMemory = 0;
-                else
-                    this._MaxMemory = value;
-            }
-        }
-
-        public long MaxMemoryKB
-        {
-            get
-            {
-                return this.MaxMemory / 1024;
-            }
-            set
-            {
-                this.MaxMemory = value * 1024;
-            }
-        }
-
-        public long MaxMemoryMB
-        {
-            get { return this.MaxMemory / 1024 / 1024; }
-            set { this.MaxMemory = value * 1024 * 1024; }
+            get { return this._ExtentBuffer.Writes + this._TableBuffer.Writes; }
         }
 
         public int MaxThreadCount
@@ -109,12 +80,7 @@ namespace Rye.Data
         {
             get
             {
-                List<string> names = new List<string>();
-                foreach (Extent e in this._ExtentCache.Values)
-                {
-                    names.Add(string.Format("{0} : {1} : {2}", e.Header.Name, e.Header.ID, e.MemCost));
-                }
-                return names.ToArray();
+                return this._ExtentBuffer.Keys.ToArray();
             }
         }
 
@@ -122,12 +88,7 @@ namespace Rye.Data
         {
             get
             {
-                List<string> names = new List<string>();
-                foreach (Table t in this._TableCache.Values)
-                {
-                    names.Add(string.Format("{0}", t.Header.Name));
-                }
-                return names.ToArray();
+                return this._TableBuffer.Keys.ToArray();
             }
         }
 
@@ -135,43 +96,54 @@ namespace Rye.Data
         public void RequestFlushExtent(Extent E)
         {
 
-            if (this.CanAcceptExtent(E))
+            // Check if we need to free up space //
+            if (!this._ExtentBuffer.HasCapacity(E.MemCost))
             {
-                this.VirtualFlushExtent(E);
-                return;
+                this.FreeExtentSpace(E.MemCost);
             }
 
-            this.Flush(E);
+            // Push into the buffer //
+            this._ExtentBuffer.Allocate(E);
 
         }
 
         public void RequestFlushTable(Table T)
         {
 
-            if (this.CanAcceptTable(T))
+            // Check if we need to free up space //
+            if (!this._TableBuffer.HasCapacity(T.MemCost))
             {
-                this.VirtualFlushTable(T);
-                return;
+                this.FreeTableSpace(T.MemCost);
             }
 
-            this.Flush(T);
+            // Push the table into the buffer //
+            this._TableBuffer.Allocate(T);
 
         }
 
         public Extent RequestBufferExtent(Table Parent, long ID)
         {
 
+            // Get the key //
             string key = Parent.Header.CreateChild(ID).LookUpKey;
 
-            if (this.IsExtentCached(key))
+            // Check if this already exists //
+            if (this._ExtentBuffer.Exists(key))
             {
-                return this.VirtualBufferExtent(key);
+                return this._ExtentBuffer.Request(key);
             }
 
-            Extent e = this.BufferExtent(Parent, ID);
+            // Get the extent from the disk //
+            Extent e = this._Provider.BufferExtent(Parent, ID);
+            
+            // Check if we need to free up space //
+            if (!this._ExtentBuffer.HasCapacity(e.MemCost))
+            {
+                this.FreeExtentSpace(e.MemCost);
+            }
 
-            if (this.CanAcceptExtent(e))
-                this.VirtualFlushExtent(e);
+            // Push the extent into the buffer //
+            this._ExtentBuffer.Allocate(e);
 
             return e;
 
@@ -180,16 +152,25 @@ namespace Rye.Data
         public Table RequestBufferTable(string Path)
         {
 
-            if (this.IsTableCached(Path))
+            // Check if this table is already in memory //
+            if (this._TableBuffer.Exists(Path))
             {
-                return this.VirtualBufferTable(Path);
+                return this._TableBuffer.Request(Path);
             }
 
-            Table t = this.BufferTable(Path);
+            // Pull from disk //
+            Table t = this._Provider.BufferTable(this, Path);
 
-            if (this.CanAcceptTable(t))
-                this.VirtualFlushTable(t);
+            // Check if we need to free up space //
+            if (!this._TableBuffer.HasCapacity(t.MemCost))
+            {
+                this.FreeTableSpace(t.MemCost);
+            }
 
+            // Push the table onto the buffer //
+            this._TableBuffer.Allocate(t);
+
+            // Return the table //
             return t;
 
         }
@@ -198,7 +179,7 @@ namespace Rye.Data
         {
 
             // Check if the table even exists
-            if (!this.TableExists(Path))
+            if (!this._TableBuffer.Exists(Path) && !File.Exists(Path))
             {
                 return;
             }
@@ -206,14 +187,14 @@ namespace Rye.Data
             // Buffer the table //
             Table t = this.RequestBufferTable(Path);
 
-            // Burn each extent //
+            // Burn each extent, we dont care about saving to disk //
             foreach (Header h in t.Headers)
             {
-                this.ReleaseExtent(h.LookUpKey, false);
+                this._ExtentBuffer.Deallocate(h.LookUpKey);
             }
 
             // Burn the table //
-            this.ReleaseTable(Path, false);
+            this._TableBuffer.Deallocate(Path);
 
             // Delete the disk based table //
             if (File.Exists(Path))
@@ -223,25 +204,64 @@ namespace Rye.Data
 
         }
 
-        public void FlushCache()
+        // Space freeing methods //
+        public void FreeExtentSpace(long SpaceNeeded)
         {
 
-            foreach (KeyValuePair<string, Table> kv in this._TableCache)
+            while (!this._ExtentBuffer.HasCapacity(SpaceNeeded) && this._ExtentBuffer.Count > 0)
             {
-                this.Flush(kv.Value);
-            }
-            foreach (KeyValuePair<string, Extent> kv in this._ExtentCache)
-            {
-                this.Flush(kv.Value);
+
+                Extent e = this._ExtentBuffer.RequestAndDeallocateNext();
+                //Console.WriteLine("Removing '{0}' from memory; total savings: {1}", e.Header.Name, e.MemCost);
+                this._Provider.FlushExtent(e);
+
             }
 
         }
 
+        public void FreeAllExtentSpace()
+        {
+
+            while (this._ExtentBuffer.Count != 0)
+            {
+                this._Provider.FlushExtent(this._ExtentBuffer.RequestAndDeallocateNext());
+            }
+
+        }
+
+        public void FreeTableSpace(long SpaceNeeded)
+        {
+
+            while (!this._TableBuffer.HasCapacity(SpaceNeeded) && this._TableBuffer.Count > 0)
+            {
+
+                this._Provider.FlushTable(this._TableBuffer.RequestAndDeallocateNext());
+
+            }
+
+        }
+
+        public void FreeAllTableSpace()
+        {
+
+            while (this._TableBuffer.Count != 0)
+            {
+                this._Provider.FlushTable(this._TableBuffer.RequestAndDeallocateNext());
+            }
+
+        }
+
+        // Flushing and clearing the cache //
+        public void FlushCache()
+        {
+            this.FreeAllExtentSpace();
+            this.FreeAllTableSpace();
+        }
+
         public void ClearCache()
         {
-            this._ExtentCache = new Dictionary<string, Extent>(StringComparer.OrdinalIgnoreCase);
-            this._TableCache = new Dictionary<string, Table>(StringComparer.OrdinalIgnoreCase);
-            this._CurrentMemory = 0;
+            this._ExtentBuffer = new TablixBuffer<Extent>();
+            this._TableBuffer = new TablixBuffer<Table>();
         }
 
         public void FlushAndClearCache()
@@ -264,17 +284,17 @@ namespace Rye.Data
                 sb.AppendLine("Kernel Statistics");
                 sb.AppendLine(string.Format("Disk Reads: {0}", this.DiskReads));
                 sb.AppendLine(string.Format("Disk Writes: {0}", this.DiskWrites));
-                sb.AppendLine(string.Format("Virtual Reads: {0}", this._VIRTUAL_READS));
-                sb.AppendLine(string.Format("Virtual Writes: {0}", this._VIRTUAL_WRITES));
+                sb.AppendLine(string.Format("Virtual Reads: {0}", this.VirtualReads));
+                sb.AppendLine(string.Format("Virtual Writes: {0}", this.VirtualWrites));
                 sb.AppendLine("Shard Cache:");
-                foreach (KeyValuePair<string, Extent> kv in this._ExtentCache)
+                foreach (string x in this._ExtentBuffer.Keys)
                 {
-                    sb.AppendLine(kv.Key);
+                    sb.AppendLine(x);
                 }
                 sb.AppendLine("ShartTable Cache:");
-                foreach (KeyValuePair<string, Table> kv in this._TableCache)
+                foreach (string x in this._TableBuffer.Keys)
                 {
-                    sb.AppendLine(kv.Key);
+                    sb.AppendLine(x);
                 }
                 return sb.ToString();
 
@@ -283,7 +303,7 @@ namespace Rye.Data
 
         public bool TableExists(string Path)
         {
-            return File.Exists(Path) || this.IsTableCached(Path);
+            return File.Exists(Path) || this._TableBuffer.Exists(Path);
         }
 
         public void MarkTable(string Path, bool PriorityOne)
@@ -296,31 +316,17 @@ namespace Rye.Data
             if (t.ExtentCount == 0)
                 return;
 
-            // Check if we can accept a table //
-            if (!this.CanAcceptTable(t) && !PriorityOne)
-                return;
-            else if (!this.CanAcceptTable(t))
-                this.ClearCache();
-
-            // Check again if we can now accept the table //
-            if (!this.CanAcceptTable(t))
-                return;
-
             // Call all extents //
             int id = 0;
             while (id < t.ExtentCount)
             {
-                
+
                 // Check if the extent is in memory //
                 Header h = t.RenderHeader(id);
-                if (!this.IsExtentCached(h.LookUpKey))
+                if (!this._ExtentBuffer.Exists(h.LookUpKey))
                 {
 
-                    // See if we can take the extent //
-                    if (this._ExtentCache.Count + 1 < this._ExtentCacheLimit)
-                    {
-                        Extent e = this.RequestBufferExtent(t, id);
-                    }
+                    Extent e = this.RequestBufferExtent(t, id);
 
                 }
 
@@ -328,222 +334,7 @@ namespace Rye.Data
 
         }
 
-        #region IO_Manager
-
-        private long _MaxMemory = 256 * 1024 * 1024; // 256 mb
-        private long _CurrentMemory = 0;
-        private int _ExtentCacheLimit = 16;
-        private int _TableCacheLimit = 16;
-
-        // ----------------------- Extents ----------------------- //
-        private bool IsExtentCached(string Path)
-        {
-            return this._ExtentCache.ContainsKey(Path);
-        }
-
-        private bool CanAcceptExtent(Extent Data)
-        {
-
-            // Shard is already cached //
-            if (this._ExtentCache.ContainsKey(Data.Header.Path))
-                return true;
-
-            // We are over the cache the limit //
-            if (this._ExtentCache.Count >= this._ExtentCacheLimit)
-                return false;
-
-            // We are over the memory limit //
-            //if (this._MaxMemory < this._CurrentMemory + Data.MemCost)
-            //    return false;
-
-            // Otherwise we can accept it //
-            return true;
-
-        }
-
-        private bool CanAcceptExtent(Table Data, long ID)
-        {
-
-            // Get the ID //
-            if (ID > Data.ExtentCount || ID < 0)
-                return false;
-
-            // Get the record count //
-            long MemoryCost = Data.GetRecordCount(ID) * Data.Columns.RecordMemCost;
-
-            // Check if we have space //
-            if (MemoryCost + this._CurrentMemory > this._MaxMemory)
-                return false;
-
-            return true;
-
-        }
-
-        private void VirtualFlushExtent(Extent Data)
-        {
-
-            if (this._ExtentCache.ContainsKey(Data.Header.LookUpKey))
-            {
-                this._CurrentMemory += (Data.MemCost - this._ExtentCache[Data.Header.LookUpKey].MemCost);
-                this._ExtentCache[Data.Header.LookUpKey] = Data;
-                this._VIRTUAL_WRITES++;
-            }
-            else
-            {
-                this._CurrentMemory += Data.MemCost;
-                this._ExtentCache.Add(Data.Header.LookUpKey, Data);
-                this._VIRTUAL_WRITES++;
-            }
-
-        }
-
-        private Extent VirtualBufferExtent(string Key)
-        {
-
-            this._VIRTUAL_READS++;
-            return this._ExtentCache[Key];
-
-        }
-
-        private void ReleaseExtent(string Key, bool Flush)
-        {
-
-            if (!this.IsExtentCached(Key))
-                return;
-
-            if (Flush)
-                this.Flush(this.VirtualBufferExtent(Key));
-
-            this._CurrentMemory -= this.VirtualBufferExtent(Key).MemCost;
-
-            this._ExtentCache.Remove(Key);
-
-        }
-
-        private void ReleaseAllExtents(bool Flush)
-        {
-
-            List<string> paths = this._ExtentCache.Keys.ToList();
-
-            foreach (string path in paths)
-            {
-                this.ReleaseExtent(path, Flush);
-            }
-
-        }
-
-        // ----------------------- Tables ----------------------- //
-        private bool IsTableCached(string Path)
-        {
-            return this._TableCache.ContainsKey(Path);
-        }
-
-        private bool CanAcceptTable(Table Data)
-        {
-            if (this._TableCache.ContainsKey(Data.Header.Path))
-                return true;
-            if (this._TableCache.Count >= this._TableCacheLimit)
-                return false;
-            if (this._MaxMemory < this._CurrentMemory + Data.MemCost)
-                return false;
-            return true;
-        }
-
-        private void VirtualFlushTable(Table Data)
-        {
-
-            if (this._TableCache.ContainsKey(Data.Header.Path))
-            {
-                this._CurrentMemory += (Data.MemCost - this._TableCache[Data.Header.Path].MemCost);
-                this._TableCache[Data.Header.Path] = Data;
-                this._VIRTUAL_WRITES++;
-            }
-            else
-            {
-                this._CurrentMemory += Data.MemCost;
-                this._TableCache.Add(Data.Header.Path, Data);
-                this._VIRTUAL_WRITES++;
-            }
-
-        }
-
-        private Table VirtualBufferTable(string Path)
-        {
-
-            this._VIRTUAL_READS++;
-            return this._TableCache[Path];
-
-        }
-
-        private void ReleaseTable(string Path, bool Flush)
-        {
-
-            if (!this.IsTableCached(Path))
-                return;
-
-            if (Flush)
-                this.Flush(this.VirtualBufferTable(Path));
-
-            this._CurrentMemory -= this.VirtualBufferTable(Path).MemCost;
-
-            this._TableCache.Remove(Path);
-
-        }
-
-        private void ReleaseAllTables(bool Flush)
-        {
-
-            List<string> paths = this._TableCache.Keys.ToList();
-
-            foreach (string path in paths)
-            {
-                this.ReleaseTable(path, Flush);
-            }
-
-        }
-
-        #endregion
-
-        #region DiskProcess
-
-        private void Flush(Extent E)
-        {
-
-            this._Provider.FlushExtent(E);
-            this._DISK_WRITES++;
-
-        }
-
-        private void Flush(Table T)
-        {
-
-            this._Provider.FlushTable(T);
-            this._DISK_WRITES++;
-
-        }
-
-        private Extent BufferExtent(Table Parent, long ID)
-        {
-
-            Extent e = this._Provider.BufferExtent(Parent, ID);
-            this._DISK_READS++;
-
-            return e;
-
-        }
-
-        private Table BufferTable(string Path)
-        {
-
-            Table t = this._Provider.BufferTable(this, Path);
-            this._DISK_READS++;
-
-            return t;
-
-        }
-
-        #endregion
-
+        // Text dumping //
         public void TextDump(TabularData Data, string OutPath, char Delim, char Escape, Expressions.Filter Where, Expressions.Register Memory)
         {
 
@@ -674,14 +465,27 @@ namespace Rye.Data
     public abstract class DataSerializationProvider
     {
 
-        public const long META_DATA_PAGE_SIZE = 1024 * 1024;
+        public const long META_DATA_PAGE_SIZE = 1024 * 128;
         public const long META_DATA_PAGE_OFFSET = 0;
         public const long DEFAULT_PAGE_SIZE = Extent.DEFAULT_PAGE_SIZE;
-        
+
+        public int _Reads = 0;
+        public int _Writes = 0;
+
         // Properties //
         public abstract int Version { get; }
 
         public abstract string Extension { get; }
+
+        public int Reads
+        {
+            get { return this._Reads; }
+        }
+
+        public int Writes
+        {
+            get { return this._Writes; }
+        }
 
         public virtual long DefaultPageSize
         {
@@ -749,7 +553,7 @@ namespace Rye.Data
              */
 
             // Update the data //
-            //Data.PreSerialize();
+            Data.PreSerialize();
 
             // Write header //
             Location = this.WriteRecord(Mem, Location, Data.Header);
@@ -795,6 +599,8 @@ namespace Rye.Data
 
             }
 
+            this._Writes++;
+
         }
 
         public void FlushTable(Table Data)
@@ -819,6 +625,8 @@ namespace Rye.Data
             {
                 this.WritePage(fs, META_DATA_PAGE_OFFSET, b);
             }
+
+            this._Writes++;
 
         }
 
@@ -922,7 +730,7 @@ namespace Rye.Data
 
             // Child header //
             Header h = Parent.RenderHeader((int)ID);
-            
+
             // Create a buffer //
             byte[] buffer;
 
@@ -941,6 +749,8 @@ namespace Rye.Data
             // Serialize the extent //
             List<Record> cache = new List<Record>();
             int idx = this.ReadRecordCollection(buffer, 0, h.RecordCount, (int)h.ColumnCount, cache);
+
+            this._Reads++;
 
             // Return //
             return new Extent(Parent.Columns, h, cache, Parent.SortBy);
@@ -961,6 +771,8 @@ namespace Rye.Data
                 buffer = this.BufferPage(fs, 0, META_DATA_PAGE_SIZE);
 
             }
+
+            this._Reads++;
 
             return this.ReadTable(Driver, buffer, 0);
 
@@ -1722,5 +1534,194 @@ namespace Rye.Data
 
 
     }
+
+    public sealed class TablixBuffer<T> where T : TabularData
+    {
+
+        /*
+            67108864
+            134217728
+            268435456
+            536870912
+            1073741824
+         */
+        public const long MEM_1MB = 1048576;
+        public const long MEM_64MB = 67108864;
+        public const long MEM_128MB = 134217728;
+        public const long MEM_256MB = 268435456;
+        public const long MEM_512MB = 536870912;
+        public const long MEM_1024MB = 1073741824;
+
+        private long _MaxMemoryCapacity = MEM_128MB; // Bytes
+        private long _CurrentMemory = 0;
+        private Quack<string> _PriorityQueue = new Quack<string>(Quack<string>.QuackState.FIFO);
+        private Dictionary<string, T> _Buffer = new Dictionary<string, T>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, long> _MemoryValueCache = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        private int _Reads = 0;
+        private int _Writes = 0;
+        private int _Burns = 0;
+
+        public void Allocate(T Data)
+        {
+
+            // Get the lookup key //
+            string key = Data.Header.LookUpKey;
+
+            // Check if this already has the key, only update the memory //
+            if (this.Exists(key))
+            {
+                this._CurrentMemory += (Data.MemCost - this._MemoryValueCache[key]);
+                this._MemoryValueCache[key] = Data.MemCost;
+                return;
+            }
+
+            // Check if we have capacity, if not, then remove an element from the cache //
+            if (!this.HasCapacity(Data.MemCost))
+            {
+                throw new Rye.Interpreter.RyeDataException("The extent buffer is at capacity");
+            }
+
+            // Add to the queue //
+            this._PriorityQueue.Allocate(key);
+            this._Writes++;
+
+            // Add the buffer value //
+            this._Buffer.Add(key, Data);
+
+            // Handle memory //
+            this._MemoryValueCache.Add(key, Data.MemCost);
+            this._CurrentMemory += Data.MemCost;
+
+        }
+
+        public void Deallocate(string Key)
+        {
+
+            // Remove the key //
+            if (!this._Buffer.ContainsKey(Key))
+                return;
+
+            // Remove the buffer //
+            this._Buffer.Remove(Key);
+            
+            // Remove from the memory count //
+            this._CurrentMemory -= (this._MemoryValueCache[Key]);
+            this._MemoryValueCache.Remove(Key);
+
+            // Remove from the quack //
+            this._PriorityQueue.Remove(Key);
+            this._Burns++;
+
+        }
+
+        public void DeallocateNext()
+        {
+
+            if (this._PriorityQueue.Count == 0)
+                return;
+
+            string key = this._PriorityQueue.Deallocate();
+
+            this.Deallocate(key);
+
+        }
+
+        public T Request(string Key)
+        {
+            if (!this._Buffer.ContainsKey(Key))
+                throw new IndexOutOfRangeException(string.Format("Buffer does not contain '{0}'", Key));
+            this._Reads++;
+            return this._Buffer[Key];
+        }
+
+        public T RequestAndDeallocate(string Key)
+        {
+            T value = this.Request(Key);
+            this.Deallocate(Key);
+            return value;
+        }
+
+        public T RequestAndDeallocateNext()
+        {
+            string Key = this._PriorityQueue.Deallocate();
+            T value = this.Request(Key);
+            this.Deallocate(Key);
+            return value;
+        }
+
+        public bool Exists(string Key)
+        {
+            return this._Buffer.ContainsKey(Key);
+        }
+
+        public bool HasCapacity(long MemorySize)
+        {
+            return (this._CurrentMemory + MemorySize < this._MaxMemoryCapacity);
+        }
+
+        public bool CanEverHaveCapacity(long MemorySize)
+        {
+            return this._MaxMemoryCapacity > MemorySize;
+        }
+
+        public int Reads
+        {
+            get { return this._Reads; }
+        }
+
+        public int Writes
+        {
+            get { return this._Writes; }
+        }
+
+        public int Burns
+        {
+            get { return this._Burns; }
+        }
+
+        public int Count
+        {
+            get
+            {
+                return this._Buffer.Count;
+            }
+        }
+
+        public bool IsEmpty
+        {
+            get { return this._Buffer.Count == 0; }
+        }
+
+        public bool IsFull
+        {
+            get 
+            {
+                return this._CurrentMemory >= this._MaxMemoryCapacity;
+            }
+        }
+
+        public List<string> Keys
+        {
+            get { return this._Buffer.Keys.ToList(); }
+        }
+
+        public void BurnBuffer()
+        {
+
+            this._Buffer = new Dictionary<string, T>(StringComparer.OrdinalIgnoreCase);
+            this._PriorityQueue = new Quack<string>(Quack<string>.QuackState.FIFO);
+            this._MemoryValueCache = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+            this._CurrentMemory = 0;
+
+        }
+
+        public Queue<T> GetObjects()
+        {
+            return new Queue<T>(this._Buffer.Values);
+        }
+
+
+    }
+
 
 }

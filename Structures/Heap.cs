@@ -83,15 +83,21 @@ namespace Rye.Structures
             {
                 int ptr = this.GetPointer(Name);
                 this._RefSet.Remove(Name);
-                this[ptr] = default(T);
             }
 
         }
 
         public void Reallocate(string Name, T Value)
         {
-            this.Deallocate(Name);
+
+            if (this.Exists(Name))
+            {
+                this[Name] = Value;
+                return;
+            }
+
             this.Allocate(Name, Value);
+
         }
 
         public void Vacum()

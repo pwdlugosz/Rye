@@ -59,8 +59,12 @@ AND : A N D;
 XOR : X O R;
 NOT : N O T | '!';
 
+// Units //
+SUNIT_B : B Y T E S;
+SUNIT_KB : K B;
+SUNIT_MB : M B;
+
 // Keywods //
-DEBUG_DUMP : '%' D U M P;
 K_AGGREGATE : A G G R E G A T E;
 K_ALL : A L L;
 K_ANTI : A N T I;
@@ -81,7 +85,7 @@ K_DUMP : D U M P;
 K_DYNAMIC : D Y N A M I C;
 K_ELSE : E L S E;
 K_END : E N D;
-K_ESCAPE : E S C A P E;
+K_ESCAPE : E X I T;
 K_EXEC : E X E C | E X E C U T E;
 K_FOR : F O R;
 K_FROM : F R O M;
@@ -100,6 +104,7 @@ K_LEFT : L E F T;
 K_MAP : M A I N | M A P;
 K_MERGE : M E R G E;
 K_NEW : N E W;
+K_NO_PRINT : N O '_' P R I N T;
 K_NOT : N O T;
 K_OF : O F;
 K_ON : O N;
@@ -164,12 +169,13 @@ LITERAL_STRING
 	| T A B							// \t
 	;
 
-// Command Term //
-CTERM : '%;' | G O ';';
-
-// Identifier Parameter Text //
-PARAMETER : '@' IDENTIFIER;
-IDENTIFIER : [a-zA-Z_] [a-zA-Z_0-9]*;
+// Base Token //
+PARAMETER 
+	: '@' IDENTIFIER
+	;
+IDENTIFIER
+	: [a-zA-Z_] [a-zA-Z_0-9]*
+	;
 
 // Comments and whitespace //
 SINGLE_LINE_COMMENT : '//' ~[\r\n]* -> channel(HIDDEN);

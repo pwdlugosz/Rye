@@ -77,6 +77,15 @@ namespace Rye.Data
 
         }
 
+        public CellMatrix(Record Data, CellAffinity UseAffinity)
+            :this(Data.Count, 1, UseAffinity)
+        {
+            for (int i = 0; i < Data.Count; i++)
+            {
+                this[i] = Data[i];
+            }
+        }
+
         // Public Properties //
         /// <summary>
         /// Gets count of matrix rows
@@ -119,6 +128,23 @@ namespace Rye.Data
                     this._Data[Row, Column] = value;
                 else
                     this._Data[Row, Column] = Cell.Cast(value, this._Affinity);
+            }
+
+        }
+
+        public virtual Cell this[int Row]
+        {
+
+            get
+            {
+                return this._Data[Row, 0];
+            }
+            set
+            {
+                if (value.AFFINITY == this._Affinity)
+                    this._Data[Row, 0] = value;
+                else
+                    this._Data[Row, 0] = Cell.Cast(value, this._Affinity);
             }
 
         }

@@ -1,0 +1,63 @@
+﻿
+
+CONNECT
+{
+	TEMP TO 'C:\Users\pwdlu_000\Documents\Rye Projects\Temp\';
+	FINBASE TO 'C:\Users\pwdlu_000\Documents\Finance\';
+};
+
+
+CREATE TABLE TEMP.TEST1 PAGE_SIZE = 1MB
+{
+	KEY AS INT,
+	VALUE AS DOUBLE
+};
+
+DECLARE { I AS INT = 0; };
+
+FOR I = 0 TO 1000000
+DO
+{
+	APPEND
+	{
+		TEMP.TEST1;
+		RETAIN
+			I AS KEY,
+			RAND_NUM() AS VALUE
+		;
+	};
+};
+
+SYSTEM.EMPTY_CACHE { };
+
+AGGREGATE
+{
+	FROM TEMP.TEST1;
+};
+BY
+{
+	KEY % 10 AS KEY;
+};
+OVER
+{
+	AVG(VALUE) AS AVG_VALUE,
+	MIN(VALUE) AS MIN_VALUE,
+	MAX(VALUE) AS MAX_VALUE;
+};
+APPEND
+{
+	NEW TEMP.TEST2 PAGE_SIZE = 1MB;
+	RETAIN
+		OUT.*;
+	DUMP 'C:\Users\pwdlu_000\Documents\Rye Projects\Temp\Test2.csv', ',';
+};
+
+
+
+
+
+
+
+
+
+

@@ -61,7 +61,7 @@ namespace Rye.Interpreter
 
                 Errors.Add("\tParsing Error Detected 1: ");
                 Errors.Add("\t" + "\t" + e1.Message);
-
+                
             }
             catch (RyeCompileException e2)
             {
@@ -100,8 +100,36 @@ namespace Rye.Interpreter
             }
 
         }
-        
 
+        public void ExecuteDebug(string Script)
+        {
+
+            // Create a token stream and do lexal analysis //
+            AntlrInputStream TextStream = new AntlrInputStream(Script);
+            RyeLexer HorseLexer = new RyeLexer(TextStream);
+
+            // Parse the script //
+            CommonTokenStream RyeTokenStream = new CommonTokenStream(HorseLexer);
+            RyeParser rye = new RyeParser(RyeTokenStream);
+
+            // Handle the error listener //
+            rye.RemoveErrorListeners();
+            rye.AddErrorListener(new ParserErrorListener());
+
+            // Create an executer object //
+            CommandVisitor processor = new CommandVisitor(this.Enviro);
+
+            // Execute each element in the call stack //
+            int Runs = 0;
+            foreach (RyeParser.CommandContext ctx in rye.compile_unit().command_set().command())
+            {
+
+                Runs += processor.Visit(ctx);
+
+            }
+
+        }
+        
     }
 
     public sealed class ParserErrorListener : BaseErrorListener

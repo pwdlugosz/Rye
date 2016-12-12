@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Antlr4.4.5-alpha003\build\Antlr4.props" Condition="Exists('..\packages\Antlr4.4.5-alpha003\build\Antlr4.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -63,30 +63,17 @@
     <SignManifests>true</SignManifests>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Antlr4.Runtime, Version=4.5.0.0, Culture=neutral, PublicKeyToken=e9931a4108ef2354, processorArchitecture=MSIL">
-      <HintPath>..\packages\Antlr4.Runtime.4.5-alpha003\lib\net45\Antlr4.Runtime.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Excel, Version=2.1.2.3, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
-      <HintPath>..\packages\ExcelDataReader.2.1.2.3\lib\net45\Excel.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="ICSharpCode.SharpZipLib, Version=0.86.0.518, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpZipLib.0.86.0\lib\20\ICSharpCode.SharpZipLib.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Interop.SHDocVw, Version=1.1.0.0, Culture=neutral, PublicKeyToken=db7cfd3acb5ad44e, processorArchitecture=MSIL">
-      <HintPath>..\packages\WatiN.2.1.0\lib\net40\Interop.SHDocVw.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
+    <Reference Include="jint, Version=2.10.2.0, Culture=neutral, PublicKeyToken=2e92ba9c8d81157f, processorArchitecture=MSIL">
+      <HintPath>..\packages\jint.2.10.2\lib\net45\jint.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.mshtml, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <EmbedInteropTypes>True</EmbedInteropTypes>
       <HintPath>..\packages\WatiN.2.1.0\lib\net40\Microsoft.mshtml.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
@@ -97,17 +84,29 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="WatiN.Core, Version=2.1.0.1196, Culture=neutral, PublicKeyToken=db7cfd3acb5ad44e, processorArchitecture=MSIL">
+    <Reference Include="Antlr4.Runtime, Version=4.5.0.0, Culture=neutral, PublicKeyToken=e9931a4108ef2354">
+      <HintPath>..\packages\Antlr4.Runtime.4.5-alpha003\lib\net45\Antlr4.Runtime.dll</HintPath>
+    </Reference>
+    <Reference Include="Excel, Version=2.1.2.3, Culture=neutral, PublicKeyToken=93517dbe6a4012fa">
+      <HintPath>..\packages\ExcelDataReader.2.1.2.3\lib\net45\Excel.dll</HintPath>
+    </Reference>
+    <Reference Include="HtmlAgilityPack, Version=1.4.9.5, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a">
+      <HintPath>..\packages\HtmlAgilityPack.1.4.9.5\lib\Net45\HtmlAgilityPack.dll</HintPath>
+    </Reference>
+    <Reference Include="ICSharpCode.SharpZipLib, Version=0.86.0.518, Culture=neutral, PublicKeyToken=1b03e6acf1164f73">
+      <HintPath>..\packages\SharpZipLib.0.86.0\lib\20\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
+    <Reference Include="Interop.SHDocVw, Version=1.1.0.0, Culture=neutral, PublicKeyToken=db7cfd3acb5ad44e">
+      <HintPath>..\packages\WatiN.2.1.0\lib\net40\Interop.SHDocVw.dll</HintPath>
+    </Reference>
+    <Reference Include="WatiN.Core, Version=2.1.0.1196, Culture=neutral, PublicKeyToken=db7cfd3acb5ad44e">
       <HintPath>..\packages\WatiN.2.1.0\lib\net40\WatiN.Core.dll</HintPath>
-      <Private>True</Private>
     </Reference>
-    <Reference Include="WebDriver, Version=2.53.1.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="WebDriver, Version=2.53.1.0, Culture=neutral, PublicKeyToken=null">
       <HintPath>..\packages\Selenium.WebDriver.2.53.1\lib\net40\WebDriver.dll</HintPath>
-      <Private>True</Private>
     </Reference>
-    <Reference Include="WebDriver.Support, Version=2.53.1.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="WebDriver.Support, Version=2.53.1.0, Culture=neutral, PublicKeyToken=null">
       <HintPath>..\packages\Selenium.Support.2.53.1\lib\net40\WebDriver.Support.dll</HintPath>
-      <Private>True</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -134,6 +133,7 @@
     <Compile Include="Data\CellAffinity.cs" />
     <Compile Include="Data\CellAffinityHelper.cs" />
     <Compile Include="Data\CellFormat.cs" />
+    <Compile Include="Data\CellParser.cs" />
     <Compile Include="Data\CompoundRecord.cs" />
     <Compile Include="Data\DataManager.cs" />
     <Compile Include="Data\DataSet.cs" />
@@ -147,9 +147,11 @@
     <Compile Include="Data\RecordWriter.cs" />
     <Compile Include="Data\Schema.cs" />
     <Compile Include="Exchange\ExchangeProvider.cs" />
+    <Compile Include="Exchange\HTMLProvider.cs" />
     <Compile Include="Exchange\MSExcelProvider.cs" />
     <Compile Include="Exchange\ObjectExchange.cs" />
     <Compile Include="Exchange\OLEDB.cs" />
+    <Compile Include="Exchange\WebProvider.cs" />
     <Compile Include="Expressions\ExpressionCaseWhenElse.cs" />
     <Compile Include="Expressions\Register.cs" />
     <Compile Include="Expressions\SystemFunctions.cs" />
@@ -186,6 +188,7 @@
     </Compile>
     <Compile Include="Interpreter\RyeScriptProcessorcs.cs" />
     <Compile Include="Data\Session.cs" />
+    <Compile Include="Libraries\ExchangeLibrary.cs" />
     <Compile Include="Libraries\FinanceLibrary.cs" />
     <Compile Include="Libraries\MSOfficeLibrary.cs" />
     <Compile Include="Libraries\SystemLibrary.cs" />
@@ -228,6 +231,8 @@
     <Compile Include="Methods\MethodSort.cs" />
     <Compile Include="Methods\MethodWhile.cs" />
     <Compile Include="Data\SortMaster.cs" />
+    <Compile Include="Mining\MiningModel.cs" />
+    <Compile Include="Mining\Regression\RegressionParameterStruct.cs" />
     <Compile Include="Query\PreProcessor.cs" />
     <Compile Include="Libraries\FileLibrary.cs" />
     <Compile Include="Libraries\FunctionLibrary.cs" />
@@ -265,6 +270,7 @@
     <None Include="Scripts\ExpressionTesting.rye" />
     <None Include="Scripts\MassDownloader.rye" />
     <None Include="Scripts\MatrixTesting.rye" />
+    <None Include="Scripts\PageSizeTesting.rye" />
     <None Include="Scripts\Primes.rye" />
     <None Include="Scripts\QueryTesting.rye" />
     <None Include="Scripts\SortTesting.rye" />
@@ -352,9 +358,7 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Mining\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

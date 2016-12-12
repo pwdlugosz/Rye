@@ -1131,6 +1131,10 @@ namespace Rye.Interpreter
         // Statics //
         public static string CleanString(string Value)
         {
+            
+            // Check for empty text //
+            if (Value == "" || Value == "''" || Value == "$$$$" || Value == "\"\"")
+                return "";
 
             // Check for tab //
             if (Value.ToLower() == STRING_TAB)
@@ -1140,6 +1144,12 @@ namespace Rye.Interpreter
             if (Value.ToLower() == STRING_NEWLINE)
                 return "\n";
 
+            // Check for "'", $$'$$, '"', $$"$$ //
+            if (Value == "\"'\"" || Value == "$$'$$")
+                return "'";
+            if (Value == "'\"'" || Value == "$$\"$$")
+                return "\"";
+
             // Check for lengths less than two //
             if (Value.Length < 2)
             {
@@ -1147,7 +1157,7 @@ namespace Rye.Interpreter
             }
 
             // Handle 'ABC' to ABC //
-            if (Value.First() == SLIT1 && Value.Last() == SLIT1)
+            if (Value.First() == SLIT1 && Value.Last() == SLIT1 && Value.Length >= 2)
             {
                 Value = Value.Substring(1, Value.Length - 2);
                 while (Value.Contains("''"))
@@ -1157,7 +1167,7 @@ namespace Rye.Interpreter
             }
 
             // Handle "ABC" to ABC //
-            if (Value.First() == SLIT2 && Value.Last() == SLIT2)
+            if (Value.First() == SLIT2 && Value.Last() == SLIT2 && Value.Length >= 2)
             {
                 Value = Value.Substring(1, Value.Length - 2);
                 while (Value.Contains("\"\""))

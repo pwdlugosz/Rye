@@ -62,6 +62,13 @@ namespace Rye.Data
             // RNG //
             this._generator = new RandomCell();
             
+            // Default Page Size //
+            this.DefualtPageSize = Kernel.DefaultPageSize;
+
+            // Add in time variables to the heap //
+            this._scalars.Allocate("DAY_TICKS", new Cell(864000000000L));
+
+
         }
 
         public Session()
@@ -100,6 +107,12 @@ namespace Rye.Data
             get { return this._generator; }
         }
 
+        public long DefualtPageSize
+        {
+            get;
+            set;
+        }
+        
         // Support //
         public bool IsGlobal(string NameSpace)
         {

@@ -130,7 +130,7 @@ namespace Rye.Helpers
             RecordBuilder rb = new RecordBuilder();
             for (int i = 0; i < t.Length; i++)
             {
-                rb.Add(Cell.Parse(t[i], Columns.ColumnAffinity(i)));
+                rb.Add(CellParser.Parse(t[i], Columns.ColumnAffinity(i)));
             }
 
             return rb.ToRecord();

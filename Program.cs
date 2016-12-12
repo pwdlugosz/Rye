@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Rye.Data;
 using Rye.Interpreter;
 using Rye.Expressions;
+using Jint;
 
 namespace Rye
 {
@@ -28,6 +29,14 @@ namespace Rye
         {
 
             System.Diagnostics.Stopwatch sw = Stopwatch.StartNew();
+
+            string script = System.IO.File.ReadAllText(@"C:\Users\pwdlu_000\Documents\Finance\Testing_Flat_Files\Zacks_javascript_Test.txt");
+
+            Engine jscript = new Engine().SetValue("log", new Action<object>(Console.WriteLine));
+
+            jscript.Execute(script);
+
+
 
             Console.WriteLine("Run Time: {0}", sw.Elapsed);
             string t = Console.ReadLine();
@@ -53,12 +62,14 @@ namespace Rye
             enviro.SetMethodLibrary(new Libraries.MSOfficeLibrary(enviro));
             enviro.SetMethodLibrary(new Libraries.SystemMethodLibrary(enviro));
             enviro.SetMethodLibrary(new Libraries.WebLibrary(enviro));
+            enviro.SetMethodLibrary(new Libraries.ExchangeLibrary(enviro));
 
             // Add the function libraries //
             enviro.SetFunctionLibrary(new Libraries.FileFunctionLibrary(enviro));
             enviro.SetFunctionLibrary(new Libraries.TableFunctionLibrary(enviro));
             enviro.SetFunctionLibrary(new Libraries.FinanceFunctionLibrary(enviro));
             enviro.SetFunctionLibrary(new Libraries.SystemFunctionLibrary(enviro));
+            enviro.SetFunctionLibrary(new Libraries.ExchangeFunctionLibrary(enviro));
 
             // Create a script process //
             RyeScriptProcessor runner = new RyeScriptProcessor(enviro);
@@ -67,6 +78,7 @@ namespace Rye
             runner.Execute(script);
 
             // Close down the kernel space //
+            enviro.Kernel.BaseIO = enviro.IO;
             enviro.Kernel.ShutDown();
 
             sw.Stop();
@@ -100,12 +112,14 @@ namespace Rye
             enviro.SetMethodLibrary(new Libraries.MSOfficeLibrary(enviro));
             enviro.SetMethodLibrary(new Libraries.SystemMethodLibrary(enviro));
             enviro.SetMethodLibrary(new Libraries.WebLibrary(enviro));
+            enviro.SetMethodLibrary(new Libraries.ExchangeLibrary(enviro));
 
             // Add the function libraries //
             enviro.SetFunctionLibrary(new Libraries.FileFunctionLibrary(enviro));
             enviro.SetFunctionLibrary(new Libraries.TableFunctionLibrary(enviro));
             enviro.SetFunctionLibrary(new Libraries.FinanceFunctionLibrary(enviro));
             enviro.SetFunctionLibrary(new Libraries.SystemFunctionLibrary(enviro));
+            enviro.SetFunctionLibrary(new Libraries.ExchangeFunctionLibrary(enviro));
 
             // Create a script process //
             RyeScriptProcessor runner = new RyeScriptProcessor(enviro);

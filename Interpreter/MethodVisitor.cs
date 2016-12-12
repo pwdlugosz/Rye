@@ -274,13 +274,14 @@ namespace Rye.Interpreter
 
             Heap<Expression> parameters = new Heap<Expression>();
             string script = this._exp.ToNode(context.exec_method().expression()).Evaluate().valueSTRING;
+            bool NoPrint = (context.exec_method().K_NO_PRINT() != null);
 
             foreach (RyeParser.Exec_unitContext ctx in context.exec_method().exec_unit())
             {
                 parameters.Allocate(ctx.PARAMETER().GetText(), this._exp.ToNode(ctx.expression()));
             }
 
-            return new MethodExecScript(this._master, this._Session, script, parameters);
+            return new MethodExecScript(this._master, this._Session, script, parameters, NoPrint);
 
         }
 

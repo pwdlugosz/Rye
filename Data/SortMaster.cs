@@ -56,11 +56,15 @@ namespace Rye.Data
         public static long SortMerge(Extent A, Extent B, RecordComparer RC)
         {
 
+            // Before we do anything, check if A's last record is less than B's first
+            if (RC.Compare(A.Cache.Last(), B.Cache.First()) < 0)
+            {
+                return 0;
+            }
+
             // Variables //
-            Extent x = new Extent(A.Columns);
-            Extent y = new Extent(B.Columns);
-            x.Header.PageSize = A.Header.PageSize;
-            y.Header.PageSize = B.Header.PageSize;
+            Extent x = new Extent(A.Columns, A.Header.PageSize);
+            Extent y = new Extent(B.Columns, B.Header.PageSize);
             int CompareResult = 0;
 
             // Main record loop //
@@ -94,6 +98,9 @@ namespace Rye.Data
 
             }
 
+            // Note: for the clean up phase, at most only of these will execute becuase by definition
+            // we must have gone through (at least) one of the tables.
+
             // Clean up first shard //
             while (ptra < A.Count)
             {
@@ -119,8 +126,8 @@ namespace Rye.Data
             }
 
             // Set the heaps //
-            Extent.SetCache(A, x);
-            Extent.SetCache(B, y);
+            Extent.SetCache(A, x); // Has the smallest records
+            Extent.SetCache(B, y); // Has the largest records
 
             return RC.Clicks;
 
@@ -160,11 +167,11 @@ namespace Rye.Data
         {
 
             long Clicks = 0;
-            foreach (Header h in A.Headers)
+            for (int i = 0; i < A.ExtentCount; i++)
             {
 
                 // Buffer record set //
-                Extent e = A.IO.RequestBufferExtent(A, h.ID);
+                Extent e = A.IO.RequestBufferExtent(A, i);
 
                 // Check if it is sorted //
                 Clicks += SortMaster.Sort(e, RC);
@@ -420,6 +427,27 @@ namespace Rye.Data
             RecordComparer rc = new KeyedRecordComparer(k);
             A.SortBy = k;
             return SortMaster.Sort(A, rc, Extents);
+        }
+
+        // Check sorts //
+        public static bool CheckSort(Extent E, RecordComparer RC)
+        {
+
+            if (E.Count == 0)
+                return false;
+            else if (E.Count == 1)
+                return true;
+
+            for (int i = 1; i < E.Count; i++)
+            {
+
+                if (RC.Compare(E[i - 1], E[i]) > 0)
+                    return false;
+
+            }
+
+            return true;
+
         }
 
     }

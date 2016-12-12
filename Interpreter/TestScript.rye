@@ -3,55 +3,81 @@
 CONNECT
 {
 	TEMP TO 'C:\Users\pwdlu_000\Documents\Rye Projects\Temp\';
-	FINBASE TO 'C:\Users\pwdlu_000\Documents\Finance\';
+	FINBASE TO 'C:\Users\pwdlu_000\Documents\Finance\Datasets\';
+	FIN_MASTER TO 'C:\Users\pwdlu_000\Documents\Finance\Support_Files\';
 };
 
+/*
 
-CREATE TABLE TEMP.TEST1 PAGE_SIZE = 1
-{
-	KEY AS INT,
-	VALUE AS DOUBLE
-};
-
-DECLARE { I AS INT = 0; };
-
-FOR I = 0 TO 1000000
-DO
-{
-	APPEND
+	DECLARE
 	{
-		TEMP.TEST1;
-		RETAIN
-			I AS KEY,
-			RAND_NUM() AS VALUE
-		;
+		PROC_SCRIPT AS STRING;
 	};
-};
 
-SYSTEM.EMPTY_CACHE { };
+	PROC_SCRIPT = 
+	$$
 
-AGGREGATE
-{
-	FROM TEMP.TEST1;
-};
-BY
-{
-	KEY % 10 AS KEY;
-};
-OVER
-{
-	AVG(VALUE) AS AVG_VALUE,
-	MIN(VALUE) AS MIN_VALUE,
-	MAX(VALUE) AS MAX_VALUE;
-};
-APPEND
-{
-	NEW TEMP.TEST2 PAGE_SIZE = 1;
-	RETAIN
-		OUT.*;
-	DUMP 'C:\Users\pwdlu_000\Documents\Rye Projects\Temp\Test2.csv', ',';
-};
+		SELECT
+		{
+			FROM FINBASE.@TICKER_EARNINGS AS T;
+		};
+		MAIN
+		{
+			APPEND
+			{
+				FIN_MASTER.MASTER_EARNINGS;
+				RETAIN
+					T.*;
+			};
+		};
 
+	$$;
+
+
+	CREATE TABLE FIN_MASTER.MASTER_EARNINGS PAGE_SIZE = 16 MB
+	{
+		TICKER AS STRING.10,
+		FILE_DT AS DATE,
+		RPT_DT AS STRING,
+		EST_AMT AS NUM,
+		ACT_AMT AS NUM
+
+	};
+
+	SELECT
+	{
+		FROM FIN_MASTER.TICKERS AS T;
+		WHERE POSITION(T.TICKER, '-', 0) == NULL;
+	};
+	MAIN
+	{
+
+		IF (TABLIX.EXISTS('FINBASE.' + TICKER + '_EARNINGS')) THEN
+		DO
+		{
+
+			EXEC
+			{
+				SCRIPT = PROC_SCRIPT;
+				NO_PRINT;
+				@TICKER = TICKER;
+			};
+
+			PRINT '----- {' + TICKER + '} -----';
+
+		};
+
+	};
+
+*/
+
+
+FILE.EXPORT
+{
+	DATA = TABLE FIN_MASTER.MASTER_EARNINGS;
+	PATH = 'C:\Users\pwdlu_000\Documents\Finance\EarningsData.csv';
+	DELIM = ',';
+};
 
 
 

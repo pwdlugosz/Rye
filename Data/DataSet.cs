@@ -11,7 +11,7 @@ namespace Rye.Data
     public abstract class TabularData
     {
 
-        public const long DEFAULT_PAGE_SIZE = 1024 * 1024 * 16;
+        public const long DEFAULT_PAGE_SIZE = 1024 * 512;
 
         // Properties //
         public abstract Schema Columns { get; }
@@ -101,6 +101,11 @@ namespace Rye.Data
 
         public Extent(Schema NewColumns)
             : this(NewColumns, Header.NewMemoryOnlyExtentHeader("EXTENT", NewColumns.Count, DEFAULT_PAGE_SIZE))
+        {
+        }
+
+        public Extent(Schema NewColumns, long PageSize)
+            : this(NewColumns, Header.NewMemoryOnlyExtentHeader("EXTENT", NewColumns.Count, PageSize))
         {
         }
         
@@ -1713,7 +1718,7 @@ namespace Rye.Data
             private long _RecordCount;
             private Table _T;
             private Key _SortBy;
-
+            
             public TableVolume(Table T, int ThreadID, int ThreadCount)
                 :base(ThreadID)
             {
@@ -1727,6 +1732,14 @@ namespace Rye.Data
                 int BeginAt = 0;
                 int EndAt = 0;
                 int CountOf = 0;
+
+                this.IsEmpty = false;
+                if (T.RecordCount == 0)
+                {
+                    this.IsEmpty = true;
+                    this._ExtentIDs = new int[0];
+                    return;
+                }
 
                 for (int i = 0; i < ThreadID + 1; i++)
                 {
@@ -2257,6 +2270,12 @@ namespace Rye.Data
             get { return this._ThreadID; }
         }
 
+        public bool IsEmpty
+        {
+            get;
+            protected set;
+        }
+
         public abstract long ExtentCount { get; }
 
         public abstract long RecordCount { get; }
@@ -2455,7 +2474,7 @@ namespace Rye.Data
 
             this._E = V.GetExtent(0);
             this._CurrentExtentRecordCount = (int)this._E.RecordCount;
-            this._Memory.Value = this._E[this._ptr_CurrentRecord];
+            this._Memory.Value = (this._CurrentExtentRecordCount == 0 ? V.Columns.NullRecord : this._E[this._ptr_CurrentRecord]);
             this._NullRecord = V.Columns.NullRecord;
 
         }

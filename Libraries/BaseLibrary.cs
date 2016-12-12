@@ -124,6 +124,7 @@ namespace Rye.Libraries
         public const string FUNC_LOGIT = "logit";
         public const string FUNC_SMAX = "smax";
         public const string FUNC_SMIN = "smin";
+        public const string FUNC_EXTREME = "extreme";
         public const string FUNC_ABS = "abs";
         public const string FUNC_SIGN = "sign";
 
@@ -144,6 +145,7 @@ namespace Rye.Libraries
         public const string MUTABLE_RANDNUM = "rand_num";
         public const string MUTABLE_RANDSTRING = "rand_string";
         public const string MUTABLE_RANDBLOB = "rand_blob";
+        public const string MUTABLE_RANDVAR = "rand_var";
 
         public const string VOLATILE_GUID = "guid";
         public const string VOLATILE_NOW = "now";
@@ -252,6 +254,7 @@ namespace Rye.Libraries
             FUNC_LOGIT,
             FUNC_SMAX,
             FUNC_SMIN,
+            FUNC_EXTREME,
             FUNC_ABS,
             FUNC_SIGN,
 
@@ -272,6 +275,7 @@ namespace Rye.Libraries
             MUTABLE_RANDNUM,
             MUTABLE_RANDBLOB,
             MUTABLE_RANDSTRING,
+            MUTABLE_RANDVAR,
 
             VOLATILE_GUID,
             VOLATILE_NOW,

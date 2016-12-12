@@ -140,7 +140,7 @@ namespace Rye.Data
         {
             double u = this.BaseDouble();
             double v = this.BaseDouble();
-            double x = Math.Sqrt(-Math.Log(u * 2D)) * Math.Cos(2D * v * Math.PI);
+            double x = Math.Sqrt(-Math.Log(u) * 2D) * Math.Cos(2D * v * Math.PI);
             return new Cell(x);
         }
 

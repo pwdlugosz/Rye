@@ -2571,6 +2571,53 @@ namespace Rye.Data
         }
 
         /// <summary>
+        /// Returns the most extreme value in a sequence
+        /// </summary>
+        /// <param name="Data">The sequence to evaluate; the first value is the radix, the next N values are compared to the radix</param>
+        /// <returns>The value with the greatest distance from the radix</returns>
+        public static Cell Extreme(params Cell[] Data)
+        {
+
+            // Handle invalid argument structures //
+            if (Data.Length == 0)
+                return Cell.NULL_INT;
+
+            CellAffinity t = Data[0].AFFINITY;
+
+            // Handle invalid types //
+            if (t == CellAffinity.BLOB || t == CellAffinity.BOOL || t == CellAffinity.STRING)
+                return new Cell(t);
+
+            // Handle arrays too small //
+            if (Data.Length < 2)
+                return new Cell(t);
+
+            // Get the radix //
+            Cell radix = Data[0];
+            Cell MostExtreme = Cell.ZeroValue(t);
+            Cell GreatestDistance = Cell.ZeroValue(t);
+
+            // Cycle through looking for the most extreme value //
+            for (int i = 1; i < Data.Length; i++)
+            {
+                
+                Cell distance = Cell.Abs(Data[i] - radix);
+                
+                if (distance > GreatestDistance)
+                {
+                    GreatestDistance = distance;
+                    MostExtreme = Data[i];
+                }
+
+            }
+
+            if (MostExtreme.AFFINITY != t)
+                return Cell.Cast(MostExtreme, t);
+            return MostExtreme;
+
+        }
+
+        /// <summary>
         /// Returns the cumulative AND value of an array of cells
         /// </summary>
         /// <param name="Data">A collection of cells</param>
@@ -3053,6 +3100,24 @@ namespace Rye.Data
         }
 
         /// <summary>
+        /// Manipulates the ticks value
+        /// </summary>
+        /// <param name="C"></param>
+        /// <param name="Ticks"></param>
+        /// <returns></returns>
+        public static Cell AddTicks(Cell C, Cell Ticks)
+        {
+
+            if (C.AFFINITY != CellAffinity.DATE_TIME)
+                return Cell.NULL_DATE;
+
+            C.INT += Ticks.INT;
+
+            return C;
+
+        }
+
+        /// <summary>
         /// Converts a byte array to a string using UTF16 encoding
         /// </summary>
         /// <param name="Hash"></param>
@@ -3092,6 +3157,11 @@ namespace Rye.Data
 
         }
 
+        /// <summary>
+        /// Calculates the integer root
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <returns></returns>
         internal static long IntRoot(long Value)
         {
 
@@ -3110,6 +3180,11 @@ namespace Rye.Data
 
         }
 
+        /// <summary>
+        /// Gets the index of the highest bit //
+        /// </summary>
+        /// <param name="Value"></param>
+        /// <returns></returns>
         internal static int HighestBit(long Value)
         {
 
@@ -3378,6 +3453,13 @@ namespace Rye.Data
 
         }
 
+        /// <summary>
+        /// Given a pattern and a string or blob, this function will try to seek out the starting position of a patern
+        /// </summary>
+        /// <param name="Source"></param>
+        /// <param name="Pattern"></param>
+        /// <param name="StartAt"></param>
+        /// <returns>Either an integer indicating the position of the pattern or NULL if the pattern wasn't found</returns>
         public static Cell Position(Cell Source, Cell Pattern, int StartAt)
         {
 
@@ -3385,10 +3467,13 @@ namespace Rye.Data
                 StartAt = 0;
 
             if (StartAt > Source.DataCost)
-                return new Cell(Source.AFFINITY);
+                return Cell.NULL_INT;
 
             if (Source.AFFINITY == CellAffinity.STRING)
             {
+                int idx = Source.STRING.IndexOf(Pattern.valueSTRING, StartAt);
+                if (idx == -1)
+                    return Cell.NULL_INT;
                 return new Cell(Source.STRING.IndexOf(Pattern.valueSTRING, StartAt));
             }
 
@@ -3426,7 +3511,7 @@ namespace Rye.Data
 
             }
 
-            return new Cell(Source.AFFINITY);
+            return Cell.NULL_INT;
 
         }
 

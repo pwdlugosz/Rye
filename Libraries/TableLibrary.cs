@@ -31,6 +31,7 @@ namespace Rye.Libraries
         public const string CELL_COUNT = "CELL_COUNT";
         public const string IS_SORTED = "IS_SORTED";
         public const string IS_SORTED_BY = "IS_SORTED_BY";
+        public const string EXISTS = "EXISTS";
 
         private static string[] _FunctionNames =
         {
@@ -39,7 +40,8 @@ namespace Rye.Libraries
             EXTENT_COUNT,
             CELL_COUNT,
             IS_SORTED,
-            IS_SORTED_BY
+            IS_SORTED_BY,
+            EXISTS
         };
 
         public override string[] Names
@@ -64,6 +66,9 @@ namespace Rye.Libraries
                     return this.LambdaIsSorted();
                 case IS_SORTED_BY:
                     return this.LambdaIsSortedBy();
+                case EXISTS:
+                    return this.LambdaExists();
+
             };
 
             throw new ArgumentException(string.Format("Cell function '{0}' does not exist", Name));
@@ -154,6 +159,21 @@ namespace Rye.Libraries
 
         }
 
+        private CellFunction LambdaExists()
+        {
+
+            Func<Cell[], Cell> lambda = (x) =>
+            {
+
+                string[] name = x[0].valueSTRING.Split('.');
+                return new Cell(this._Session.TabularDataExists(name[0], name[1]));
+
+            };
+            return new CellFunctionFixedShell(EXISTS, 1, CellAffinity.BOOL, lambda);
+
+        }
+
+
     }
 
     public sealed class TableMethodLibrary : MethodLibrary
@@ -162,6 +182,7 @@ namespace Rye.Libraries
         public const string LIBRARY_NAME = "TABLIX";
         public const string IMPORT = "IMPORT";
         public const string EXPORT = "EXPORT";
+        public const string ABOUT = "ABOUT";
         
         public TableMethodLibrary(Session Session)
             : base(Session)
@@ -175,7 +196,8 @@ namespace Rye.Libraries
         private static string[] _MethodNames = new string[]
         {
             IMPORT,
-            EXPORT
+            EXPORT,
+            ABOUT
         };
 
         private Heap2<string, string> _CompressedSig;
@@ -196,8 +218,9 @@ namespace Rye.Libraries
 
             this._CompressedSig = new Heap2<string, string>();
 
-            this._CompressedSig.Allocate(FileMethodLibrary.IMPORT, "Loads a file into an existing table", "DATA|The table to load|T|false;PATH|The flat file location|E|false;DELIM|The column delimitor|E|false;ESCAPE|The escape sequence character|E|true;SKIP|The number of lines to skip|E|true");
-            this._CompressedSig.Allocate(FileMethodLibrary.EXPORT, "Exports a table into a new file", "DATA|The table to export|T|false;PATH|The path to the exported file|E|false;DELIM|The column delimitor|E|false");
+            this._CompressedSig.Allocate(TableMethodLibrary.IMPORT, "Loads a file into an existing table", "DATA|The table to load|T|false;PATH|The flat file location|E|false;DELIM|The column delimitor|E|false;ESCAPE|The escape sequence character|E|true;SKIP|The number of lines to skip|E|true");
+            this._CompressedSig.Allocate(TableMethodLibrary.EXPORT, "Exports a table into a new file", "DATA|The table to export|T|false;PATH|The path to the exported file|E|false;DELIM|The column delimitor|E|false");
+            this._CompressedSig.Allocate(TableMethodLibrary.ABOUT, "Prints meta data abouta table", "DATA|The table to export|T|false");
             
         }
 
@@ -206,10 +229,12 @@ namespace Rye.Libraries
 
             switch (Name.ToUpper())
             {
-                case FileMethodLibrary.IMPORT:
+                case TableMethodLibrary.IMPORT:
                     return this.Method_Import(Parent, Parameters);
-                case FileMethodLibrary.EXPORT:
+                case TableMethodLibrary.EXPORT:
                     return this.Method_Export(Parent, Parameters);
+                case TableMethodLibrary.ABOUT:
+                    return this.Method_About(Parent, Parameters);
             }
             throw new ArgumentException(string.Format("Method '{0}' does not exist", Name));
 
@@ -260,6 +285,20 @@ namespace Rye.Libraries
 
             };
             return new LibraryMethod(Parent, EXPORT, Parameters, false, kappa);
+
+        }
+
+        private Method Method_About(Method Parent, ParameterCollection Parameters)
+        {
+
+            Action<ParameterCollection> kappa = (x) =>
+            {
+
+                TabularData Data = x.Tables["DATA"];
+                this._Session.IO.WriteLine(Data.InfoString);
+
+            };
+            return new LibraryMethod(Parent, ABOUT, Parameters, false, kappa);
 
         }
 

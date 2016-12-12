@@ -116,7 +116,7 @@ namespace Rye.Interpreter
         {
 
             // Get the Page Size //
-            long size = (context.append_method().K_PAGE_SIZE() == null ? Extent.DEFAULT_PAGE_SIZE : long.Parse(context.append_method().LITERAL_INT().GetText())) * 1024 * 1024;
+            long size = CompilerHelper.RenderPageSize(Enviro, context.append_method().page_size());
                 
             // Check if we need to create the table or just open it //
             if (context.append_method().K_NEW() == null)
@@ -152,8 +152,8 @@ namespace Rye.Interpreter
         {
 
             // Get the Page Size //
-            long size = (context.K_PAGE_SIZE() == null ? Extent.DEFAULT_PAGE_SIZE : long.Parse(context.LITERAL_INT().GetText())) * 1024 * 1024;
-             
+            long size = CompilerHelper.RenderPageSize(Enviro, context.page_size());
+
             // Check if we need to create the table or just open it //
             if (context.K_NEW() == null)
             {
@@ -342,6 +342,43 @@ namespace Rye.Interpreter
 
             return new Methods.MethodSort(null, Data, cols, r, k);
 
+
+        }
+
+        // Page Size //
+        public static long RenderPageSize(Session Enviro, RyeParser.Page_sizeContext context)
+        {
+
+            // Return the default page size //
+            if (context == null)
+                return Enviro.DefualtPageSize;
+
+            // Get the literal integer //
+            long page_size = long.Parse(context.LITERAL_INT().GetText());
+
+            // Look for MB //
+            if (context.SUNIT_MB() != null)
+                return page_size * 1024 * 1024;
+
+            // Look for KB //
+            if (context.SUNIT_KB() != null)
+                return page_size * 1024;
+
+            // Otherwise, assume it in bytes //
+            return page_size;
+
+        }
+
+        public static string UnParsePageSize(long PageSize)
+        {
+
+            if (PageSize >= 1024 * 1024)
+                return Math.Round(((double)PageSize) / (1024D * 1024D), 1).ToString() + "MB";
+
+            if (PageSize >= 1024)
+                return Math.Round(((double)PageSize) / (1024D), 1).ToString() + "KB";
+
+            return PageSize.ToString() + "B";
 
         }
 

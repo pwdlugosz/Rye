@@ -17,14 +17,18 @@ namespace Rye.Methods
         private Heap<Expression> _Parameters;
         private string _Script;
         private RyeScriptProcessor _engine;
+        private bool _NoPrint = false;
+        private Session _Session;
 
-        public MethodExecScript(Method Parent, Session Enviro, string Script, Heap<Expression> Parameters)
+        public MethodExecScript(Method Parent, Session Enviro, string Script, Heap<Expression> Parameters, bool NoPrint)
             :base(Parent)
         {
 
+            this._Session = Enviro;
             this._Parameters = Parameters;
             this._Script = Script;
             this._engine = new RyeScriptProcessor(Enviro);
+            this._NoPrint = NoPrint;
 
         }
 
@@ -55,13 +59,25 @@ namespace Rye.Methods
 
             }
 
+            // Handle the supression reversion //
+            bool RevertBackToPrinting = this._Session.IO.Supress; // If not supressed, this tells us to un-supress
+            this._Session.IO.Supress = this._NoPrint;
+
+            // Run the script //
             this._engine.Execute(sb.ToString());
 
+            // Reverse the supression back to true //
+            this._Session.IO.Supress = RevertBackToPrinting;
+
+        }
+
+        public override void EndInvoke()
+        {
         }
 
         public override Method CloneOfMe()
         {
-            return new MethodExecScript(this._Parent, this._engine.Enviro, this._Script, this._Parameters);
+            return new MethodExecScript(this._Parent, this._engine.Enviro, this._Script, this._Parameters, this._NoPrint);
         }
 
     }

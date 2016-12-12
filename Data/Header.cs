@@ -212,7 +212,10 @@ namespace Rye.Data
 
         public string LookUpKey
         {
-            get { return this.Path + this.ID.ToString(); }
+            get 
+            { 
+                return (this.Affinity == HeaderType.Table ? this.Path : this.Path + this.ID.ToString()); 
+            }
         }
 
         // Methods //
@@ -241,6 +244,9 @@ namespace Rye.Data
         {
             
             if (this.Affinity != HeaderType.Extent)
+                return false;
+
+            if (this.Directory == null || H.Directory == null)
                 return false;
             
             // Check both the directory, name and extension match; don't care about ID or type //

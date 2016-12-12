@@ -75,6 +75,20 @@ namespace Rye.Structures
 
         }
 
+        public void Remove(T Value)
+        {
+            this._Cache.Remove(Value);
+        }
+
+        public IEnumerable<T> ToCache
+        {
+            get
+            {
+                if (this.State == QuackState.FIFO)
+                    return new Queue<T>(this._Cache);
+                return new Stack<T>(this._Cache);
+            }
+        }
 
     }
 
