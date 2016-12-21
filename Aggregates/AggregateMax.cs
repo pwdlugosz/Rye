@@ -87,6 +87,11 @@ namespace Rye.Aggregates
             return new AggregateMax(this._Map.CloneOfMe(), this._F.CloneOfMe());
         }
 
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>() { this._F.Node, this._Map };
+        }
+
     }
 
     public sealed class AggregateMaxOf : Aggregate
@@ -184,6 +189,11 @@ namespace Rye.Aggregates
             return new AggregateMaxOf(this._Key.CloneOfMe(), this._Value.CloneOfMe(), this._F.CloneOfMe());
         }
 
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>() { this._F.Node, this._Key, this._Value };
+        }
+
     }
 
     public sealed class AggregateLast : Aggregate
@@ -248,6 +258,11 @@ namespace Rye.Aggregates
         public override Aggregate CloneOfMe()
         {
             return new AggregateFirst(this._Map.CloneOfMe(), this._F.CloneOfMe());
+        }
+
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>() { this._F.Node, this._Map };
         }
 
     }

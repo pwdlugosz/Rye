@@ -96,6 +96,8 @@ namespace Rye.Data
         public void RequestFlushExtent(Extent E)
         {
 
+            E.PreSerialize();
+
             // Check if we need to free up space //
             if (!this._ExtentBuffer.HasCapacity(E.MemCost))
             {
@@ -347,7 +349,10 @@ namespace Rye.Data
             while (!stream.EndOfData)
             {
 
-                sw.WriteLine(stream.ReadNext().ToString(Delim, Escape));
+                Record r = stream.ReadNext();
+                string q = r.ToString(Delim, Escape);
+
+                sw.WriteLine(q);
 
             }
 
@@ -1567,11 +1572,12 @@ namespace Rye.Data
             // Get the lookup key //
             string key = Data.Header.LookUpKey;
 
-            // Check if this already has the key, only update the memory //
+            // Check if this already has the key, only update the memory and the actual data //
             if (this.Exists(key))
             {
                 this._CurrentMemory += (Data.MemCost - this._MemoryValueCache[key]);
                 this._MemoryValueCache[key] = Data.MemCost;
+                this._Buffer[key] = Data;
                 return;
             }
 

@@ -78,24 +78,24 @@ namespace Rye.Libraries
 
             this._CompressedSig.Allocate(XL_LAUNCH, "Launches an Excel application", ParameterCollectionSigniture.ZERO_PARAMETER);
             this._CompressedSig.Allocate(XL_SHUTDOWN, "Shuts down an Excel application", ParameterCollectionSigniture.ZERO_PARAMETER);
-            this._CompressedSig.Allocate(XL_OPEN, "Opens an Excel workbook", "PATH|The path to the Excel file|E|false");
-            this._CompressedSig.Allocate(XL_CREATE, "Creates an Excel workbook", "PATH|The path to the Excel file|E|false");
-            this._CompressedSig.Allocate(XL_CLOSE, "Closes an Excel workbook", "BOOK|The workbook alias name|E|false");
-            this._CompressedSig.Allocate(XL_SAVE, "Saves an Excel workbook", "BOOK|The workbook alias name|E|false");
-            this._CompressedSig.Allocate(XL_SAVE_CLOSE, "Closes and saves an Excel workbook", "BOOK|The workbook alias name|E|false");
+            this._CompressedSig.Allocate(XL_OPEN, "Opens an Excel workbook", "PATH|The path to the Excel file|Value|false");
+            this._CompressedSig.Allocate(XL_CREATE, "Creates an Excel workbook", "PATH|The path to the Excel file|Value|false");
+            this._CompressedSig.Allocate(XL_CLOSE, "Closes an Excel workbook", "BOOK|The workbook alias name|Value|false");
+            this._CompressedSig.Allocate(XL_SAVE, "Saves an Excel workbook", "BOOK|The workbook alias name|Value|false");
+            this._CompressedSig.Allocate(XL_SAVE_CLOSE, "Closes and saves an Excel workbook", "BOOK|The workbook alias name|Value|false");
 
-            this._CompressedSig.Allocate(XL_IMPORT, "Imports a range into a table", "BOOK|The workbook alias name|E|false;SHEET|The worksheet name|E|false;RANGE|The workbook range|E|false;DATA|The table to import into|T|false");
-            this._CompressedSig.Allocate(XL_EXPORT, "Exports a table into a workbook", "BOOK|The workbook alias name|E|false;SHEET|The worksheet name|E|false;RANGE|The workbook range|E|false;DATA|The table to export|T|false");
-            this._CompressedSig.Allocate(XL_COPY_PASTE, "Copies one book/sheet/range into another", "FROM_BOOK|The source workbook|E|false;FROM_SHEET|The source worksheet|E|false;FROM_RANGE|The source range|E|false;TO_BOOK|The destination workbook|E|false;TO_SHEET|The destination worksheet|E|false;TO_RANGE|The destination range|E|false");
-            this._CompressedSig.Allocate(XL_COPY_PASTE_VALUES, "Copies the values from one book/sheet/range to another", "FROM_BOOK|The source workbook|E|false;FROM_SHEET|The source worksheet|E|false;FROM_RANGE|The source range|E|false;TO_BOOK|The destination workbook|E|false;TO_SHEET|The destination worksheet|E|false;TO_RANGE|The destination range|E|false");
-            this._CompressedSig.Allocate(XL_TELEPORT, "Does a strict range set from one book/sheet/range to another", "FROM_BOOK|The source workbook|E|false;FROM_SHEET|The source worksheet|E|false;FROM_RANGE|The source range|E|false;TO_BOOK|The destination workbook|E|false;TO_SHEET|The destination worksheet|E|false;TO_RANGE|The destination range|E|false");
-            this._CompressedSig.Allocate(XL_COPY_SHEET, "Copies one book/sheet to another", "FROM_BOOK|The source workbook|E|false;FROM_SHEET|The source worksheet|E|false;TO_BOOK|The destination workbook|E|false;TO_SHEET|The destination worksheet|E|false");
-            this._CompressedSig.Allocate(XL_DELETE_SHEET, "Deletes a sheet form a workbook", "BOOK|The workbook alias name|E|false;SHEET|The worksheet name|E|false");
-            this._CompressedSig.Allocate(XL_RUN_MACRO, "Runs a macro", "NAME|The macro name|E|false");
-            this._CompressedSig.Allocate(XL_SET_VALUE, "Set a cell/range to a specific value", "BOOK|The workbook alias name|E|false;SHEET|The worksheet name|E|false;RANGE|The workbook range|E|false;VALUE|The value to set|E|false");
-            this._CompressedSig.Allocate(XL_SET_FORMULA, "Sets a formula", "BOOK|The workbook alias name|E|false;SHEET|The worksheet name|E|false;RANGE|The workbook range|E|false;FORMULA|The formula to set|E|false");
+            this._CompressedSig.Allocate(XL_IMPORT, "Imports a range into a table", "BOOK|The workbook alias name|Value|false;SHEET|The worksheet name|Value|false;RANGE|The workbook range|Value|false;DATA|The table to import into|T|false");
+            this._CompressedSig.Allocate(XL_EXPORT, "Exports a table into a workbook", "BOOK|The workbook alias name|Value|false;SHEET|The worksheet name|Value|false;RANGE|The workbook range|Value|false;DATA|The table to export|T|false");
+            this._CompressedSig.Allocate(XL_COPY_PASTE, "Copies one book/sheet/range into another", "FROM_BOOK|The source workbook|Value|false;FROM_SHEET|The source worksheet|Value|false;FROM_RANGE|The source range|Value|false;TO_BOOK|The destination workbook|Value|false;TO_SHEET|The destination worksheet|Value|false;TO_RANGE|The destination range|Value|false");
+            this._CompressedSig.Allocate(XL_COPY_PASTE_VALUES, "Copies the values from one book/sheet/range to another", "FROM_BOOK|The source workbook|Value|false;FROM_SHEET|The source worksheet|Value|false;FROM_RANGE|The source range|Value|false;TO_BOOK|The destination workbook|Value|false;TO_SHEET|The destination worksheet|Value|false;TO_RANGE|The destination range|Value|false");
+            this._CompressedSig.Allocate(XL_TELEPORT, "Does a strict range set from one book/sheet/range to another", "FROM_BOOK|The source workbook|Value|false;FROM_SHEET|The source worksheet|Value|false;FROM_RANGE|The source range|Value|false;TO_BOOK|The destination workbook|Value|false;TO_SHEET|The destination worksheet|Value|false;TO_RANGE|The destination range|Value|false");
+            this._CompressedSig.Allocate(XL_COPY_SHEET, "Copies one book/sheet to another", "FROM_BOOK|The source workbook|Value|false;FROM_SHEET|The source worksheet|Value|false;TO_BOOK|The destination workbook|Value|false;TO_SHEET|The destination worksheet|Value|false");
+            this._CompressedSig.Allocate(XL_DELETE_SHEET, "Deletes a sheet form a workbook", "BOOK|The workbook alias name|Value|false;SHEET|The worksheet name|Value|false");
+            this._CompressedSig.Allocate(XL_RUN_MACRO, "Runs a macro", "NAME|The macro name|Value|false");
+            this._CompressedSig.Allocate(XL_SET_VALUE, "Set a cell/range to a specific value", "BOOK|The workbook alias name|Value|false;SHEET|The worksheet name|Value|false;RANGE|The workbook range|Value|false;VALUE|The value to set|Value|false");
+            this._CompressedSig.Allocate(XL_SET_FORMULA, "Sets a formula", "BOOK|The workbook alias name|Value|false;SHEET|The worksheet name|Value|false;RANGE|The workbook range|Value|false;FORMULA|The formula to set|Value|false");
 
-            this._CompressedSig.Allocate(XL_IMPORT_FAST, "Imports a table into a workbook", "PATH|The workbook file path|E|false;SHEET|The worksheet name|E|false;RANGE|The workbook range|E|false;DATA|The table to export|T|false");
+            this._CompressedSig.Allocate(XL_IMPORT_FAST, "Imports a table into a workbook", "PATH|The workbook file path|Value|false;SHEET|The worksheet name|Value|false;RANGE|The workbook range|Value|false;DATA|The table to export|T|false");
             
         }
 

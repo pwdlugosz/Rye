@@ -98,6 +98,11 @@ namespace Rye.Aggregates
         {
             return new AggregateFreq(this._M.CloneOfMe(), this._F.CloneOfMe(), this._G.CloneOfMe());
         }
+        
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>() { this._F.Node, this._M, this._G.Node };
+        }
 
     }
 

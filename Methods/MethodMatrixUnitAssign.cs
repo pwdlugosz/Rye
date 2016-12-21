@@ -41,6 +41,12 @@ namespace Rye.Methods
 
         }
 
+        public Heap<CellMatrix> InnerHeap
+        {
+            get { return this._MHeap; }
+            set { this._MHeap = value; }
+        }
+
         public override void Invoke()
         {
 
@@ -76,6 +82,11 @@ namespace Rye.Methods
         public override Method CloneOfMe()
         {
             return new MethodMatrixUnitAssign(this.Parent, this._MHeap, this._Ref, this._Node.CloneOfMe(), this._RowID.CloneOfMe(), this._ColID.CloneOfMe(), this._AssignID);
+        }
+        
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>() { this._Node, this._RowID, this._ColID };
         }
 
     }

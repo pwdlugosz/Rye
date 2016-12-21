@@ -607,9 +607,10 @@ namespace Rye.Interpreter
             Expression row = this.Visit(context.expression()[0]);
             Expression col = this.Visit(context.expression()[1]);
 
-            CellMatrix m = this.GetMatrixHeap(sname)[mname];
+            Heap<CellMatrix> m = this.GetMatrixHeap(sname);
+            int rf = m.GetPointer(mname);
 
-            return new ExpressionArrayDynamicRef(this.MasterNode, row, col, m);
+            return new ExpressionMatrixRef(this.MasterNode, row, col, m, rf);
 
         }
 
@@ -623,9 +624,10 @@ namespace Rye.Interpreter
             Expression row = this.Visit(context.expression());
             Expression col = new ExpressionValue(null, Cell.ZeroValue(CellAffinity.INT));
 
-            CellMatrix m = this.GetMatrixHeap(sname)[mname];
+            Heap<CellMatrix> m = this.GetMatrixHeap(sname);
+            int rf = m.GetPointer(mname);
 
-            return new ExpressionArrayDynamicRef(this.MasterNode, row, col, m);
+            return new ExpressionMatrixRef(this.MasterNode, row, col, m, rf);
 
         }
 
@@ -638,15 +640,17 @@ namespace Rye.Interpreter
             Expression col = this.Visit(context.expression()[1]);
 
             // Check the non-session data //
-            if (this._SecondaryName.ToUpper() == vname.ToUpper())
+            if (this._SecondaryMatrixes.Exists(vname))
             {
-                return new ExpressionArrayDynamicRef(this.MasterNode, row, col, this._SecondaryMatrixes[vname]);
+                int rf = this._SecondaryMatrixes.GetPointer(vname);
+                return new ExpressionMatrixRef(this.MasterNode, row, col, this._SecondaryMatrixes, rf);
             }
 
             // Check global //
             if (this._Session.MatrixExists(vname))
             {
-                return new ExpressionArrayDynamicRef(this.MasterNode, row, col, this._Session.GetMatrix(vname));
+                int rf = this._Session.Matrixes.GetPointer(vname);
+                return new ExpressionMatrixRef(this.MasterNode, row, col, this._Session.Matrixes, rf);
             }
 
             throw new RyeCompileException("Can't find matrix '{0}'", vname);
@@ -662,15 +666,17 @@ namespace Rye.Interpreter
             Expression col = new ExpressionValue(this.MasterNode, new Cell(0L));
 
             // Check the non-session data //
-            if (this._SecondaryName.ToUpper() == vname.ToUpper())
+            if (this._SecondaryMatrixes.Exists(vname))
             {
-                return new ExpressionArrayDynamicRef(this.MasterNode, row, col, this._SecondaryMatrixes[vname]);
+                int rf = this._SecondaryMatrixes.GetPointer(vname);
+                return new ExpressionMatrixRef(this.MasterNode, row, col, this._SecondaryMatrixes, rf);
             }
 
             // Check global //
             if (this._Session.MatrixExists(vname))
             {
-                return new ExpressionArrayDynamicRef(this.MasterNode, row, col, this._Session.GetMatrix(vname));
+                int rf = this._Session.Matrixes.GetPointer(vname);
+                return new ExpressionMatrixRef(this.MasterNode, row, col, this._Session.Matrixes, rf);
             }
 
             throw new RyeCompileException("Can't find matrix '{0}'", vname);

@@ -250,7 +250,7 @@ namespace Rye.Libraries
         * Name | Description | Affinity | Can Be Null?
         * 
         * Affinity can be:
-        * E: expression
+        * Value: expression
         * V: vector
         * M: matrix expression
         * T: table (or extent)
@@ -262,20 +262,20 @@ namespace Rye.Libraries
 
             this._CompressedSig = new Heap2<string, string>();
 
-            this._CompressedSig.Allocate(FileMethodLibrary.ZIP, "Zips a file", "IN_PATH|The path of the file to zip|E|false;OUT_PATH|The path to the zipped file|E|false");
-            this._CompressedSig.Allocate(FileMethodLibrary.UNZIP, "Unzips a file", "IN_PATH|The path of the file to unzip (*.zip)|E|false;OUT_PATH|The path to directory|E|false");
-            this._CompressedSig.Allocate(FileMethodLibrary.WRITE_ALL_TEXT, "Writes text to a file; if the file already exists, it will be overwritten", "PATH|The path of the file to dump text to|E|false;TEXT|Text to write|E|false");
-            this._CompressedSig.Allocate(FileMethodLibrary.WRITE_ALL_BYTES, "Writes bytes to a file; if the file already exists, it will be overwritten", "PATH|The path of the file to dump text to|E|false;OUT_PATH|Bytes to write|E|false");
-            this._CompressedSig.Allocate(FileMethodLibrary.APPEND_ALL_TEXT, "Writes text to a file; if the file exists, it will append the text to the end", "PATH|The path of the file to dump text to|E|false;TEXT|Text to write|E|false");
-            this._CompressedSig.Allocate(FileMethodLibrary.APPEND_ALL_BYTES, "Writes bytes to a file; if the file exists, it will append the bytes to the end", "PATH|The path of the file to dump text to|E|false;OUT_PATH|Bytes to write|E|false");
-            this._CompressedSig.Allocate(FileMethodLibrary.DELETE, "Deletes a file", "PATH|The file to delete|E|false");
-            this._CompressedSig.Allocate(FileMethodLibrary.MOVE, "Moves a file to another location", "FROM_PATH|The original file to move|E|false;TO_PATH|The new location to move to|E|false");
-            this._CompressedSig.Allocate(FileMethodLibrary.COPY, "Copies a file to another location", "FROM_PATH|The original file to copy|E|false;TO_PATH|The path to put the copy in|E|false");
-            this._CompressedSig.Allocate(FileMethodLibrary.IMPORT, "Loads a file into an existing table", "DATA|The table to load|T|false;PATH|The flat file location|E|false;DELIM|The column delimitor|E|false;ESCAPE|The escape sequence character|E|true;SKIP|The number of lines to skip|E|true");
-            this._CompressedSig.Allocate(FileMethodLibrary.EXPORT, "Exports a table into a new file", "DATA|The table to export|T|false;PATH|The path to the exported file|E|false;DELIM|The column delimitor|E|false");
-            this._CompressedSig.Allocate(FileMethodLibrary.DOWNLOAD, "Downloads a url to a file", "URL|The URL to download|E|false;PATH|The path to the exported file|E|false;POST|The post string|E|true");
-            this._CompressedSig.Allocate(FileMethodLibrary.MAKE, "Creates a file or directory", "PATH|The path to be created|E|false");
-            this._CompressedSig.Allocate(FileMethodLibrary.BUILD_FT, "Creates a file table", "PATH|The path to the directory being traversed|E|false;NAME|The table create and load with data|E|false");
+            this._CompressedSig.Allocate(FileMethodLibrary.ZIP, "Zips a file", "IN_PATH|The path of the file to zip|Value|false;OUT_PATH|The path to the zipped file|Value|false");
+            this._CompressedSig.Allocate(FileMethodLibrary.UNZIP, "Unzips a file", "IN_PATH|The path of the file to unzip (*.zip)|Value|false;OUT_PATH|The path to directory|Value|false");
+            this._CompressedSig.Allocate(FileMethodLibrary.WRITE_ALL_TEXT, "Writes text to a file; if the file already exists, it will be overwritten", "PATH|The path of the file to dump text to|Value|false;TEXT|Text to write|Value|false");
+            this._CompressedSig.Allocate(FileMethodLibrary.WRITE_ALL_BYTES, "Writes bytes to a file; if the file already exists, it will be overwritten", "PATH|The path of the file to dump text to|Value|false;OUT_PATH|Bytes to write|Value|false");
+            this._CompressedSig.Allocate(FileMethodLibrary.APPEND_ALL_TEXT, "Writes text to a file; if the file exists, it will append the text to the end", "PATH|The path of the file to dump text to|Value|false;TEXT|Text to write|Value|false");
+            this._CompressedSig.Allocate(FileMethodLibrary.APPEND_ALL_BYTES, "Writes bytes to a file; if the file exists, it will append the bytes to the end", "PATH|The path of the file to dump text to|Value|false;OUT_PATH|Bytes to write|Value|false");
+            this._CompressedSig.Allocate(FileMethodLibrary.DELETE, "Deletes a file", "PATH|The file to delete|Value|false");
+            this._CompressedSig.Allocate(FileMethodLibrary.MOVE, "Moves a file to another location", "FROM_PATH|The original file to move|Value|false;TO_PATH|The new location to move to|Value|false");
+            this._CompressedSig.Allocate(FileMethodLibrary.COPY, "Copies a file to another location", "FROM_PATH|The original file to copy|Value|false;TO_PATH|The path to put the copy in|Value|false");
+            this._CompressedSig.Allocate(FileMethodLibrary.IMPORT, "Loads a file into an existing table", "DATA|The table to load|T|false;PATH|The flat file location|Value|false;DELIM|The column delimitor|Value|false;ESCAPE|The escape sequence character|Value|true;SKIP|The number of lines to skip|Value|true");
+            this._CompressedSig.Allocate(FileMethodLibrary.EXPORT, "Exports a table into a new file", "DATA|The table to export|T|false;PATH|The path to the exported file|Value|false;DELIM|The column delimitor|Value|false");
+            this._CompressedSig.Allocate(FileMethodLibrary.DOWNLOAD, "Downloads a url to a file", "URL|The URL to download|Value|false;PATH|The path to the exported file|Value|false;POST|The post string|Value|true");
+            this._CompressedSig.Allocate(FileMethodLibrary.MAKE, "Creates a file or directory", "PATH|The path to be created|Value|false");
+            this._CompressedSig.Allocate(FileMethodLibrary.BUILD_FT, "Creates a file table", "PATH|The path to the directory being traversed|Value|false;NAME|The table create and load with data|Value|false");
 
         }
 

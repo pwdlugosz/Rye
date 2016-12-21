@@ -5,6 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Net;
+using HtmlAgilityPack;
+using ScrapySharp.Network;
+using ScrapySharp.Extensions;
+using Rye.Data;
 
 namespace Rye.Exchange
 {
@@ -12,96 +16,124 @@ namespace Rye.Exchange
     public class WebProvider
     {
 
-        private CookieContainer _Cookies;
-        private HttpWebRequest _Request;
-        private HttpWebResponse _Response;
-
-        private byte[] _Cache;
+        private ScrapingBrowser _Browser;
+        private WebPage _Page;
 
         public WebProvider()
         {
-            this._Cookies = new CookieContainer();
-            this._Request = null;
-            this._Response = null;
+            this._Browser = new ScrapingBrowser();
+            this._Page = null;
         }
 
-        public void Cache(string URL)
+        public bool PageIsNull
+        {
+            get { return this._Page == null; }
+        }
+
+        public void NavigateURL(string Url)
+        {
+            this._Page = this._Browser.NavigateToPage(new Uri(Url));
+        }
+
+        public string Extract(string Path, int Index)
         {
 
-            // Open a writer
-            using (MemoryStream writter = new MemoryStream())
+            HtmlNode[] nodes = this._Page.Html.CssSelect(Path).ToArray();
+
+            if (Index < nodes.Length)
             {
-
-                // Create the web request
-                this._Request = (HttpWebRequest)HttpWebRequest.Create(URL);
-                this._Request.CookieContainer = this._Cookies;
-
-                // Dump to the output writer
-                this._Response = (HttpWebResponse)this._Request.GetResponse();
-                using (Stream reader = this._Response.GetResponseStream())
-                {
-                    reader.CopyTo(writter);
-                }
-
-                this._Cache = writter.ToArray();
-            
+                return nodes[Index].InnerHtml;
             }
-
-
-        }
-
-        public void Post(string URL, string Post)
-        {
-
-            // Open a writer
-            using (MemoryStream writter = new MemoryStream())
-            {
-
-                // Create the web request
-                this._Request = (HttpWebRequest)HttpWebRequest.Create(URL);
-                this._Request.CookieContainer = this._Cookies;
-
-                // Set the posting attributes //
-                this._Request.Method = "POST";
-                this._Request.ContentType = "application/x-www-form-urlencoded";
-
-                // Set the posting variables //
-                byte[] hash = System.Text.Encoding.ASCII.GetBytes(Post);
-                this._Request.ContentLength = hash.Length;
-
-                // Write the post data to a stream //
-                using (Stream post = this._Request.GetRequestStream())
-                {
-                    post.Write(hash, 0, hash.Length);
-                }
-
-                // Dump to the output writer
-                this._Response = (HttpWebResponse)this._Request.GetResponse();
-                using (Stream reader = this._Response.GetResponseStream())
-                {
-                    reader.CopyTo(writter);
-                }
-
-                this._Cache = writter.ToArray();
-            
-            }
+            return null;
 
         }
 
-        public void Dump(string Path)
+        public void Sink(string Path)
         {
 
-            using (Stream s = File.Create(Path))
+            this._Page.SaveSnapshot(Path);
+
+        }
+
+        // Static methods //
+        public static void HTTP_Request_Get(string URL, string Path)
+        {
+
+            try
             {
 
-                if (this._Cache != null)
+                // Open a writer
+                using (Stream writter = File.Create(Path))
                 {
-                    s.Write(this._Cache, 0, this._Cache.Length);
+
+                    // Create the web request
+                    System.Net.WebRequest req = System.Net.HttpWebRequest.Create(URL);
+
+                    // Dump to the output writer
+                    using (Stream reader = req.GetResponse().GetResponseStream())
+                    {
+                        reader.CopyTo(writter);
+                    }
+
+
                 }
 
             }
+            catch
+            {
+
+            }
+
+
 
         }
+
+        public static void HTTP_Request_Post(string URL, string Path, string PostString)
+        {
+
+
+            try
+            {
+
+                // Open a writer
+                using (Stream writter = File.Create(Path))
+                {
+
+                    // Create the web request
+                    System.Net.WebRequest req = System.Net.HttpWebRequest.Create(URL);
+
+                    // Set the posting attributes //
+                    req.Method = "POST";
+                    req.ContentType = "application/x-www-form-urlencoded";
+
+                    // Set the posting variables //
+                    byte[] hash = System.Text.Encoding.ASCII.GetBytes(PostString);
+                    req.ContentLength = hash.Length;
+
+                    // Write the post data to a stream //
+                    using (Stream post = req.GetRequestStream())
+                    {
+                        post.Write(hash, 0, hash.Length);
+                    }
+
+                    // Dump to the output writer
+                    using (Stream reader = req.GetResponse().GetResponseStream())
+                    {
+                        reader.CopyTo(writter);
+                    }
+
+                }
+
+            }
+            catch
+            {
+
+            }
+
+
+
+        }
+
 
     }
 

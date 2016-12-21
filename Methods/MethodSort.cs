@@ -115,7 +115,12 @@ namespace Rye.Methods
 
         public override Method CloneOfMe()
         {
-            return new MethodSort(this.Parent, this._data, this._values, this._reg, this._key);
+            return new MethodSort(this.Parent, this._data, this._values.CloneOfMe(), this._reg, this._key);
+        }
+
+        public override List<Expression> InnerExpressions()
+        {
+            return this._values.Nodes.ToList();
         }
 
         public static MethodSort Empty

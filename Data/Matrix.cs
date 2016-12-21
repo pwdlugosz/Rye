@@ -262,6 +262,13 @@ namespace Rye.Data
             return sb.ToString();
         }
 
+        public CellMatrix CloneOfMe()
+        {
+
+            return new CellMatrix(this);
+
+        }
+
         #region Opperators
 
         /// <summary>

@@ -73,6 +73,11 @@ namespace Rye.Aggregates
             }
         }
 
+        public List<Aggregate> Nodes
+        {
+            get { return this._cache; }
+        }
+
         // Methods //
         public void Add(Aggregate R, string Alias)
         {

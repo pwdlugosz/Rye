@@ -18,7 +18,7 @@ namespace Rye.Methods
 
         protected Method _Parent;
         protected List<Method> _Children;
-        protected int _RaiseElement = 0; // 0 == normal, 1 == break loop, 2 == break main read
+        protected int _RaiseElement = 0; // 0 == normal, 1 == break loop, 2 == break current read
         protected Register _reg;
 
         public Method(Method Parent)
@@ -172,6 +172,18 @@ namespace Rye.Methods
         public virtual string Message()
         {
             return "Method";
+        }
+
+        public virtual List<Expression> InnerExpressions()
+        {
+
+            List<Expression> val = new List<Expression>();
+            foreach (Method x in this._Children)
+            {
+                val.AddRange(x.InnerExpressions());
+            }
+            return val;
+
         }
 
     }

@@ -63,6 +63,10 @@
     <SignManifests>true</SignManifests>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FSharp.Core, Version=4.4.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="jint, Version=2.10.2.0, Culture=neutral, PublicKeyToken=2e92ba9c8d81157f, processorArchitecture=MSIL">
       <HintPath>..\packages\jint.2.10.2\lib\net45\jint.dll</HintPath>
       <Private>True</Private>
@@ -71,12 +75,22 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
       <HintPath>..\packages\WatiN.2.1.0\lib\net40\Microsoft.mshtml.dll</HintPath>
     </Reference>
+    <Reference Include="ScrapySharp.Core, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ScrapySharp.2.6.2\lib\net45\ScrapySharp.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ScrapySharpAsync, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ScrapySharp.2.6.2\lib\net45\ScrapySharpAsync.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Runtime.Caching" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -135,7 +149,6 @@
     <Compile Include="Data\CellFormat.cs" />
     <Compile Include="Data\CellParser.cs" />
     <Compile Include="Data\CompoundRecord.cs" />
-    <Compile Include="Data\DataManager.cs" />
     <Compile Include="Data\DataSet.cs" />
     <Compile Include="Data\Header.cs" />
     <Compile Include="Data\Kernel.cs" />
@@ -153,6 +166,7 @@
     <Compile Include="Exchange\OLEDB.cs" />
     <Compile Include="Exchange\WebProvider.cs" />
     <Compile Include="Expressions\ExpressionCaseWhenElse.cs" />
+    <Compile Include="Query\CloneFactory.cs" />
     <Compile Include="Expressions\Register.cs" />
     <Compile Include="Expressions\SystemFunctions.cs" />
     <Compile Include="Expressions\Expression.cs" />
@@ -228,6 +242,7 @@
     <Compile Include="Methods\MethodMatrixUnitAssign.cs" />
     <Compile Include="Methods\MethodNothing.cs" />
     <Compile Include="Methods\MethodCollection.cs" />
+    <Compile Include="Methods\MethodPrint.cs" />
     <Compile Include="Methods\MethodSort.cs" />
     <Compile Include="Methods\MethodWhile.cs" />
     <Compile Include="Data\SortMaster.cs" />

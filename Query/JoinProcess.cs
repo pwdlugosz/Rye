@@ -10,6 +10,9 @@ using Rye.Expressions;
 namespace Rye.Query
 {
 
+    /// <summary>
+    /// Provides support for joining data over a single thread
+    /// </summary>
     public class JoinProcessNode : QueryNode
     {
 
@@ -22,7 +25,8 @@ namespace Rye.Query
         protected ExpressionCollection _C;
         protected RecordWriter _W;
 
-        public JoinProcessNode(int ThreadID, Session Session, JoinAlgorithm JA, JoinType JT, Volume V1, Register M1, Volume V2, Register M2, RecordComparer RC, Filter F, ExpressionCollection C, RecordWriter W)
+        public JoinProcessNode(int ThreadID, Session Session, JoinAlgorithm JA, JoinType JT, Volume V1, Register M1, Volume V2, Register M2, 
+            RecordComparer RC, Filter F, ExpressionCollection C, RecordWriter W)
             : base(ThreadID, Session)
         {
             this._BaseAlgorithm = JA;
@@ -61,6 +65,9 @@ namespace Rye.Query
 
     }
 
+    /// <summary>
+    /// Provides support for consolidating join threads
+    /// </summary>
     public class JoinConsolidation : QueryConsolidation<JoinProcessNode>
     {
 
@@ -92,6 +99,9 @@ namespace Rye.Query
 
     }
 
+    /// <summary>
+    /// Represents each base join type
+    /// </summary>
     public enum JoinType
     {
         Inner,
@@ -104,6 +114,9 @@ namespace Rye.Query
         Cross
     }
 
+    /// <summary>
+    /// Represents each join algorithm type
+    /// </summary>
     public enum JoinAlgorithmType
     {
 
@@ -112,6 +125,9 @@ namespace Rye.Query
 
     }
 
+    /// <summary>
+    /// Represents each join implementation type
+    /// </summary>
     public enum JoinImplementationType
     {
 
@@ -155,16 +171,16 @@ namespace Rye.Query
          * The CROSS JOIN is implemented using a nested loop in the base class
          * 
          * There are two key implementations:
-         *      E x E
+         *      Value x Value
          *      V x V
          * 
          * The following can be derived from the above
-         *      E x V
-         *      E x T
+         *      Value x V
+         *      Value x T
          *      V x T
          *      T x T
          *      
-         * The 'Block' joins, implement V x V via E x E in blocks
+         * The 'Block' joins, implement V x V via Value x Value in blocks
          * 
          */
 
@@ -243,6 +259,8 @@ namespace Rye.Query
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
 
+            // Try to save some time by checking for no-run situations
+
             switch (Type)
             {
 
@@ -299,7 +317,7 @@ namespace Rye.Query
 
         }
 
-        // E x E //
+        // Value x Value //
         public abstract long InnerJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory, RecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream);
 
@@ -632,7 +650,7 @@ namespace Rye.Query
         public double Cost_FullSort(Volume V)
         {
 
-            double AllRecords = (double)V.RecordCount;
+            double AllRecords = 0; // (double)V.RecordCount;
             double AllExtents = (double)V.ExtentCount;
             double RecordPerExtentEstimate = AllRecords / AllExtents;
             return (Math.Log(RecordPerExtentEstimate, 2) * RecordPerExtentEstimate) * AllExtents + (AllExtents - 1) * AllExtents / 2D * RecordPerExtentEstimate;
@@ -696,7 +714,7 @@ namespace Rye.Query
             this.BaseJoinAlgorithmType = JoinAlgorithmType.SortMerge;
         }
 
-        // E x E Joins //
+        // Value x Value Joins //
         public override long InnerJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory, 
             RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
@@ -858,10 +876,6 @@ namespace Rye.Query
             if (OutputStream.Columns.Count != Output.Count)
                 throw new ArgumentException("The RecordWriter and ExpressionCollection passed have invalid lengths");
             
-            // If either table is empty, just return //
-            //if (LeftVolume.RecordCount == 0 || RightVolume.RecordCount == 0)
-            //    return 0L;
-            
             // Check the sort //
             //this.CheckSort(LeftVolume, JoinPredicate.LeftKey);
             //this.CheckSort(RightVolume, JoinPredicate.RightKey);
@@ -873,8 +887,8 @@ namespace Rye.Query
             int CompareResult = 0;
             long clicks = 0;
 
-            // Start the main sort loop //
-            while (!left.AtEnd && !right.AtEnd)
+            // Start the current sort loop: note this should'nt run if either volume has no records / extents //
+            while (!left.AtEnd && !right.AtEnd && !left.IsEmpty && !right.IsEmpty)
             {
 
                 // Get the first record compare //
@@ -1008,8 +1022,8 @@ namespace Rye.Query
             int CompareResult = 0;
             long clicks = 0;
 
-            // Start the main sort loop //
-            while (!left.AtEnd && !right.AtEnd)
+            // Start the current sort loop //
+            while (!left.AtEnd && !right.AtEnd && !left.IsEmpty && !right.IsEmpty)
             {
 
                 CompareResult = JoinPredicate.Compare(left.Memory.Value, right.Memory.Value);
@@ -1225,7 +1239,7 @@ namespace Rye.Query
             this.BaseJoinAlgorithmType = JoinAlgorithmType.NestedLoop;
         }
 
-        // E x E Joins //
+        // Value x Value Joins //
         public override long InnerJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory,
             RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
@@ -1394,6 +1408,135 @@ namespace Rye.Query
         {
             return (double)(T1.RecordCount * T2.RecordCount);
         }
+
+
+    }
+
+    /// <summary>
+    /// Provides a system to join tables
+    /// </summary>
+    public class JoinModel
+    {
+
+        protected Session _Session;
+
+        protected JoinAlgorithm _BaseAlgorithm;
+        protected JoinType _BaseType;
+        protected TabularData _LeftTable;
+        protected TabularData _RightTable;
+        protected string _LeftAlias;
+        protected string _RightAlias;
+        protected TabularData _Output;
+        protected RecordComparer _JoinPredicate;
+        protected Filter _Where;
+        protected ExpressionCollection _Fields;
+        
+        public JoinModel(Session Session)
+        {
+            this._Session = Session;
+            this._BaseAlgorithm = new SortMerge();
+            this._BaseType = JoinType.Inner;
+            this._Where = Filter.TrueForAll;
+            this._Fields = new ExpressionCollection();
+        }
+
+        public void SetLEFT(TabularData Value, string Alias)
+        {
+            this._LeftTable = Value;
+            this._LeftAlias = Alias;
+        }
+
+        public void SetRIGHT(TabularData Value, string Alias)
+        {
+            this._RightTable = Value;
+            this._RightAlias = Alias;
+        }
+
+        public void SetOUTPUT(TabularData Value)
+        {
+            this._Output = Value;
+        }
+
+        public void SetPREDICATE(RecordComparer Value)
+        {
+            this._JoinPredicate = Value;
+        }
+
+        public void SetWHERE(Filter Value)
+        {
+            this._Where = Value;
+        }
+
+        public void AddRETAIN(Expression Value, string Alias)
+        {
+            this._Fields.Add(Value, Alias);
+        }
+
+        public void AddRETAIN(ExpressionCollection Value)
+        {
+
+            for (int i = 0; i < Value.Count; i++)
+            {
+                this._Fields.Add(Value[i], Value.Alias(i));
+            }
+
+        }
+
+        public void SetTYPE(JoinType Value)
+        {
+            this._BaseType = Value;
+        }
+
+        public void SetALGORITHM(JoinAlgorithm Value)
+        {
+            this._BaseAlgorithm = Value;
+        }
+
+        // Create a single process node //
+        public JoinProcessNode RenderNode(int ThreadID, int ThreadCount)
+        {
+
+            // Create the volume //
+            Volume left = this._LeftTable.CreateVolume(ThreadID, ThreadCount);
+            Volume right = this._RightTable.CreateVolume(ThreadID, ThreadCount);
+
+            // Create two registers //
+            Register lmem = new Register(this._LeftAlias, this._LeftTable.Columns);
+            Register rmem = new Register(this._RightAlias, this._RightTable.Columns);
+
+            // Create the memory envrioment //
+            CloneFactory spiderweb = new CloneFactory();
+            spiderweb.Append(lmem);
+            spiderweb.Append(rmem);
+            spiderweb.Append(this._Session.Scalars); // Add in the global scalars
+            spiderweb.Append(this._Session.Matrixes); // Add in the global matrixes
+
+            // Create clones of all our inputs //
+            ExpressionCollection fields = spiderweb.Clone(this._Fields);
+            Filter where = spiderweb.Clone(this._Where);
+
+            // Create the output stream //
+            RecordWriter out_stream = this._Output.OpenWriter();
+
+            // Return a node //
+            return new JoinProcessNode(ThreadID, this._Session, this._BaseAlgorithm, this._BaseType, left, lmem, right, rmem, this._JoinPredicate, where, fields, out_stream);
+
+        }
+
+        public List<JoinProcessNode> RenderNodes(int ThreadCount)
+        {
+
+            List<JoinProcessNode> nodes = new List<JoinProcessNode>();
+
+            for (int i = 0; i < ThreadCount; i++)
+            {
+                nodes.Add(this.RenderNode(i, ThreadCount));
+            }
+
+            return nodes;
+
+        }
+
 
 
     }

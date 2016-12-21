@@ -4,21 +4,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Rye.Data;
+using Rye.Structures;
 
 namespace Rye.Expressions
 {
+
     public sealed class Register
     {
-
-        private Guid _UID;
 
         public Register(string Name, Schema Columns)
         {
             this.Value = null;
             this.NullValue = Columns.NullRecord;
             this.Columns = Columns;
-            this._UID = Guid.NewGuid();
             this.Name = Name;
+            this.UID = Guid.NewGuid();
         }
 
         public Record Value;
@@ -31,7 +31,8 @@ namespace Rye.Expressions
 
         public Guid UID
         {
-            get { return this._UID; }
+            get;
+            private set;
         }
 
         public Register CloneOfMe()
@@ -39,21 +40,26 @@ namespace Rye.Expressions
             return new Register(this.Name, this.Columns);
         }
 
+        public static Heap<Register> GetMemoryRegisters(params IRegisterExtractor[] Nodes)
+        {
+
+            Heap<Register> bag = new Heap<Register>();
+            foreach (IRegisterExtractor x in Nodes)
+            {
+                bag.Import(x.GetMemoryRegisters());
+            }
+            return bag;
+
+        }
+
     }
 
-    public sealed class RegisterComparer : IEqualityComparer<Register>
+    public interface IRegisterExtractor
     {
 
-        public bool Equals(Register A, Register B)
-        {
-            return A.UID == B.UID;
-        }
-
-        public int GetHashCode(Register A)
-        {
-            return A.UID.GetHashCode();
-        }
+        Heap<Register> GetMemoryRegisters();
 
     }
+
 
 }

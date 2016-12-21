@@ -206,7 +206,7 @@ namespace Rye.Libraries
         * Name | Description | Affinity | Can Be Null?
         * 
         * Affinity can be:
-        * E: expression
+        * Value: expression
         * V: vector
         * M: matrix expression
         * T: table (or extent)
@@ -218,8 +218,8 @@ namespace Rye.Libraries
 
             this._CompressedSig = new Heap2<string, string>();
 
-            this._CompressedSig.Allocate(TableMethodLibrary.IMPORT, "Loads a file into an existing table", "DATA|The table to load|T|false;PATH|The flat file location|E|false;DELIM|The column delimitor|E|false;ESCAPE|The escape sequence character|E|true;SKIP|The number of lines to skip|E|true");
-            this._CompressedSig.Allocate(TableMethodLibrary.EXPORT, "Exports a table into a new file", "DATA|The table to export|T|false;PATH|The path to the exported file|E|false;DELIM|The column delimitor|E|false");
+            this._CompressedSig.Allocate(TableMethodLibrary.IMPORT, "Loads a file into an existing table", "DATA|The table to load|T|false;PATH|The flat file location|Value|false;DELIM|The column delimitor|Value|false;ESCAPE|The escape sequence character|Value|true;SKIP|The number of lines to skip|Value|true");
+            this._CompressedSig.Allocate(TableMethodLibrary.EXPORT, "Exports a table into a new file", "DATA|The table to export|T|false;PATH|The path to the exported file|Value|false;DELIM|The column delimitor|Value|false");
             this._CompressedSig.Allocate(TableMethodLibrary.ABOUT, "Prints meta data abouta table", "DATA|The table to export|T|false");
             
         }

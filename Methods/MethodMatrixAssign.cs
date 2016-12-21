@@ -26,6 +26,12 @@ namespace Rye.Methods
             this._mat = Heap;
         }
 
+        public Heap<CellMatrix> InnerHeap
+        {
+            get { return this._mat; }
+            set { this._mat = value; }
+        }
+
         public override void Invoke()
         {
             this._mat[this._ref] = this._expression.Evaluate();

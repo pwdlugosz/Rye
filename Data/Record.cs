@@ -371,7 +371,7 @@ namespace Rye.Data
         /// <param name="Text">Text representing the record</param>
         /// <param name="Delim">A delim value partitioning fields</param>
         /// <returns>A record</returns>
-        public static Record Parse(Schema Columns, string Text, char Delim)
+        public static Record Parse(Schema Columns, string Text, char[] Delim)
         {
             string[] s = Text.Split(Delim);
             if (s.Length != Columns.Count)
@@ -382,6 +382,18 @@ namespace Rye.Data
                 c.Add(Cell.Parse(s[i], Columns.ColumnAffinity(i)));
             }
             return new Record(c.ToArray());
+        }
+
+        /// <summary>
+        /// Parses a string into a record; throws an exception if the parse fails
+        /// </summary>
+        /// <param name="Columns">A schema representing the record types</param>
+        /// <param name="Text">Text representing the record</param>
+        /// <param name="Delim">A delim value partitioning fields</param>
+        /// <returns>A record</returns>
+        public static Record Parse(Schema Columns, string Text, char Delim)
+        {
+            return Record.Parse(Columns, Text, new char[] { Delim });
         }
 
         /// <summary>
@@ -402,7 +414,7 @@ namespace Rye.Data
         /// <param name="Text">Text representing the record</param>
         /// <param name="Delim">A delim value partitioning fields</param>
         /// <returns>A record</returns>
-        public static Record TryParse(Schema Columns, string Text, char Delim)
+        public static Record TryParse(Schema Columns, string Text, char[] Delim)
         {
             string[] s = Text.Split(Delim);
             if (s.Length != Columns.Count) throw new Exception("Parse-Expression is invalid: " + Text);
@@ -412,6 +424,18 @@ namespace Rye.Data
                 c.Add(Cell.TryParse(s[i], Columns.ColumnAffinity(i)));
             }
             return new Record(c.ToArray());
+        }
+
+        /// <summary>
+        /// Parses a string into a record; returns null if the parse failes
+        /// </summary>
+        /// <param name="Columns">A schema representing the record types</param>
+        /// <param name="Text">Text representing the record</param>
+        /// <param name="Delim">A delim value partitioning fields</param>
+        /// <returns>A record</returns>
+        public static Record TryParse(Schema Columns, string Text, char Delim)
+        {
+            return Record.TryParse(Columns, Text, new char[] { Delim });
         }
 
         /// <summary>

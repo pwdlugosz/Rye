@@ -36,6 +36,11 @@ namespace Rye.Methods
             return new MethodEscapeRead(this.Parent);
         }
 
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>();
+        }
+
     }
 
 }

@@ -89,6 +89,11 @@ namespace Rye.Aggregates
             return new AggregateSum(this._Map.CloneOfMe(), this._F.CloneOfMe());
         }
 
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>() { this._F.Node, this._Map };
+        }
+
     }
 
 }

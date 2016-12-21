@@ -26,8 +26,6 @@ namespace Rye.Data
             }
         }
 
-        public abstract IEnumerable<Record> Records { get; }
-
         public abstract long ExtentCount { get; }
 
         public abstract long RecordCount { get; }
@@ -214,11 +212,6 @@ namespace Rye.Data
             }
         }
 
-        public override IEnumerable<Record> Records
-        {
-            get { return this._Cache; }
-        }
-
         public Extent EmptyClone()
         {
             return new Extent(this._Columns, this._Head, new List<Record>(), this._OrderBy);
@@ -283,6 +276,8 @@ namespace Rye.Data
         {
             if (this.IsFull)
                 throw new Exception("RecordSet is full");
+            if (Data == null)
+                throw new ArgumentNullException();
             this._Cache.Add(Data);
 
         }
@@ -477,36 +472,7 @@ namespace Rye.Data
 
             public override long RecordCount
             {
-                get
-                {
-                    return this._E.RecordCount;
-                }
-            }
-
-            public override long FirstRowID
-            {
-                get
-                {
-                    return 0L;
-                }
-            }
-
-            public override long LastRowID
-            {
-                get
-                {
-                    return (long)(this._E.RecordCount - 1);
-                }
-            }
-
-            public override IEnumerable<Header> Headers
-            {
-                get
-                {
-                    List<Header> headers = new List<Header>();
-                    headers.Add(this._E.Header);
-                    return headers;
-                }
+                get { return (long)this._E.Count; }
             }
 
             public override IEnumerable<Extent> Extents
@@ -516,14 +482,6 @@ namespace Rye.Data
                     List<Extent> Es = new List<Extent>();
                     Es.Add(this._E);
                     return Es;
-                }
-            }
-
-            public override IEnumerable<Record> Records
-            {
-                get
-                {
-                    return this._E._Cache;
                 }
             }
 
@@ -649,14 +607,6 @@ namespace Rye.Data
             }
         }
 
-        public override IEnumerable<Record> Records
-        {
-            get 
-            {
-                return new RecordIEnumerable(this); 
-            }
-        }
-
         public override long CellCount
         {
             get { return this.RecordCount * this._Columns.Count; }
@@ -685,7 +635,7 @@ namespace Rye.Data
         }
 
         // IO Methods //
-        public void RequestFlushMe()
+        public virtual void RequestFlushMe()
         {
             this._IO.RequestFlushTable(this);
         }
@@ -703,13 +653,13 @@ namespace Rye.Data
             get { return this._Refs; }
         }
 
-        public long GetRecordCount(long ID)
+        public virtual long GetRecordCount(long ID)
         {
             return this._Refs[(int)ID][(int)OFFSET_COUNT].valueINT;
         }
 
         /* ## Thread Safe ##*/
-        protected void AddRefRecord(long ID, long RecordCount)
+        public virtual void AddRefRecord(long ID, long RecordCount)
         {
 
             lock (this._lock)
@@ -722,7 +672,7 @@ namespace Rye.Data
         }
 
         /* ## Thread Safe ##*/
-        protected void UpdateRefRercord(long ID, long RecordCount)
+        public virtual void UpdateRefRercord(long ID, long RecordCount)
         {
             lock (this._lock)
             {
@@ -813,6 +763,9 @@ namespace Rye.Data
                 if (Data.Header.PageSize != this.Header.PageSize)
                     throw new Exception("The data set passed is too large");
 
+                // Call the pre-serializer to ensure the record count is correct //
+                Data.PreSerialize();
+
                 // Need to create a new header //
                 long id = this._Refs.Count;
                 Header h = this.Header.CreateChild(id);
@@ -856,6 +809,17 @@ namespace Rye.Data
 
         }
 
+        public virtual Extent NewShell()
+        {
+
+            Header h = this.Header.CreateChild(0);
+            Extent e = new Extent(this.Columns, h);
+            e.Header.PageSize = this.Header.PageSize;
+
+            return e;
+
+        }
+
         public virtual Extent PopFirst()
         {
             return this.GetExtent(0);
@@ -880,20 +844,28 @@ namespace Rye.Data
             return this.PopLast();
         }
 
+        /* ## Thread Safe ##*/
         public override void PreSerialize()
         {
-            this._Head.KeyCount = this._OrderBy.Count;
-            this._Head.Stamp();
+            lock (this._lock)
+            {
+                this._Head.KeyCount = this._OrderBy.Count;
+                this._Head.Stamp();
+            }
         }
 
+        /* ## Thread Safe ##*/
         internal virtual void CursorClose(Extent Data)
         {
 
-            // Dont flush if zero records otherwise we may run into trouble when we buffer again //
-            if (Data.Count == 0)
-                return;
-            this.AddExtent(Data);
-            this._IO.RequestFlushTable(this);
+            lock (this._lock)
+            {
+                // Dont flush if zero records otherwise we may run into trouble when we buffer again //
+                if (Data.Count == 0)
+                    return;
+                this.AddExtent(Data);
+                this._IO.RequestFlushTable(this);
+            }
 
         }
 
@@ -986,221 +958,6 @@ namespace Rye.Data
         }
 
         // Private classes //
-        protected sealed class SetEnumerator : IEnumerator<Extent>, System.Collections.IEnumerator, IDisposable
-        {
-
-            private int _idx = -1;
-            private Table _t;
-
-            public SetEnumerator(Table Data)
-            {
-                this._t = Data;
-            }
-
-            public bool MoveNext()
-            {
-                this._idx++;
-                return this._idx < this._t.ExtentCount;
-            }
-
-            public void Reset()
-            {
-                this._idx = -1;
-            }
-
-            Extent IEnumerator<Extent>.Current
-            {
-
-                get
-                {
-                    return this._t.GetExtent(this._idx);
-                }
-
-            }
-
-            object System.Collections.IEnumerator.Current
-            {
-
-                get
-                {
-                    return this._t.GetExtent(this._idx);
-                }
-
-            }
-
-            public void Dispose()
-            {
-            }
-
-            public long ExtentCount
-            {
-                get { return this._t.ExtentCount; }
-            }
-
-        }
-
-        protected sealed class SetEnumerable : IEnumerable<Extent>, System.Collections.IEnumerable
-        {
-
-            private SetEnumerator _e;
-
-            public SetEnumerable(Table Data)
-            {
-                _e = new SetEnumerator(Data);
-            }
-
-            IEnumerator<Extent> IEnumerable<Extent>.GetEnumerator()
-            {
-                return _e;
-            }
-
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-            {
-                return _e;
-            }
-
-            public long ExtentCount
-            {
-                get { return this._e.ExtentCount; }
-            }
-
-        }
-
-        protected sealed class ThreadedSetEnumerator : IEnumerator<Extent>, System.Collections.IEnumerator, IDisposable
-        {
-
-            private int _idx = -1;
-            private Table _t;
-            private int[] _ExtentIDs;
-            private long _rowstart;
-
-            public ThreadedSetEnumerator(Table Data, int ThreadID, int ThreadCount)
-            {
-                
-                this._t = Data;
-                int TotalExtents = (int)Data.ExtentCount;
-                int Remainder = TotalExtents % ThreadCount;
-                int BucketCount = TotalExtents / ThreadCount;
-                int RemainderCounter = 0;
-                int BeginAt = 0;
-                int EndAt = 0;
-                int CountOf = 0;
-
-                for (int i = 0; i < ThreadID + 1; i++)
-                {
-                    BeginAt += CountOf;
-                    CountOf = BucketCount + (RemainderCounter < Remainder ? 1 : 0);
-                    RemainderCounter++;
-                    EndAt = BeginAt + CountOf;
-                }
-
-                List<int> ids = new List<int>();
-                for (int i = BeginAt; i < EndAt; i++)
-                {
-                    ids.Add(i);
-                }
-                this._ExtentIDs = ids.ToArray();
-
-                // Get the count of all records up to this point //
-                long counter = 0;
-                long FirstID = this._ExtentIDs[0]; 
-                foreach (Record r in Data._Refs.Records)
-                {
-                    if (r[0].INT < FirstID)
-                        counter += r[1].INT;
-                }
-
-            }
-
-            public bool MoveNext()
-            {
-                this._idx++;
-                return this._idx < this._ExtentIDs.Length;
-            }
-
-            public void Reset()
-            {
-                this._idx = -1;
-            }
-
-            Extent IEnumerator<Extent>.Current
-            {
-
-                get
-                {
-                    return this._t.GetExtent(this._ExtentIDs[this._idx]);
-                }
-
-            }
-
-            object System.Collections.IEnumerator.Current
-            {
-
-                get
-                {
-                    return this._t.GetExtent(this._ExtentIDs[this._idx]);
-                }
-
-            }
-
-            public void Dispose()
-            {
-            }
-
-            public long ExtentCount
-            {
-                get { return (long)this._ExtentIDs.Length; }
-            }
-
-            public int[] ExtentIDs
-            {
-                get { return this._ExtentIDs; }
-            }
-
-            public long RowStart
-            {
-                get { return this._rowstart; }
-            }
-
-        }
-
-        protected sealed class ThreadedSetEnumerable : IEnumerable<Extent>, System.Collections.IEnumerable
-        {
-
-            private ThreadedSetEnumerator _e;
-
-            public ThreadedSetEnumerable(Table Data, int ThreadID, int ThreadCount)
-            {
-                _e = new ThreadedSetEnumerator(Data, ThreadCount, ThreadID);
-            }
-
-            IEnumerator<Extent> IEnumerable<Extent>.GetEnumerator()
-            {
-                return _e;
-            }
-
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-            {
-                return _e;
-            }
-
-            public long ExtentCount
-            {
-                get { return this._e.ExtentCount; }
-            }
-
-            public int[] ExtentIDs
-            {
-                get { return this._e.ExtentIDs; }
-            }
-
-            public long BeginRowID
-            {
-                get { return this._e.RowStart; }
-            }
-
-        }
-
         protected sealed class HeaderEnumerator : IEnumerator<Header>, System.Collections.IEnumerator, IDisposable
         {
 
@@ -1267,103 +1024,6 @@ namespace Rye.Data
 
         }
 
-        protected sealed class RecordEnumerator : IEnumerator<Record>, System.Collections.IEnumerator, IDisposable
-        {
-
-            private int _record_ptr = -1;
-            private int _extent_ptr = 0;
-            private Table _t;
-            private Extent _e;
-
-            public RecordEnumerator(Table Data)
-            {
-                this._t = Data;
-                this._e = this._t.PopFirst();
-            }
-
-            public bool MoveNext()
-            {
-
-                if (this._e.Count == 0)
-                    return false;
-
-                this._record_ptr++;
-                if (this._record_ptr >= this._e.Count && this._extent_ptr < this._t.ExtentCount - 1)
-                {
-                    this._record_ptr = 0;
-                    this._extent_ptr++;
-                    this._e = this._t.GetExtent(this._extent_ptr);
-                    return true;
-                }
-                else if (this._extent_ptr >= this._e.Count)
-                {
-                    return false;
-                }
-                else if (this._record_ptr >= this._e.Count)
-                {
-                    return false;
-                }
-                else
-                {
-                    return true;
-                }
-                
-            }
-
-            public void Reset()
-            {
-                this._extent_ptr = 0;
-                this._record_ptr = -1;
-            }
-
-            Record IEnumerator<Record>.Current
-            {
-
-                get
-                {
-                    return this._e[this._record_ptr];
-                }
-
-            }
-
-            object System.Collections.IEnumerator.Current
-            {
-
-                get
-                {
-                    return this._e[this._record_ptr];
-                }
-
-            }
-
-            public void Dispose()
-            {
-            }
-
-        }
-
-        protected sealed class RecordIEnumerable : IEnumerable<Record>, System.Collections.IEnumerable
-        {
-
-            private RecordEnumerator _e;
-
-            public RecordIEnumerable(Table Data)
-            {
-                _e = new RecordEnumerator(Data);
-            }
-
-            IEnumerator<Record> IEnumerable<Record>.GetEnumerator()
-            {
-                return _e;
-            }
-
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-            {
-                return _e;
-            }
-
-        }
-
         protected sealed class TableRecordReader : RecordReader
         {
 
@@ -1392,6 +1052,7 @@ namespace Rye.Data
             public TableRecordReader(Table From, Register MemoryLocation)
                 : this(From, MemoryLocation, Filter.TrueForAll)
             {
+
             }
 
             // Properties //
@@ -1470,252 +1131,11 @@ namespace Rye.Data
 
         }
 
-        protected sealed class ThreadedTableRecordReader : RecordReader
-        {
-
-            private Table _ParentData;
-            private int[] _ExtentIDs;
-            private int _ptrData = 0;
-
-            // Constructor //
-            public ThreadedTableRecordReader(Table From, int[] IDs, Register MemoryLocation, Filter Where)
-                : base()
-            {
-            
-                this._ptrData = DEFAULT_POINTER;
-                this._ParentData = From;
-                this._Data = From.PopFirstOrGrow();
-                this._Where = Where;
-                this._Memory = MemoryLocation;
-                this._ExtentIDs = IDs;
-                if (!Where.Default)
-                {
-                    this._IsFiltered = true;
-                    while (!this.CheckFilter && !this.EndOfData)
-                        this.Advance();
-                }
-
-            }
-
-            public ThreadedTableRecordReader(Table From, int[] IDs, Register MemoryLocation)
-                : this(From, IDs, MemoryLocation, Filter.TrueForAll)
-            {
-            }
-
-            // Properties //
-            public override bool EndOfData
-            {
-                get
-                {
-                    return this.EndOfCache && this.EndOfExtent || this._ParentData.ExtentCount == 0;
-                }
-            }
-
-            public bool EndOfExtent
-            {
-                get
-                {
-                    return this._ptrRecord >= this._Data.Count;
-                }
-            }
-
-            public bool EndOfCache
-            {
-                get
-                {
-                    return this._ptrData >= this._ExtentIDs.Length;
-                }
-            }
-
-            public int ExtentPosition
-            {
-                get 
-                { 
-                    return this._ptrData; 
-                }
-            }
-
-            public override bool BeginingOfData
-            {
-                get
-                {
-                    return base.BeginingOfData && this._ptrData == 0;
-                }
-            }
-
-            // Methods //
-            public override void UnFilteredAdvance()
-            {
-
-                //base.UnFilteredAdvance();
-                this._ptrRecord += INCREMENTER;
-            
-                // If we are at the end of the extent, but not the cache, buffer the next extent //
-                if (this.EndOfExtent && !this.EndOfCache)
-                {
-
-                    // Increment Pointer //
-                    this._ptrData++;
-
-                    // Exit if at the end of the cache //
-                    if (!this.EndOfCache)
-                    {
-
-                        // Advance and pop //
-                        int id = this._ExtentIDs[this._ptrData];
-                        this._Data = this._ParentData.GetExtent(id);
-
-                        // Reset the record pointer //
-                        this._ptrRecord = 0;
-
-                    }
-
-                }
-
-                // Allocate memory for the where structure //
-                if (!this.EndOfData)
-                {
-                    this._Memory.Value = this.Read();
-                }
-
-            }
-
-
-        }
-
-        protected sealed class TableExtentCollection : ExtentCollection
-        {
-
-            private SetEnumerable _base;
-            private Table _source;
-
-            public TableExtentCollection(Table Data)
-                : base()
-            {
-                this._base = new SetEnumerable(Data);
-                this._source = Data;
-            }
-
-            public override long ExtentCount
-            {
-                get { return this._base.ExtentCount; }
-            }
-
-            public override IEnumerable<Extent> Extents
-            {
-                get { return this._base; }
-            }
-
-            public override long BeginRowID
-            {
-                get { return 0; }
-            }
-
-            public override void SetExtent(Extent Data)
-            {
-                this._source.SetExtent(Data);
-            }
-
-            public override Extent GetExtent(int Index)
-            {
-                return this._source.GetExtent(Index);
-            }
-
-            public override Schema Columns
-            {
-                get 
-                { 
-                    return this._source.Columns; 
-                }
-            }
-
-            public override RecordReader OpenReader(Register MemoryLocation)
-            {
-                return new TableRecordReader(this._source, MemoryLocation);
-            }
-
-            public override RecordReader OpenReader(Register MemoryLocation, Filter Where)
-            {
-                return new TableRecordReader(this._source, MemoryLocation, Where);
-            }
-
-        }
-
-        protected sealed class ThreadedTableExtentCollection : ExtentCollection
-        {
-
-            private ThreadedSetEnumerable _base;
-            private Table _source;
-
-            public ThreadedTableExtentCollection(Table Data, int ThreadID, int ThreadCount)
-                : base()
-            {
-
-                this._base = new ThreadedSetEnumerable(Data, ThreadCount, ThreadID);
-                this._source = Data;
-
-                int FirstID = this._base.ExtentIDs.First();
-                int LastID = this._base.ExtentIDs.Last();
-
-            }
-
-            public override long ExtentCount
-            {
-                get { return this._base.ExtentCount; }
-            }
-
-            public override Schema Columns
-            {
-                get
-                {
-                    return this._source.Columns;
-                }
-            }
-
-            public override IEnumerable<Extent> Extents
-            {
-                get { return this._base; }
-            }
-
-            public override long BeginRowID
-            {
-                get { return this._base.BeginRowID; }
-            }
-
-            public override void SetExtent(Extent Data)
-            {
-                this._source.SetExtent(Data);
-            }
-
-            public override Extent GetExtent(int Index)
-            {
-
-                if (Index >= this.ExtentCount)
-                    throw new ArgumentOutOfRangeException("Shard index is out of range");
-                int idx = this._base.ExtentIDs[Index];
-                return this._source.GetExtent(idx);
-
-            }
-
-            public override RecordReader OpenReader(Register MemoryLocation)
-            {
-                return new ThreadedTableRecordReader(this._source, this._base.ExtentIDs, MemoryLocation);
-            }
-
-            public override RecordReader OpenReader(Register MemoryLocation, Filter Where)
-            {
-                return new ThreadedTableRecordReader(this._source, this._base.ExtentIDs, MemoryLocation, Where);
-            }
-
-        }
-
         protected sealed class TableVolume : Volume
         {
 
             private int[] _ExtentIDs;
-            private long _FirstRowID;
-            private long _LastRowID;
-            private long _RecordCount;
+            private long _Count;
             private Table _T;
             private Key _SortBy;
             
@@ -1724,15 +1144,7 @@ namespace Rye.Data
             {
                 
                 this._T = T;
-
-                int TotalExtents = (int)T.ExtentCount;
-                int Remainder = TotalExtents % ThreadCount;
-                int BucketCount = TotalExtents / ThreadCount;
-                int RemainderCounter = 0;
-                int BeginAt = 0;
-                int EndAt = 0;
-                int CountOf = 0;
-
+                
                 this.IsEmpty = false;
                 if (T.RecordCount == 0)
                 {
@@ -1741,43 +1153,12 @@ namespace Rye.Data
                     return;
                 }
 
-                for (int i = 0; i < ThreadID + 1; i++)
+                this._ExtentIDs = TableVolume.GetIDs(ThreadID, ThreadCount, (int)T.ExtentCount);
+                foreach(int idx in this._ExtentIDs)
                 {
-                    BeginAt += CountOf;
-                    CountOf = BucketCount + (RemainderCounter < Remainder ? 1 : 0);
-                    RemainderCounter++;
-                    EndAt = BeginAt + CountOf;
+                    this._Count += T.GetRecordCount(idx);
                 }
-
-                List<int> ids = new List<int>();
-                for (int i = BeginAt; i < EndAt; i++)
-                {
-                    ids.Add(i);
-                }
-                this._ExtentIDs = ids.ToArray();
-
-                // Get the count of all records up to this point //
-                long counter = 0;
-                long FirstID = this._ExtentIDs.First();
-                long LastID = this._ExtentIDs.Last();
-                foreach (Record r in T._Refs.Records)
-                {
-
-                    if (r[0].INT < FirstID)
-                    {
-                        counter += r[1].INT;
-                    }
-
-                    if (this._ExtentIDs.Contains((int)r[0].INT))
-                    {
-                        this._RecordCount += r[1].INT;
-                    }
-
-                }
-
-                this._FirstRowID = counter;
-                this._LastRowID = this._FirstRowID + this._RecordCount;
-
+                
                 // Set sort key //
                 this._SortBy = T._OrderBy;
                 
@@ -1817,41 +1198,7 @@ namespace Rye.Data
 
             public override long RecordCount
             {
-                get
-                {
-                    return this._RecordCount;
-                }
-            }
-
-            public override long FirstRowID
-            {
-                get
-                {
-                    return this._FirstRowID;
-                }
-            }
-
-            public override long LastRowID
-            {
-                get
-                {
-                    return this._LastRowID;
-                }
-            }
-
-            public override IEnumerable<Header> Headers
-            {
-                get
-                {
-
-                    List<Header> headers = new List<Header>();
-                    foreach (int i in this._ExtentIDs)
-                    {
-                        headers.Add(this._T.RenderHeader(i));
-                    }
-                    return headers;
-
-                }
+                get { return this._Count; }
             }
 
             public override IEnumerable<Extent> Extents
@@ -1859,14 +1206,6 @@ namespace Rye.Data
                 get
                 {
                     return new TableVolumeExtentEnumerator(this._T, this._ExtentIDs);
-                }
-            }
-
-            public override IEnumerable<Record> Records
-            {
-                get
-                {
-                    return new TableVolumeRecordEnumerator(this._T, this._ExtentIDs);
                 }
             }
 
@@ -1887,64 +1226,6 @@ namespace Rye.Data
             }
 
             // -- Enumerators -- //
-            private class TableVolumeHeaderEnumerator : IEnumerator<Header>, System.Collections.IEnumerator, IEnumerable<Header>, System.Collections.IEnumerable, IDisposable
-            {
-
-                private int _idx = -1;
-                private Table _ref;
-                private int[] _ids;
-
-                public TableVolumeHeaderEnumerator(Table Data, int[] ExtentIDs)
-                {
-                    this._ref = Data;
-                    this._ids = ExtentIDs;
-                }
-
-                public bool MoveNext()
-                {
-                    this._idx++;
-                    return this._idx < this._ids.Length;
-                }
-
-                public void Reset()
-                {
-                    this._idx = -1;
-                }
-
-                Header IEnumerator<Header>.Current
-                {
-                    get
-                    {
-                        int i = this._ids[this._idx];
-                        return this._ref.RenderHeader(i);
-                    }
-                }
-
-                object System.Collections.IEnumerator.Current
-                {
-                    get
-                    {
-                        int i = this._ids[this._idx];
-                        return this._ref.RenderHeader(i);
-                    }
-                }
-
-                IEnumerator<Header> IEnumerable<Header>.GetEnumerator()
-                {
-                    return this;
-                }
-
-                System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-                {
-                    return this;
-                }
-
-                public void Dispose()
-                {
-                }
-
-            }
-
             private class TableVolumeExtentEnumerator : IEnumerator<Extent>, System.Collections.IEnumerator, IEnumerable<Extent>, System.Collections.IEnumerable, IDisposable
             {
 
@@ -2003,94 +1284,6 @@ namespace Rye.Data
 
             }
 
-            private class TableVolumeRecordEnumerator : IEnumerator<Record>, System.Collections.IEnumerator, IEnumerable<Record>, System.Collections.IEnumerable, IDisposable
-            {
-
-                private int _record_ptr = -1;
-                private int _extent_ptr = 0;
-                private Table _t;
-                private Extent _e;
-                private int[] _ExtentIDs;
-
-                public TableVolumeRecordEnumerator(Table Data, int[] ExtentIDs)
-                {
-                    this._t = Data;
-                    this._e = this._t.PopFirst();
-                    this._ExtentIDs = ExtentIDs;
-                }
-
-                public bool MoveNext()
-                {
-
-                    if (this._e.Count == 0)
-                        return false;
-
-                    this._record_ptr++;
-                    if (this._record_ptr >= this._e.Count && this._extent_ptr < this._ExtentIDs.Length - 1)
-                    {
-                        this._record_ptr = 0;
-                        this._extent_ptr++;
-                        int id = this._ExtentIDs[this._extent_ptr];
-                        this._e = this._t.GetExtent(id);
-                        return true;
-                    }
-                    else if (this._extent_ptr >= this._e.Count)
-                    {
-                        return false;
-                    }
-                    else if (this._record_ptr >= this._e.Count)
-                    {
-                        return false;
-                    }
-                    else
-                    {
-                        return true;
-                    }
-
-                }
-
-                public void Reset()
-                {
-                    this._extent_ptr = 0;
-                    this._record_ptr = -1;
-                }
-
-                Record IEnumerator<Record>.Current
-                {
-
-                    get
-                    {
-                        return this._e[this._record_ptr];
-                    }
-
-                }
-
-                object System.Collections.IEnumerator.Current
-                {
-
-                    get
-                    {
-                        return this._e[this._record_ptr];
-                    }
-
-                }
-
-                IEnumerator<Record> IEnumerable<Record>.GetEnumerator()
-                {
-                    return this;
-                }
-
-                System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-                {
-                    return this;
-                }
-
-                public void Dispose()
-                {
-                }
-
-            }
-
             private class TableVolumeRecordReader : RecordReader
             {
 
@@ -2105,7 +1298,7 @@ namespace Rye.Data
 
                     this._ptrData = DEFAULT_POINTER;
                     this._ParentData = From;
-                    this._Data = From.PopFirstOrGrow();
+                    this._Data = From.GetExtent(ExtentIDs.First());
                     this._Where = Where;
                     this._Memory = MemoryLocation;
                     this._ExtentIDs = ExtentIDs;
@@ -2118,6 +1311,9 @@ namespace Rye.Data
                         return;
                     }
 
+                    // Initialize the memory register for the advance //
+                    this._Memory.Value = this.Read();
+
                     // Check the filter //
                     if (!Where.Default)
                     {
@@ -2125,6 +1321,8 @@ namespace Rye.Data
                         while (!this.CheckFilter && !this.EndOfData)
                             this.Advance();
                     }
+
+
 
                 }
 
@@ -2208,6 +1406,34 @@ namespace Rye.Data
 
             }
 
+            public static int[] GetIDs(int ThreadID, int TotalThreadCount, int ExtentCount)
+            {
+
+                int[] ExtentCounts = new int[TotalThreadCount];
+                int[] ExtentStart = new int[TotalThreadCount];
+                int idx = 0;
+
+                for (int i = 0; i < ExtentCount; i++)
+                {
+                    ExtentCounts[i % TotalThreadCount]++;
+                }
+
+                for (int i = 0; i < TotalThreadCount; i++)
+                {
+                    ExtentStart[i] = idx;
+                    idx += ExtentCounts[i];
+                }
+
+                int[] Indexes = new int[ExtentCounts[ThreadID]];
+                for (int i = 0; i < Indexes.Length; i++)
+                {
+                    Indexes[i] = ExtentStart[ThreadID] + i;
+                }
+
+                return Indexes;
+
+            }
+
         }
 
         public static Table CreateTable(Kernel IO, string Dir, string Name, Schema Columns, long PageSize)
@@ -2225,27 +1451,6 @@ namespace Rye.Data
             return new Table(IO, h, Columns, true);
 
         }
-
-    }
-
-    public abstract class ExtentCollection 
-    {
-
-        public abstract long ExtentCount { get; }
-
-        public abstract IEnumerable<Extent> Extents { get; }
-
-        public abstract long BeginRowID { get; }
-
-        public abstract void SetExtent(Extent Data);
-
-        public abstract Extent GetExtent(int Index);
-
-        public abstract Schema Columns { get; }
-
-        public abstract RecordReader OpenReader(Register MemoryLocation);
-
-        public abstract RecordReader OpenReader(Register MemoryLocation, Filter Where);
 
     }
 
@@ -2280,15 +1485,7 @@ namespace Rye.Data
 
         public abstract long RecordCount { get; }
 
-        public abstract long FirstRowID { get; }
-
-        public abstract long LastRowID { get; }
-
-        public abstract IEnumerable<Header> Headers { get; }
-
         public abstract IEnumerable<Extent> Extents { get; }
-
-        public abstract IEnumerable<Record> Records { get; }
 
         public abstract Extent GetExtent(int Index);
 
@@ -2465,14 +1662,14 @@ namespace Rye.Data
         public ModeStep(Volume V, Register Memory)
         {
 
-            if (V.ExtentCount == 0)
-                throw new ArgumentException("Cannot create a ModeStep with no extents");
+            //if (V.ExtentCount == 0)
+            //    throw new ArgumentException("Cannot create a ModeStep with no extents");
 
             this._V = V;
             this._Memory = Memory;
             this._TotalExtentCount = (int)V.ExtentCount;
 
-            this._E = V.GetExtent(0);
+            this._E = (V.ExtentCount == 0 ? new Extent(V.Columns) : V.GetExtent(0));
             this._CurrentExtentRecordCount = (int)this._E.RecordCount;
             this._Memory.Value = (this._CurrentExtentRecordCount == 0 ? V.Columns.NullRecord : this._E[this._ptr_CurrentRecord]);
             this._NullRecord = V.Columns.NullRecord;
@@ -2495,6 +1692,11 @@ namespace Rye.Data
             {
                 return this._ptr_CurrentExtent >= this._TotalExtentCount;
             }
+        }
+
+        public bool IsEmpty
+        {
+            get { return this._V.ExtentCount == 0 || (this._V.ExtentCount == 1 && this._E.Count == 0); }
         }
 
         public Register Memory

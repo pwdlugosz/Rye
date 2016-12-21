@@ -268,6 +268,33 @@ namespace Rye.Exchange
             RaizeDataTable(Element, Writer, 0, Element.Rows.Count, 0, Element.Columns.Count);
         }
 
+        // Parsing //
+        public static void ParseTable(RecordWriter Writer, string Text, char[] RowDelim, char[] ColDelim, char Escape)
+        {
+
+            // Get the schema //
+            Schema s = Writer.Columns;
+
+            // Cycle through each record //
+            foreach (string rec in Text.Split(RowDelim))
+            {
+
+                Record r = Helpers.Splitter.ToRecord(rec, s, ColDelim, Escape);
+                Writer.Insert(r);
+
+            }
+
+        }
+
+        public static void ParseTable(TabularData Data, string Text, char[] RowDelim, char[] ColDelim, char Escape)
+        {
+
+            RecordWriter w = Data.OpenWriter();
+            ParseTable(w, Text, RowDelim, ColDelim, Escape);
+            w.Close();
+
+        }
+
     }
 
 }

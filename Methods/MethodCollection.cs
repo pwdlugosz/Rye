@@ -30,6 +30,11 @@ namespace Rye.Methods
             get { return this._tree.Count; }
         }
 
+        public List<Method> Nodes
+        {
+            get { return this._tree; }
+        }
+
         public bool CheckBreak
         {
             get

@@ -13,7 +13,7 @@ namespace Rye.Methods
 
     public enum ParameterAffinity
     {
-        Expression = 0, // E, Nu
+        Expression = 0, // Value, Nu
         ExpressionVector = 1, // V, NuV
         Table = 2, // T, Tau
         Matrix = 3 // M, Mu
@@ -40,7 +40,7 @@ namespace Rye.Methods
 
         private static string[] ShortNames = new string[]
         {
-            "E",
+            "Value",
             "V",
             "M",
             "T"
@@ -233,6 +233,39 @@ namespace Rye.Methods
                     break;
 
             }
+
+        }
+
+        public ParameterCollection CloneOfMe()
+        {
+
+            ParameterCollection pc = new ParameterCollection();
+
+            // clone expressions //
+            foreach (KeyValuePair<string,Expression> x in this._eCache.Entries)
+            {
+                pc.Add(x.Key, x.Value.CloneOfMe());
+            }
+
+            // clone expression vectors //
+            foreach (KeyValuePair<string, ExpressionCollection> x in this._vCache.Entries)
+            {
+                pc.Add(x.Key, x.Value.CloneOfMe());
+            }
+
+            // clone matrix expressions //
+            foreach (KeyValuePair<string, MatrixExpression> x in this._mCache.Entries)
+            {
+                pc.Add(x.Key, x.Value.CloneOfMe());
+            }
+
+            // add tables, do not clone //
+            foreach (KeyValuePair<string, TabularData> x in this._tCache.Entries)
+            {
+                pc.Add(x.Key, x.Value);
+            }
+
+            return pc;
 
         }
 
@@ -533,7 +566,7 @@ namespace Rye.Methods
 
         public override Method CloneOfMe()
         {
-            return new LibraryMethod(this._Parent, this._Name, this._Parameters, this.CanBeAsync, this._BeginInvoke, this._Invoke, this._EndInvoke);
+            return new LibraryMethod(this._Parent, this._Name, this._Parameters.CloneOfMe(), this.CanBeAsync, this._BeginInvoke, this._Invoke, this._EndInvoke);
         }
 
         public override bool CanBeAsync
@@ -542,6 +575,27 @@ namespace Rye.Methods
             {
                 return this._CanBeAsync;
             }
+        }
+
+        public override List<Expression> InnerExpressions()
+        {
+
+            List<Expression> val = new List<Expression>();
+
+            // Expression Collections //
+            foreach (ExpressionCollection x in this._Parameters.ExpressionVectors.Values)
+            {
+                val.AddRange(x.Nodes);
+            }
+
+            // Expressions //
+            foreach (Expression y in this._Parameters.Expressions.Values)
+            {
+                val.Add(y);
+            }
+
+            return val;
+
         }
 
     }

@@ -211,6 +211,14 @@ namespace Rye.Interpreter
             {
                 c = Visitor.Visit(context.expression()).Evaluate();
             }
+            else if (t == CellAffinity.STRING)
+            {
+                c = new Cell(new string('\0', size));
+            }
+            else if (t == CellAffinity.BLOB)
+            {
+                c = new Cell(new byte[size]);
+            }
 
             Heap.Reallocate(vname, c);
 

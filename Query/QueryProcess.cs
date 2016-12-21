@@ -149,7 +149,7 @@ namespace Rye.Query
             foreach (Q q in this._Nodes)
             {
                 q.BeginInvoke();
-                q.Invoke(); // main drag happening here
+                q.Invoke(); // current drag happening here
                 q.EndInvoke();
             }
 

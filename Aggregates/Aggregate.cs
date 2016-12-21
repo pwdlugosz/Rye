@@ -66,6 +66,8 @@ namespace Rye.Aggregates
 
         public abstract Aggregate CloneOfMe();
 
+        public abstract List<Expression> InnerExpressions();
+        
     }
 
 }

@@ -15,7 +15,7 @@ namespace Rye.Expressions
         private Heap<Cell> _Heap;
         private int _Pointer;
         private CellAffinity _ReturnType;
-
+        
         public ExpressionHeapRef(Expression Parent, Heap<Cell> Heap, int DirectRef, CellAffinity ReturnType)
             : base(Parent, ExpressionAffinity.Heap)
         {
@@ -70,9 +70,32 @@ namespace Rye.Expressions
             return this._Heap[this._Pointer].DataCost;
         }
 
+        public void ForceHeap(Heap<Cell> NewHeap)
+        {
+
+            if (NewHeap.Identifier.ToUpper() != this._Heap.Identifier.ToUpper())
+                return;
+
+            // Check to see if we need to change the heap ref //
+            string name = this._Heap.Name(this._Pointer);
+            int NewPtr = NewHeap.GetPointer(name);
+
+            if (NewPtr == -1)
+                throw new ArgumentException(string.Format("The new heap doesn't contain {0}", name));
+
+            this._Pointer = NewPtr;
+            this._Heap = NewHeap;
+
+        }
+
         public int Pointer
         {
             get { return this._Pointer; }
+        }
+
+        public Heap<Cell> InnerHeap
+        {
+            get { return this._Heap; }
         }
 
     }

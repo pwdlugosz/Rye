@@ -32,7 +32,7 @@ namespace Rye.Data
 
         public virtual void BulkInsert(Extent Data)
         {
-            foreach (Record r in Data.Records)
+            foreach (Record r in Data.Cache)
                 this.Insert(r);
         }
 
@@ -102,7 +102,7 @@ namespace Rye.Data
         public TableWriter(Table Data)
         {
             this._t = Data;
-            this._e = Data.PopLastOrGrow();
+            this._e = Data.NewShell();
         }
 
         public override void Insert(Record Data)
@@ -110,8 +110,8 @@ namespace Rye.Data
 
             if (this._e.IsFull)
             {
-                this._t.SetExtent(this._e);
-                this._e = this._t.Grow();
+                this._t.AddExtent(this._e);
+                this._e = this._t.NewShell();
             }
             this._e.Add(Data);
 
@@ -129,7 +129,10 @@ namespace Rye.Data
 
         public override void Close()
         {
-            this._t.SetExtent(this._e);
+            if (this._e.Count != 0)
+            {
+                this._t.AddExtent(this._e);
+            }
             this._t.RequestFlushMe();
         }
 
@@ -150,12 +153,34 @@ namespace Rye.Data
 
         public override void Insert(Record Data)
         {
+            if (this._e.IsFull)
+            {
+                this._t.AddExtent(this._e);
+                this._e = this._t.NewShell();
+            }
             this._e.UncheckedAdd(Data);
         }
 
         public override void BulkInsert(Extent Data)
         {
-            this._t.AddExtent(Data);
+            if (Data.Columns.GetHashCode() == this._t.Columns.GetHashCode())
+                this._t.AddExtent(Data);
+            else
+                base.BulkInsert(Data);
+        }
+
+        public override void Close()
+        {
+            if (this._e.Count != 0)
+            {
+                this._t.AddExtent(this._e);
+            }
+            this._t.RequestFlushMe();
+        }
+
+        public override Schema Columns
+        {
+            get { return this._t.Columns; }
         }
 
         public override bool IsChecked

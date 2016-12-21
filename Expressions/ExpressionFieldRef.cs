@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Rye.Data;
+using Rye.Structures;
 
 namespace Rye.Expressions
 {
@@ -55,14 +56,16 @@ namespace Rye.Expressions
 
         public override Expression CloneOfMe()
         {
-            return new ExpressionFieldRef(this.ParentNode, this._idx, this._affinity, this._size, this._memory.CloneOfMe());
+            return new ExpressionFieldRef(this.ParentNode, this._idx, this._affinity, this._size, this._memory);
         }
 
-        public override void AssignMemoryRegister(Register OldMemoryRegister, Register NewMemoryRegister)
+        public void ForceMemoryRegister(Register NewMemoryRegister)
         {
 
-            if (this._memory.UID == OldMemoryRegister.UID)
-                this._memory = NewMemoryRegister;
+            if (this._memory.Name.ToUpper() != NewMemoryRegister.Name.ToUpper())
+                return;
+
+            this._memory = NewMemoryRegister;
 
         }
 
@@ -71,9 +74,11 @@ namespace Rye.Expressions
             return this._size;
         }
 
-        public override List<Register> GetMemoryRegisters()
+        public override Heap<Register> GetMemoryRegisters()
         {
-            return new List<Register> { this._memory };
+            Heap<Register> x = new Heap<Register>();
+            x.Allocate(this._memory.Name, this._memory);
+            return x;
         }
 
         public int Index

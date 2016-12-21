@@ -98,6 +98,18 @@ namespace Rye.MatrixExpressions
 
         public abstract MatrixExpression CloneOfMe();
 
+        public virtual List<Expression> InnerExpressions()
+        {
+
+            List<Expression> val = new List<Expression>();
+            foreach (MatrixExpression x in this._Cache)
+            {
+                val.AddRange(x.InnerExpressions());
+            }
+            return val;
+
+        }
+
     }
 
 }

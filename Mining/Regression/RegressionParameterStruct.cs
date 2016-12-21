@@ -11,34 +11,9 @@ using Rye.Structures;
 namespace Rye.Mining.Regression
 {
 
-    public sealed class RegressionInputStruct
-    {
-
-        internal Volume _Data;
-        internal ExpressionCollection _Inputs;
-        internal ExpressionCollection _Outputs;
-        internal Expression _Weight;
-        internal Filter _Where;
-        internal Register _Memory;
-
-        public RegressionInputStruct(Volume Data, Register Memory, ExpressionCollection Inputs, ExpressionCollection Outputs, Expression Weight, Filter Where)
-        {
-            this._Data = Data;
-            this._Memory = Memory;
-            this._Inputs = Inputs;
-            this._Outputs = Outputs;
-            this._Weight = Weight;
-            this._Where = Where;
-
-        }
-
-        public RegressionParameterStruct BlankParameterStruct()
-        {
-            return new RegressionParameterStruct(this._Inputs.Count, this._Outputs.Count);
-        }
-
-    }
-
+    /// <summary>
+    /// Holds regression parameters
+    /// </summary>
     public sealed class RegressionParameterStruct
     {
 
@@ -59,6 +34,11 @@ namespace Rye.Mining.Regression
 
         public RegressionParameterStruct(int ParameterCount)
             : this(ParameterCount, 1)
+        {
+        }
+
+        public RegressionParameterStruct(MiningModelSource Source)
+            : this(Source.Inputs.Count, Source.Outputs.Count)
         {
         }
 
@@ -95,6 +75,21 @@ namespace Rye.Mining.Regression
         public CellMatrix XtXInverse
         {
             get { return this._XtX.Inverse; }
+        }
+
+        public void StepWeight(Cell Weight)
+        {
+            this._WSum += Weight;
+        }
+
+        public void StepWeight()
+        {
+            this._WSum++;
+        }
+
+        public void StepObsCount()
+        {
+            this._Obs++;
         }
 
         public void RenderBeta()
@@ -155,6 +150,9 @@ namespace Rye.Mining.Regression
 
     }
 
+    /// <summary>
+    /// Holds regression error data
+    /// </summary>
     public sealed class RegressionErrorStruct
     {
 
@@ -196,9 +194,59 @@ namespace Rye.Mining.Regression
         {
             get { return this._One - CellMatrix.CheckDivide(this._SSE, this._SSTO); }
         }
+        
+        /// <summary>
+        /// Merges the SSE, SSTO and SSR values
+        /// </summary>
+        /// <param name="A">First structure</param>
+        /// <param name="B">Second structure</param>
+        /// <returns>The merged regression error structure</returns>
+        public static RegressionErrorStruct Merge(RegressionErrorStruct A, RegressionErrorStruct B)
+        {
+
+            if (A._Params != B._Params)
+            {
+                throw new ArgumentException("The RegressionErrorStruct's must have the same parameter counts");
+            }
+
+            RegressionErrorStruct C = new RegressionErrorStruct(A._SSE.CloneOfMe() + B._SSE.CloneOfMe(), A._SSTO.CloneOfMe() + B._SSTO.CloneOfMe(), A._Obs + B._Obs, A._Params);
+
+            return C;
+
+        }
+
+        /// <summary>
+        /// Merges the SSE, SSTO and SSR values
+        /// </summary>
+        /// <param name="Parameters">The collection of individual strucs</param>
+        /// <returns>The combined struct</returns>
+        public static RegressionErrorStruct Merge(IEnumerable<RegressionErrorStruct> Parameters)
+        {
+
+            RegressionErrorStruct[] p = Parameters.ToArray();
+            
+            if (p.Length == 0)
+                return null;
+
+            if (p.Length == 1)
+                return p[0];
+
+            RegressionErrorStruct prime = p[0];
+
+            for (int i = 1; i < p.Length; i++)
+            {
+                prime = RegressionErrorStruct.Merge(prime, p[i]);
+            }
+
+            return prime;
+            
+        }
 
     }
     
+    /// <summary>
+    /// Holds statistics surrounding the beta structure
+    /// </summary>
     public sealed class RegressionBetaStruct
     {
 
@@ -219,35 +267,45 @@ namespace Rye.Mining.Regression
     public abstract class RegressionAlgorithm
     {
 
-        public abstract RegressionParameterStruct Render(RegressionInputStruct Inputs);
+        public abstract RegressionParameterStruct Render(MiningModelSource Source);
 
-        public abstract RegressionErrorStruct RenderError(RegressionInputStruct Inputs, RegressionParameterStruct Parameters);
+        public abstract RegressionParameterStruct Render(MiningModelSource Source, int ThreadCount);
+
+        public abstract RegressionErrorStruct RenderError(MiningModelSource Source, RegressionParameterStruct Parameters);
+
+        public abstract RegressionErrorStruct RenderError(MiningModelSource Source, RegressionParameterStruct Parameters, int ThreadCount);
 
     }
 
     public sealed class RegressionAlgorithmLeastSquares : RegressionAlgorithm
     {
 
-        public override RegressionParameterStruct Render(RegressionInputStruct Inputs)
+        public override RegressionParameterStruct Render(MiningModelSource Source)
         {
 
             // Create a reader stream //
-            RecordReader stream = Inputs._Data.OpenReader(Inputs._Memory, Inputs._Where);
+            RecordReader stream = Source.Source.OpenReader(Source.Memory, Source.Where);
 
             // Create a regression input structure //
-            RegressionParameterStruct parameters = Inputs.BlankParameterStruct();
+            RegressionParameterStruct parameters = new RegressionParameterStruct(Source);
+
+            // Split out other variables so we don't need to keep calling the 'get' methods //
+            ExpressionCollection BigX = Source.Inputs;
+            ExpressionCollection BigY = Source.Outputs;
+            Expression BigW = Source.Weight;
+            Register BigR = Source.Memory;
 
             // Walk the reader //
             while (!stream.EndOfData)
             {
 
                 // Load the register //
-                Inputs._Memory.Value = stream.ReadNext();
+                BigR.Value = stream.ReadNext();
 
                 // Evaluate the inputs, outputs and weight //
-                Record x = Inputs._Inputs.Evaluate();
-                Record y = Inputs._Outputs.Evaluate();
-                Cell w = Inputs._Weight.Evaluate();
+                Record x = BigX.Evaluate();
+                Record y = BigY.Evaluate();
+                Cell w = BigW.Evaluate();
 
                 // Calculate the record level XtX and XtY //
                 for (int i = 0; i < x.Count; i++)
@@ -280,31 +338,44 @@ namespace Rye.Mining.Regression
                 
         }
 
-        public override RegressionErrorStruct RenderError(RegressionInputStruct Inputs, RegressionParameterStruct Parameters)
+        public override RegressionParameterStruct Render(MiningModelSource Source, int ThreadCount)
+        {
+
+            throw new NotImplementedException();
+
+        }
+
+        public override RegressionErrorStruct RenderError(MiningModelSource Source, RegressionParameterStruct Parameters)
         {
 
             // Create the cell matrixes //
-            CellMatrix sse = new CellMatrix(Inputs._Outputs.Count, 1, Cell.ZeroValue(CellAffinity.DOUBLE));
-            CellMatrix ssto = new CellMatrix(Inputs._Outputs.Count, 1, Cell.ZeroValue(CellAffinity.DOUBLE));
-            CellMatrix mean_sum = new CellMatrix(Inputs._Outputs.Count, 1, Cell.ZeroValue(CellAffinity.DOUBLE));
-            CellMatrix mean2_sum = new CellMatrix(Inputs._Outputs.Count, 1, Cell.ZeroValue(CellAffinity.DOUBLE));
+            CellMatrix sse = new CellMatrix(Source.Outputs.Count, 1, Cell.ZeroValue(CellAffinity.DOUBLE));
+            CellMatrix ssto = new CellMatrix(Source.Outputs.Count, 1, Cell.ZeroValue(CellAffinity.DOUBLE));
+            CellMatrix mean_sum = new CellMatrix(Source.Outputs.Count, 1, Cell.ZeroValue(CellAffinity.DOUBLE));
+            CellMatrix mean2_sum = new CellMatrix(Source.Outputs.Count, 1, Cell.ZeroValue(CellAffinity.DOUBLE));
             Cell wsum = Cell.ZeroValue(CellAffinity.DOUBLE);
             Cell obs = Cell.ZeroValue(CellAffinity.DOUBLE);
 
             // Create a reader stream //
-            RecordReader stream = Inputs._Data.OpenReader(Inputs._Memory, Inputs._Where);
+            RecordReader stream = Source.Source.OpenReader(Source.Memory, Source.Where);
+
+            // Split out other variables so we don't need to keep calling the 'get' methods //
+            ExpressionCollection BigX = Source.Inputs;
+            ExpressionCollection BigY = Source.Outputs;
+            Expression BigW = Source.Weight;
+            Register BigR = Source.Memory;
 
             // Walk the reader //
             while (!stream.EndOfData)
             {
 
                 // Load the register //
-                Inputs._Memory.Value = stream.ReadNext();
+                BigR.Value = stream.ReadNext();
 
                 // Evaluate the inputs, outputs and weight //
-                CellMatrix x = new CellMatrix(Inputs._Inputs.Evaluate(), CellAffinity.DOUBLE);
-                CellMatrix y = new CellMatrix(Inputs._Outputs.Evaluate(), CellAffinity.DOUBLE);
-                Cell w = Inputs._Weight.Evaluate();
+                CellMatrix x = new CellMatrix(BigX.Evaluate(), CellAffinity.DOUBLE);
+                CellMatrix y = new CellMatrix(BigY.Evaluate(), CellAffinity.DOUBLE);
+                Cell w = BigW.Evaluate();
 
                 // Get y-hat //
                 CellMatrix y_hat = new CellMatrix(y.RowCount, 1, Cell.ZeroValue(CellAffinity.DOUBLE));
@@ -333,7 +404,13 @@ namespace Rye.Mining.Regression
 
         }
 
+        public override RegressionErrorStruct RenderError(MiningModelSource Source, RegressionParameterStruct Parameters, int ThreadCount)
+        {
+            throw new NotImplementedException();
+        }
+
     }
+
 
     // Processes //
 

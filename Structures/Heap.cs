@@ -13,12 +13,15 @@ namespace Rye.Structures
         protected Dictionary<string, int> _RefSet;
         protected List<T> _Heap;
         protected List<bool> _IsReadOnly;
+        internal Guid _UID;
 
         public Heap()
         {
             _RefSet = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             _Heap = new List<T>();
             _IsReadOnly = new List<bool>();
+            this.Identifier = "UNKNOWN";
+            this._UID = Guid.NewGuid();
         }
 
         // Properties //
@@ -55,6 +58,12 @@ namespace Rye.Structures
                 this._Heap[Pointer] = value;
             }
 
+        }
+
+        public string Identifier
+        {
+            get;
+            set;
         }
 
         // Methods //
@@ -145,6 +154,19 @@ namespace Rye.Structures
         public List<T> Values
         {
             get { return this._Heap; }
+        }
+
+        public void Import(Heap<T> Value)
+        {
+
+            foreach (KeyValuePair<string, T> x in Value.Entries)
+            {
+
+                if (!this.Exists(x.Key))
+                    this.Allocate(x.Key, x.Value);
+
+            }
+
         }
 
     }

@@ -23,6 +23,12 @@ namespace Rye.MatrixExpressions
             this._heap = Mem;
         }
 
+        public Heap<CellMatrix> InnerHeap
+        {
+            get { return this._heap; }
+            set { this._heap = value; }
+        }
+
         public override CellMatrix Evaluate()
         {
             return this._heap[this._ref];

@@ -75,7 +75,7 @@ namespace Rye.Interpreter
 
             string name = context.generic_name().IDENTIFIER().Last().GetText();
             Heap<Cell> h = this._exp.GetScalarHeap(context.generic_name());
-            Method t = new MethodAssignScalar(this._master, h, h.GetPointer(name), null, 3);
+            Method t = new MethodAssignScalar(this._master, h, h.GetPointer(name), new ExpressionValue(null, Cell.NULL_INT), 3);
             this._master = t;
             return t;
 
@@ -86,7 +86,7 @@ namespace Rye.Interpreter
 
             string name = context.generic_name().IDENTIFIER().Last().GetText();
             Heap<Cell> h = this._exp.GetScalarHeap(context.generic_name());
-            Method t = new MethodAssignScalar(this._master, h, h.GetPointer(name), null, 4);
+            Method t = new MethodAssignScalar(this._master, h, h.GetPointer(name), new ExpressionValue(null, Cell.NULL_INT), 4);
             this._master = t;
             return t;
 
@@ -104,11 +104,11 @@ namespace Rye.Interpreter
             Method node;
             if (data.Header.Affinity == HeaderType.Table)
             {
-                node = MethodAppendToAsync.Optimize(this._master, data as Table, nodes);
+                node = new MethodAppendToAsync(this._master, data as Table, nodes);
             }
             else
             {
-                node = MethodAppendToAsync.Optimize(this._master, data as Extent, nodes);
+                node = new MethodAppendToAsync(this._master, data as Extent, nodes);
             }
 
             // Look for the sort statement //
@@ -234,9 +234,7 @@ namespace Rye.Interpreter
 
             ExpressionCollection vars = new ExpressionCollection();
             this._exp.AppendSet(vars, context.expression_or_wildcard_set());
-            Action go = () => { this._Session.IO.WriteLine(vars.Evaluate().ToString()); };
-
-            MethodGeneric t = new MethodGeneric(this._master, go);
+            MethodPrintE t = new MethodPrintE(this._master, this._Session, vars);
             return t;
 
         }
@@ -245,9 +243,7 @@ namespace Rye.Interpreter
         {
 
             MatrixExpression mat = this._mat.ToMatrix(context.matrix_expression());
-            Action go = () => { this._Session.IO.WriteLine(mat.Evaluate().ToString()); };
-
-            MethodGeneric t = new MethodGeneric(this._master, go);
+            MethodPrintM t = new MethodPrintM(this._master, this._Session, mat); 
             return t;
 
         }
@@ -262,9 +258,7 @@ namespace Rye.Interpreter
                 throw new RyeCompileException("Structure '{0}' does not exist", libname);
 
             Lambda l = this._Session.GetLambda(lname);
-            Action go = () => { this._Session.IO.WriteLine(l.FormatString()); };
-
-            MethodGeneric t = new MethodGeneric(this._master, go);
+            MethodPrintL t = new MethodPrintL(this._master, this._Session, l);
             return t;
 
         }

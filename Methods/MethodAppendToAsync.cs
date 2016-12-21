@@ -23,14 +23,11 @@ namespace Rye.Methods
             : base(Parent)
         {
 
-
             if (UseParentData.Columns.Count != UseFields.Columns.Count)
                 throw new ArgumentException("Output table and fields passed are not compatible");
 
             this._tParentData = UseParentData;
             this._eParentData = null;
-            this._RecordCache = UseParentData.PopLastOrGrow();
-            this._RecordCache.Header.PageSize = UseParentData.Header.PageSize;
             this._Fields = UseFields;
             this._IsTable = true;
 
@@ -45,14 +42,28 @@ namespace Rye.Methods
 
             this._tParentData = null;
             this._eParentData = UseParentData;
-            this._RecordCache = new Extent(UseParentData.Columns);
-            this._RecordCache.Header.PageSize = UseParentData.Header.PageSize;
             this._Fields = UseFields;
             this._IsTable = false;
 
         }
 
         // Base Implementations //
+        public override void BeginInvoke()
+        {
+
+            if (this._IsTable)
+            {
+                this._RecordCache = this._tParentData.NewShell();
+                this._RecordCache.Header.PageSize = this._tParentData.Header.PageSize;
+            }
+            else
+            {
+                this._RecordCache = new Extent(this._eParentData.Columns);
+                this._RecordCache.Header.PageSize = this._eParentData.Header.PageSize;
+            }
+
+        }
+
         public override void Invoke()
         {
 
@@ -60,7 +71,7 @@ namespace Rye.Methods
             if (this._RecordCache.IsFull && this._IsTable)
             {
                 this._tParentData.AddExtent(this._RecordCache);
-                this._RecordCache = this._tParentData.Grow();
+                this._RecordCache = this._tParentData.NewShell();
                 this._RecordCache.Header.PageSize = this._tParentData.Header.PageSize;
             }
             else if (this._RecordCache.IsFull)
@@ -80,15 +91,13 @@ namespace Rye.Methods
             // Append the data to the table //
             if (this._RecordCache.Count != 0 && this._IsTable)
             {
-
-                this._tParentData.SetExtent(this._RecordCache);
-
+                this._tParentData.AddExtent(this._RecordCache);
             }
             // Otherwise push all records into the extent //
             else if (this._RecordCache.Count != 0)
             {
 
-                foreach (Record r in this._RecordCache.Records)
+                foreach (Record r in this._RecordCache.Cache)
                 {
                     this._eParentData.Add(r);
                 }
@@ -103,9 +112,9 @@ namespace Rye.Methods
         public override Method CloneOfMe()
         {
             if (this._IsTable)
-                return new MethodAppendToAsync(this.Parent, this._tParentData, this._Fields);
+                return new MethodAppendToAsync(this.Parent, this._tParentData, this._Fields.CloneOfMe());
             else
-                return new MethodAppendToAsync(this.Parent, this._eParentData, this._Fields);
+                return new MethodAppendToAsync(this.Parent, this._eParentData, this._Fields.CloneOfMe());
         }
 
         public override string Message()
@@ -113,6 +122,7 @@ namespace Rye.Methods
             return string.Format("Append: {0}", this._Writes);
         }
 
+        /*
         public static Method Optimize(Method Parent, Table UseParentData, ExpressionCollection UseFields)
         {
 
@@ -130,9 +140,16 @@ namespace Rye.Methods
             return new MethodAppendToAsync(Parent, UseParentData, UseFields);
 
         }
+        */
+
+        public override List<Expression> InnerExpressions()
+        {
+            return this._Fields.Nodes.ToList();
+        }
 
     }
 
+    /*
     public sealed class MethodAppendToAsyncFast : Method
     {
 
@@ -156,7 +173,7 @@ namespace Rye.Methods
 
             this._tParentData = UseParentData;
             this._eParentData = null;
-            this._RecordCache = UseParentData.PopLastOrGrow();
+            this._RecordCache = this._tParentData.PopLastOrGrow();
             this._RecordCache.Header.PageSize = UseParentData.Header.PageSize;
             this._Fields = UseFields;
             this._IsTable = true;
@@ -182,9 +199,11 @@ namespace Rye.Methods
         // Base Implementations //
         public override void BeginInvoke()
         {
+
             this._CurrentCount = this._RecordCache.Count;
             this._MaxCount = (int)this._RecordCache.MaxRecordEstimate;
             this._IsFull = this._CurrentCount >= this._MaxCount;
+
         }
 
         public override void Invoke()
@@ -196,7 +215,7 @@ namespace Rye.Methods
             // Sink the cache to the parent table //
             if (this._IsFull && this._IsTable)
             {
-                this._tParentData.AddExtent(this._RecordCache);
+                this._tParentData.SetExtent(this._RecordCache);
                 this._RecordCache = this._tParentData.Grow();
                 this._RecordCache.Header.PageSize = this._tParentData.Header.PageSize;
                 this._CurrentCount = 0;
@@ -211,7 +230,7 @@ namespace Rye.Methods
             this._RecordCache._Cache.Add(this._Fields.Evaluate());
             this._CurrentCount++;
             this._Writes++;
-
+            
         }
 
         public override void EndInvoke()
@@ -241,9 +260,9 @@ namespace Rye.Methods
         public override Method CloneOfMe()
         {
             if (this._IsTable)
-                return new MethodAppendToAsyncFast(this.Parent, this._tParentData, this._Fields);
+                return new MethodAppendToAsyncFast(this.Parent, this._tParentData, this._Fields.CloneOfMe());
             else
-                return new MethodAppendToAsyncFast(this.Parent, this._eParentData, this._Fields);
+                return new MethodAppendToAsyncFast(this.Parent, this._eParentData, this._Fields.CloneOfMe());
         }
 
         public override string Message()
@@ -251,6 +270,12 @@ namespace Rye.Methods
             return string.Format("Append: {0}", this._Writes);
         }
 
+        public override List<Expression> InnerExpressions()
+        {
+            return this._Fields.Nodes.ToList();
+        }
+
     }
+    */
 
 }

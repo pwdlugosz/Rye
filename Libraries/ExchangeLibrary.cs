@@ -52,7 +52,7 @@ namespace Rye.Libraries
             {
 
                 case ExchangeLibrary.FROM_HTML:
-                    return ParameterCollectionSigniture.Parse(ExchangeLibrary.FROM_HTML, "Extracts a table from an HTML document", "PATH|The path to the HTML document|E|false;HTML_TAGS|The format string for the HTML table|E|false;DATA|The output table|T|false");
+                    return ParameterCollectionSigniture.Parse(ExchangeLibrary.FROM_HTML, "Extracts a table from an HTML document", "PATH|The path to the HTML document|Value|false;HTML_TAGS|The format string for the HTML table|Value|false;DATA|The output table|T|false");
 
             }
             throw new ArgumentException(string.Format("Method '{0}' does not exist", Name));
@@ -117,7 +117,11 @@ namespace Rye.Libraries
             {
 
                 case HTML_GET:
-                    return new CellFunctionFixedShell(HTML_GET, 2, CellAffinity.STRING, (x) => { return new Cell(Exchange.HTMLProvider.ToString(x[0].valueSTRING, x[1].valueSTRING));});
+                    return new CellFunctionFixedShell(HTML_GET, 2, CellAffinity.STRING, (x) => 
+                    {
+                        return new Cell(Exchange.HTMLProvider.ToString(x[0].valueSTRING, x[1].valueSTRING));
+                    }
+                    );
                 
             }
 

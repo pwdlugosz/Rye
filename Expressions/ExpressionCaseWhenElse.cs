@@ -53,11 +53,14 @@ namespace Rye.Expressions
         public override Expression CloneOfMe()
         {
 
-            Expression e = new ExpressionCaseWhenElse(this.ParentNode, this._ReturnAffinity);
-            foreach (Expression s in this._Cache)
-                e.AddChildNode(e.CloneOfMe());
-
-            return e;
+            Expression Dolly = new ExpressionCaseWhenElse(this.ParentNode, this._ReturnAffinity);
+            foreach (Expression n in this._Cache)
+            {
+                Expression clone = n.CloneOfMe();
+                clone.ParentNode = Dolly;
+                Dolly.AddChildNode(clone);
+            }
+            return Dolly;
 
         }
 

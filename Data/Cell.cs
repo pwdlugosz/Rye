@@ -230,6 +230,7 @@ namespace Rye.Data
             {
                 this.STRING = "\0";
                 this.NULL = 1;
+                return;
             }
 
             // Remove the quotes //
@@ -2058,7 +2059,7 @@ namespace Rye.Data
          */
 
         /// <summary>
-        /// Performs the log base E; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the log base Value; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
         /// <param name="C">Cell value</param>
         /// <returns>Cell value</returns>
@@ -2136,7 +2137,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Performs the exponential base E; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the exponential base Value; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
         /// <param name="C">Cell value</param>
         /// <returns>Cell value</returns>

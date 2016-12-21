@@ -39,7 +39,13 @@ namespace Rye.Methods
             this._ptrControll = CellPointer;
 
         }
-        
+
+        public Heap<Cell> InnerHeap
+        {
+            get { return this._Heap; }
+            set { this._Heap = value; }
+        }
+
         public override void BeginInvoke()
         {
             base.BeginInvoke();
@@ -96,10 +102,15 @@ namespace Rye.Methods
 
         public override Method CloneOfMe()
         {
-            MethodFor node = new MethodFor(this.Parent, this._Begin, this._End, this._Step, this._Heap, this._ptrControll);
+            MethodFor node = new MethodFor(this.Parent, this._Begin.CloneOfMe(), this._End.CloneOfMe(), this._Step.CloneOfMe(), this._Heap, this._ptrControll);
             foreach (Method t in this._Children)
                 node.AddChild(t.CloneOfMe());
             return node;
+        }
+
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>() { this._Begin, this._End, this._Step };
         }
 
     }

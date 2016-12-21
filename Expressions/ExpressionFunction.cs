@@ -65,7 +65,11 @@ namespace Rye.Expressions
         {
             ExpressionResult Dolly = new ExpressionResult(this.ParentNode, this._Func);
             foreach (Expression n in this._Cache)
-                Dolly.AddChildNode(n.CloneOfMe());
+            {
+                Expression clone = n.CloneOfMe();
+                clone.ParentNode = Dolly;
+                Dolly.AddChildNode(clone);
+            }
             return Dolly;
         }
 
@@ -75,6 +79,18 @@ namespace Rye.Expressions
             {
                 return this._Func.IsVolatile;
             }
+        }
+
+        public override int DataSize()
+        {
+
+            List<int> sizes = new List<int>();
+            foreach (Expression e in this._Cache)
+                sizes.Add(e.DataSize());
+
+            int size = this._Func.ReturnSize(this.ReturnAffinity(), sizes.ToArray());
+
+            return size;
         }
 
     }

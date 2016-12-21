@@ -9,7 +9,7 @@ using Rye.Structures;
 namespace Rye.Expressions
 {
 
-    public sealed class ExpressionCollection
+    public sealed class ExpressionCollection : IRegisterExtractor
     {
 
         private Heap<Expression> _Nodes;
@@ -110,23 +110,7 @@ namespace Rye.Expressions
                 throw new Exception(string.Format("Alias '{0}' already exists", Alias));
 
             // Handle the registers //
-            List<Register> reg = Node.GetMemoryRegisters();
-            foreach (Register r in reg)
-            {
-                
-                // If it exists, check the UID //
-                if (this._Registers.Exists(r.Name))
-                {
-                    if (r.UID != this._Registers[r.Name].UID)
-                        throw new DuplicateWaitObjectException(string.Format("Register with alias '{0}' already exists with UID '{1}'; '{2}' is the UID of new expression", r.Name, this._Registers[r.Name].UID, r.UID));
-                }
-                // Otherwise, add the register //
-                else
-                {
-                    this._Registers.Allocate(r.Name, r);
-                }
-
-            }
+            this._Registers.Import(Node.GetMemoryRegisters());
 
             this._Nodes.Allocate(Alias, Node);
 
@@ -134,7 +118,7 @@ namespace Rye.Expressions
 
         public void Add(Expression Node)
         {
-            this.Add(Node, "E" + this.Count.ToString());
+            this.Add(Node, "Value" + this.Count.ToString());
         }
 
         // Methods //
@@ -182,33 +166,45 @@ namespace Rye.Expressions
         }
 
         // Register Handles //
-        public List<Register> GetMemoryRegisters()
+        public Heap<Register> GetMemoryRegisters()
         {
-            return this._Registers.Values;
+            return this._Registers;
         }
 
-        public void AssignMemoryRegister(Register OldMemoryRegister, Register NewMemoryRegister)
+        public void ForceMemoryRegister(Register NewRegister)
         {
 
-            // Check that the cache entry's UID matches the old register's UID //
-            if (!this._Registers.Exists(OldMemoryRegister.Name))
-                return; // Don't want to error out if we try to override a non-existant register //
-
-            // Actually assign the heap //
-            this._Registers[OldMemoryRegister.Name] = NewMemoryRegister;
-
-            // Update the root nodes for each expression //
-            foreach (Expression e in this._Nodes.Values)
+            foreach (Expression x in this._Nodes.Values)
             {
-                e.AssignMemoryRegister(OldMemoryRegister, NewMemoryRegister);
+                Expression.AssignRegister(x, NewRegister);
             }
 
+        }
+
+        public void ForceMemoryRegister(Heap<Register> NewRegisters)
+        {
+
+            foreach (Expression x in this._Nodes.Values)
+            {
+                Expression.AssignRegister(x, NewRegisters);
+            }
 
         }
 
-        public Register GetMemoryRegister(string Alias)
+        public void ForceCellHeap(Heap<Cell> NewHeap)
         {
-            return this._Registers[Alias];
+            foreach (Expression x in this._Nodes.Values)
+            {
+                Expression.AssignCellHeap(x, NewHeap);
+            }
+        }
+
+        public void ForceCellMaxtrixHeap(Heap<CellMatrix> NewHeap)
+        {
+            foreach (Expression x in this._Nodes.Values)
+            {
+                Expression.AssignMatrixHeap(x, NewHeap);
+            }
         }
 
         // Statics //
@@ -266,8 +262,21 @@ namespace Rye.Expressions
 
         }
 
-    }
+        /// <summary>
+        /// Forces all registers to be assigned to the given register; does not check that the new register and the old register share the same identifier
+        /// </summary>
+        /// <param name="E"></param>
+        /// <param name="R"></param>
+        public static void ForceAssignRegister(ExpressionCollection E, Register R)
+        {
 
+            foreach (Expression e in E.Nodes)
+                Expression.ForceAssignRegister(e, R);
+
+        }
+
+
+    }
 
 
 }

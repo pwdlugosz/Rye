@@ -46,6 +46,11 @@ namespace Rye.MatrixExpressions
             return node;
         }
 
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>() { this._expression };
+        }
+
     }
 
 }

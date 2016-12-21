@@ -38,6 +38,12 @@ namespace Rye.Methods
             this._AssignID = AssignID;
         }
 
+        public Heap<Cell> InnerHeap
+        {
+            get {return this._Heap;}
+            set { this._Heap = value;}
+        }
+
         public override void Invoke()
         {
             switch (this._AssignID)
@@ -77,6 +83,11 @@ namespace Rye.Methods
         public override Method CloneOfMe()
         {
             return new MethodAssignScalar(this.Parent, this._Heap, this._Index, this._Mapping.CloneOfMe(), this._AssignID);
+        }
+
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>() { this._Mapping };
         }
 
     }

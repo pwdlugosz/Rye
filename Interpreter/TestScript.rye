@@ -3,85 +3,436 @@
 CONNECT
 {
 	TEMP TO 'C:\Users\pwdlu_000\Documents\Rye Projects\Temp\';
-	FINBASE TO 'C:\Users\pwdlu_000\Documents\Finance\Datasets\';
-	FIN_MASTER TO 'C:\Users\pwdlu_000\Documents\Finance\Support_Files\';
+	CMS TO 'C:\Users\pwdlu_000\Documents\Data\Medicare_Gov\Datasets\';
 };
+
+/*
+
+	CREATE TABLE CMS.SSA_FIPS_XWALK PAGE_SIZE = 512 KB
+	{
+
+		COUNTY_NM AS STRING.64,
+		STATE_ABV AS STRING.2,
+		SSA_CD AS INT,
+		FIPS_CD AS INT,
+		CBSA_CD AS STRING.10,
+		CBSA_NM AS STRING.32
+	};
+	SELECT
+	{
+		FROM 'C:\Users\pwdlu_000\Documents\Data\Medicare_Gov\CBSAtoCountycrosswalk_FY13.txt', TAB, NULL, 1;
+	};
+
+	CREATE TABLE CMS.ZIP_FIPS_XWALK PAGE_SIZE = 512 KB
+	{
+		ZIP_CD AS INT,
+		STATE AS INT,
+		COUNTY AS INT, 
+		FIPS_CD AS INT,
+		POPPT AS INT,
+		HUPT AS INT,
+		AREAPT AS INT,
+		AREALANDPT AS INT,
+		ZPOP AS INT,
+		ZHU AS INT,
+		ZAREA AS INT,
+		ZAREALAND AS INT,
+		COPOP AS INT,
+		COHU AS INT,
+		COAREA AS INT,
+		COAREALAND AS INT,
+		ZPOPPCT AS NUM,
+		ZHUPCT AS NUM,
+		ZAREAPCT AS NUM,
+		ZAREALANDPCT AS NUM,
+		COPOPPCT AS NUM,
+		COHUPCT AS NUM,
+		COAREAPCT AS NUM,
+		COAREALANDPCT AS NUM
+
+	};
+	SELECT
+	{
+		FROM 'C:\Users\pwdlu_000\Documents\Data\Medicare_Gov\ZipToStateCounty.txt', ',', NULL, 1;
+	};
+
+
+	CREATE TABLE CMS.PLAN_SA_2017 PAGE_SIZE = 16 MB
+	{
+
+		PBP_A_HNUMBER AS STRING.5,
+		PBP_A_PLAN_IDENTIFIER AS STRING.3,
+		PBP_A_SEGMENT_ID AS STRING.3,
+		PBP_A_BEN_COV AS STRING.1,
+		PBP_A_PLAN_TYPE AS STRING.2,	
+		ORGTYPE AS STRING.2,
+		BID_ID AS STRING.13,
+		CONTRACT_ID AS STRING.5,
+		PLAN_ID AS STRING.3,
+		SEGMENT_ID AS STRING.3,
+		COUNTY_CODE AS INT,
+		PENDING_FLAG AS STRING.1, 
+		PARTIAL_FLAG AS STRING.1,
+		CONTRACT_YEAR AS INT,
+		EGHP_FLAG AS STRING.1,
+		COUNTY AS STRING.75,
+		STCD AS STRING.2
+
+	};
+	SELECT
+	{
+		FROM 'C:\Users\pwdlu_000\Documents\Data\Medicare_Gov\PlanArea.txt', TAB, NULL, 1;
+	};
+
+*/
+
+// SELECT A DISTINCT PLAN LIST //
+
+/*
+
+	SELECT
+	{
+		FROM CMS.PLAN_SA_2017 AS T;
+	};
+	DECLARE
+	{
+		LAG_BID_ID AS STRING.13;
+		PLAN_CNT AS INT = 0;
+	};
+	MAIN
+	{
+
+		IF T.BID_ID != LOCAL.LAG_BID_ID THEN DO
+		{
+
+			APPEND
+			{
+				NEW TEMP.PLAN_S1;
+				RETAIN
+					PBP_A_HNUMBER AS CNTRCTID,
+					PBP_A_PLAN_IDENTIFIER AS PLNID,
+					PBP_A_SEGMENT_ID AS SGMNTID,
+					COUNTY_CODE AS SSA_CD,
+					COUNTY AS CNTY_NM,
+					STCD AS ST_ABV,
+					BID_ID
+				;
+			};
+
+			LOCAL.PLAN_CNT++;
+
+		};
+
+		LOCAL.LAG_BID_ID = T.BID_ID;
+
+	};
+	REDUCE
+	{
+		PRINT LOCAL.PLAN_CNT;
+	};
+
+	tablix.about
+	{
+		data = table TEMP.PLAN_S1;
+	};
+
+
+	// JOIN TO THE FIPS TABLE //
+	JOIN
+	{
+		FROM TEMP.PLAN_S1 AS A;
+		FROM CMS.SSA_FIPS_XWALK AS B;
+	};
+	ON
+	{
+		A.SSA_CD == B.SSA_CD;
+	};
+	APPEND
+	{
+		NEW TEMP.PLAN_S2;
+		RETAIN
+			A.*,
+			B.FIPS_CD
+		;
+	};
+
+
+
+
+	// JOIN TO THE ZIP CODE TABLE //
+	JOIN
+	{
+		FROM TEMP.PLAN_S2 AS A;
+		FROM CMS.ZIP_FIPS_XWALK AS B;
+	};
+	ON
+	{
+		A.FIPS_CD == B.FIPS_CD;
+	};
+	APPEND
+	{
+		NEW TEMP.PLAN_S3;
+		RETAIN
+			A.*,
+			B.ZIP_CD
+		;
+		SORT BID_ID;
+	};
+
+
+*/
+
 
 /*
 
 	DECLARE
 	{
-		PROC_SCRIPT AS STRING;
-	};
-
-	PROC_SCRIPT = 
-	$$
-
-		SELECT
-		{
-			FROM FINBASE.@TICKER_EARNINGS AS T;
-		};
-		MAIN
-		{
-			APPEND
-			{
-				FIN_MASTER.MASTER_EARNINGS;
-				RETAIN
-					T.*;
-			};
-		};
-
-	$$;
-
-
-	CREATE TABLE FIN_MASTER.MASTER_EARNINGS PAGE_SIZE = 16 MB
-	{
-		TICKER AS STRING.10,
-		FILE_DT AS DATE,
-		RPT_DT AS STRING,
-		EST_AMT AS NUM,
-		ACT_AMT AS NUM
+		BUILD_URL(SSA_CD, FIPS_CD, ZIP_CD, COUNTY, STATE, CONTRACT, PBP, SEGMENT) AS LAMBDA
+		=
+		"https://www.medicare.gov/find-a-plan/results/planresults/plan-details.aspx?TT=PUBLIC&HM=False&CNTY=" + SSA_CD + "|" + COUNTY + "|" + STATE + "0&SL=2&CY=2017&ADL=-1&MPL=-1&PTL=MAPD&NWC=0|1&AD=0&MOA=0|1&CGO=0|1&FIPSCC=" + FIPS_CD + "&ZC=" + ZIP_CD + "&SP=100&HS=3&elink=yes&cntrctid=" + CONTRACT + "&plnid=" + PBP + "&sgmntid=" + SEGMENT + "&DIID=-1";
 
 	};
 
 	SELECT
 	{
-		FROM FIN_MASTER.TICKERS AS T;
-		WHERE POSITION(T.TICKER, '-', 0) == NULL;
+		FROM TEMP.PLAN_S3 AS T;
+	};
+	DECLARE
+	{
+		CACHE_PATH AS STRING.128;
+		URL AS STRING.400;
 	};
 	MAIN
 	{
 
-		IF (TABLIX.EXISTS('FINBASE.' + TICKER + '_EARNINGS')) THEN
-		DO
+		URL = BUILD_URL(SSA_CD, FIPS_CD, ZIP_CD, CNTY_NM, ST_ABV, CNTRCTID, PLNID, SGMNTID);
+		CACHE_PATH = 'C:\Users\pwdlu_000\Documents\Data\Medicare_Gov\Flat_Files\' + BID_ID + ".html";
+
+		APPEND
 		{
-
-			EXEC
-			{
-				SCRIPT = PROC_SCRIPT;
-				NO_PRINT;
-				@TICKER = TICKER;
-			};
-
-			PRINT '----- {' + TICKER + '} -----';
-
+			NEW TEMP.PLAN_URL;
+			RETAIN
+				T.*,
+				URL,
+				CACHE_PATH
+			;
+			//DUMP 'C:\Users\pwdlu_000\Documents\Data\Medicare_Gov\Plan_URL.csv', ',';
 		};
 
 	};
 
 */
 
+/*
 
-FILE.EXPORT
+SELECT
 {
-	DATA = TABLE FIN_MASTER.MASTER_EARNINGS;
-	PATH = 'C:\Users\pwdlu_000\Documents\Finance\EarningsData.csv';
-	DELIM = ',';
+	FROM TEMP.PLAN_URL AS T;
+	WHERE (PLNID -> INT) < 800;
+};
+DECLARE
+{
+
+	PART_B_PREM AS STRING.10;
+	TOTAL_PREM AS STRING.10;
+	MED_PREM AS STRING.10;
+	DRUG_PREM AS STRING.10;
+
+	IP_OOPC_AMT AS STRING.10;
+	OP_OOPC_AMT AS STRING.10;
+	DENTAL_OOPC_AMT AS STRING.10;
+	OTHER_OOPC_AMT AS STRING.10;
+	MED_TOTAL_OOPC_AMT AS STRING.10;
+	MED_ANNUAL_OOPC_AMT AS STRING.10;
+	DRUG_ANNUAL_OOPC_AMT AS STRING.10;
+
+	LAST_FAIL AS BOOL = FALSE;
+	LAG_BID_ID AS STRING.13;
+	FAIL_CNT AS INT = 0;
+
+};
+MAIN
+{
+
+	IF LOCAL.LAG_BID_ID != T.BID_ID OR (LOCAL.LAST_FAIL == TRUE AND LOCAL.FAIL_CNT <= 3) THEN DO
+	{
+
+		WEB.NAVIGATE_URL
+		{
+			URL = T.URL;
+		};
+		
+		LOCAL.PART_B_PREM = WEB.EXTRACT('#ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewPartBPremiumVal', 0);
+		LOCAL.TOTAL_PREM = WEB.EXTRACT('#ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewTotalPremiumVal', 0);
+		LOCAL.MED_PREM = WEB.EXTRACT('#ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanBenefitsPanel_BenefitsMonthlyPlanPremiumText', 0);
+		LOCAL.DRUG_PREM = WEB.EXTRACT('#ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanBenefitsPanel_BenefitsMonthlyDrugPremiumText', 0);
+
+		LOCAL.IP_OOPC_AMT = WEB.EXTRACT('#ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewInpatientCareVal', 0);
+		LOCAL.OP_OOPC_AMT = WEB.EXTRACT('#ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewOutpatientPrescriptionDrugsVal', 0);
+		LOCAL.DENTAL_OOPC_AMT = WEB.EXTRACT('#ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewDentalServicesVal', 0);
+		LOCAL.OTHER_OOPC_AMT = WEB.EXTRACT('#ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewAllOtherServicesVal', 0);
+		LOCAL.MED_TOTAL_OOPC_AMT = WEB.EXTRACT('#ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewTotalMonthlyEstimateVal', 0);
+		LOCAL.MED_ANNUAL_OOPC_AMT = WEB.EXTRACT('#ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewTotalAnnualEstimateVal', 0);
+		LOCAL.DRUG_ANNUAL_OOPC_AMT = WEB.EXTRACT('#ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_DrugCostPanel_AverageAnnualDrugCostValue', 0);
+
+		// CHECK IF THE PAGE IS A DUD, IF SO, SET THE FAIL FLAG TO TRUE //
+		LOCAL.LAST_FAIL = (LOCAL.PART_B_PREM == NULL);
+
+		// IF THE LAST FAIL IS NOT NULL, EXPORT THE RESULTS //
+		IF LOCAL.LAST_FAIL == FALSE THEN DO
+		{
+
+			PRINT 'SUCSESS: ' + BID_ID;
+
+			APPEND
+			{
+
+				NEW CMS.PLAN_DATA_2017;
+				RETAIN
+					'"' + T.BID_ID + '"' AS BID_ID,
+					'"' + LOCAL.PART_B_PREM + '"' AS PART_B_PREM,
+					'"' + LOCAL.TOTAL_PREM + '"' AS TOTAL_PREM,
+					'"' + LOCAL.MED_PREM + '"' AS MED_PREM,
+					'"' + LOCAL.DRUG_PREM + '"' AS DRUG_PREM,
+
+					'"' + LOCAL.IP_OOPC_AMT + '"' AS IP_OOPC_AMT,
+					'"' + LOCAL.OP_OOPC_AMT + '"' AS OP_OOPC_AMT ,
+					'"' + LOCAL.DENTAL_OOPC_AMT + '"' AS DENTAL_OOPC_AMT,
+					'"' + LOCAL.OTHER_OOPC_AMT + '"' AS OTHER_OOPC_AMT,
+					'"' + LOCAL.MED_TOTAL_OOPC_AMT + '"' AS MED_TOTAL_OOPC_AMT,
+					'"' + LOCAL.MED_ANNUAL_OOPC_AMT + '"' AS MED_ANNUAL_OOPC_AMT,
+					'"' + LOCAL.DRUG_ANNUAL_OOPC_AMT + '"' AS DRUG_ANNUAL_OOPC_AMT,
+					'"' + T.URL + '"' AS URL
+				;
+				DUMP 'C:\Users\pwdlu_000\Documents\Data\Medicare_Gov\All_2017.csv', ',';
+
+			};
+
+			FAIL_CNT = 0;
+
+		};
+		ELSE DO
+		{
+			PRINT 'FAIL: ' + BID_ID;
+			FAIL_CNT++;
+		};
+
+	};
+	
+	// SET THE LAGGED BID ID //
+	LOCAL.LAG_BID_ID = T.BID_ID;
+
+
 };
 
+*/
 
 
+DECLARE { TICKS AS INT = 0; };
 
+SYSTEM.SET_SEED
+{
+	SEED = 127;
+};
+
+FOR GLOBAL.TICKS = 1 TO 2000
+DO
+{
+
+	APPEND
+	{
+		NEW TEMP.TEST1 PAGE_SIZE = 8 KB;
+		RETAIN
+			TICKS AS KEY,
+			('LEFT' -> STRING.5) AS T_ID,
+			RAND_NUM() AS VALUE
+		;
+	};
+
+	APPEND
+	{
+		NEW TEMP.TEST2 PAGE_SIZE = 8 KB;
+		RETAIN
+			TICKS AS KEY,
+			'RIGHT' AS T_ID,
+			RAND_NUM() AS VALUE
+		;
+	};
+
+};
+
+TABLIX.ABOUT
+{
+	DATA = TABLE TEMP.TEST1;
+};
+
+TABLIX.ABOUT
+{
+	DATA = TABLE TEMP.TEST2;
+};
+
+JOIN
+{
+	FROM TEMP.TEST1 AS A;
+	FROM TEMP.TEST2 AS B;
+	THREADS = 2;
+};
+ON
+{
+	A.KEY = B.KEY;
+};
+APPEND
+{
+	NEW TEMP.TEST3 PAGE_SIZE = 8 KB;
+	RETAIN
+		A.KEY,
+		A.T_ID AS A_ID,
+		B.T_ID AS B_ID,
+		A.VALUE AS A_VAL,
+		B.VALUE AS B_VAL,
+		THREADID() AS TID
+	;
+	DUMP 'C:\Users\pwdlu_000\Documents\Rye Projects\Test3.csv', ',';
+};
+
+TABLIX.ABOUT
+{
+	DATA = TABLE TEMP.TEST3;
+};
+
+AGGREGATE
+{
+	FROM TEMP.TEST3 AS T;
+	HINT 'sort';
+	THREADS = 2;
+};
+BY
+{
+	KEY % 10 AS GROUPER;
+};
+OVER
+{
+	COUNT_ALL() AS CNT_A,
+	MIN(A_VAL) AS MIN_A,
+	MAX(A_VAL) AS MAX_A,
+	AVG(A_VAL) AS AVG_A,
+	STDEV(A_VAL) AS STDEV_A
+	;
+};
+APPEND
+{
+	NEW TEMP.TEST4 PAGE_SIZE = 8 KB;
+	RETAIN
+		GROUPER,
+		CNT_A,
+		MIN_A,
+		MAX_A,
+		AVG_A,
+		STDEV_A,
+		(MAX_A + MIN_A) / (2D) AS QUASI_AVG_A
+	;
+	DUMP 'C:\Users\pwdlu_000\Documents\Rye Projects\Test4.csv', ',';
+};
 
 
 

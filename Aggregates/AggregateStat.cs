@@ -116,6 +116,11 @@ namespace Rye.Aggregates
             return this._MapX.DataSize();
         }
 
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>() { this._F.Node, this._MapX, this._MapW };
+        }
+
     }
 
 }

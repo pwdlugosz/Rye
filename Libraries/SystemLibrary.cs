@@ -246,7 +246,7 @@ namespace Rye.Libraries
                 case SUPRESS:
                     return Methods.ParameterCollectionSigniture.Parse(SUPRESS, "Toggles IO supression on or off", ParameterCollectionSigniture.ZERO_PARAMETER);
                 case SET_SEED:
-                    return Methods.ParameterCollectionSigniture.Parse(SET_SEED, "Sets the seed of the internal Rye random number generator", "SEED|An integer seed|E|false");
+                    return Methods.ParameterCollectionSigniture.Parse(SET_SEED, "Sets the seed of the internal Rye random number generator", "SEED|An integer seed|Value|false");
 
             }
             throw new ArgumentException(string.Format("Method '{0}' does not exist", Name));

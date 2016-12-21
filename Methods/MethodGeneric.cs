@@ -9,27 +9,27 @@ using Rye.Expressions;
 namespace Rye.Methods
 {
     
-    public sealed class MethodGeneric : Method
-    {
+    //public sealed class MethodGeneric : Method
+    //{
 
-        private Action _delegate;
+    //    private Action _delegate;
 
-        public MethodGeneric(Method Parent, Action Delegate)
-            : base(Parent)
-        {
-            this._delegate = Delegate;
-        }
+    //    public MethodGeneric(Method Parent, Action Delegate)
+    //        : base(Parent)
+    //    {
+    //        this._delegate = Delegate;
+    //    }
 
-        public override void Invoke()
-        {
-            this._delegate();
-        }
+    //    public override void Invoke()
+    //    {
+    //        this._delegate();
+    //    }
 
-        public override Method CloneOfMe()
-        {
-            return new MethodGeneric(this._Parent, this._delegate);
-        }
+    //    public override Method CloneOfMe()
+    //    {
+    //        return new MethodGeneric(this._Parent, this._delegate);
+    //    }
 
-    }
+    //}
 
 }

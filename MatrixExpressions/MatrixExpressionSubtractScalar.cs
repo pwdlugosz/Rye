@@ -45,6 +45,11 @@ namespace Rye.MatrixExpressions
                 node.AddChildNode(m.CloneOfMe());
             return node;
         }
+        
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>() { this._expression };
+        }
 
     }
 

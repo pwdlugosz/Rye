@@ -16,7 +16,7 @@ namespace Rye.Methods
     {
 
         private RecordWriter _writer;
-        private ExpressionCollection _output;
+        private ExpressionCollection _Fields;
         private long _writes = 0;
 
         public MethodAppendTo(Method Parent, RecordWriter Writer, ExpressionCollection Output)
@@ -28,7 +28,7 @@ namespace Rye.Methods
                 throw new Exception("Attempting to write a different number of recors to a stream");
 
             this._writer = Writer;
-            this._output = Output;
+            this._Fields = Output;
 
         }
 
@@ -39,7 +39,7 @@ namespace Rye.Methods
 
         public override void Invoke()
         {
-            Record r = this._output.Evaluate();
+            Record r = this._Fields.Evaluate();
             this._writer.Insert(r);
             this._writes++;
         }
@@ -57,9 +57,13 @@ namespace Rye.Methods
 
         public override Method CloneOfMe()
         {
-            return new MethodAppendTo(this.Parent, this._writer, this._output.CloneOfMe());
+            return new MethodAppendTo(this.Parent, this._writer, this._Fields.CloneOfMe());
         }
 
+        public override List<Expression> InnerExpressions()
+        {
+            return this._Fields.Nodes.ToList();
+        }
 
     }
 

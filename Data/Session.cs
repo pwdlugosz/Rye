@@ -41,12 +41,25 @@ namespace Rye.Data
 
             // Generate all our data objects //
             this._extents = new Heap<Extent>();
+            this._extents.Identifier = "GLOBAL";
+
             this._connections = new Heap<string>();
+            this._connections.Identifier = "GLOBAL";
+
             this._scalars = new Heap<Cell>();
+            this._scalars.Identifier = "GLOBAL";
+
             this._matrixes = new Heap<CellMatrix>();
+            this._matrixes.Identifier = "GLOBAL";
+
             this._lambdas = new Heap<Lambda>();
+            this._lambdas.Identifier = "GLOBAL";
+
             this._functions = new Heap<FunctionLibrary>();
+            this._functions.Identifier = "GLOBAL";
+
             this._methods = new Heap<MethodLibrary>();
+            this._methods.Identifier = "GLOBAL";
             
             // Load our use objects //
             this._kernel = Driver;
@@ -112,7 +125,12 @@ namespace Rye.Data
             get;
             set;
         }
-        
+
+        public int MaxThreadCount
+        {
+            get { return Environment.ProcessorCount; }
+        }
+
         // Support //
         public bool IsGlobal(string NameSpace)
         {
@@ -211,7 +229,7 @@ namespace Rye.Data
         {
 
             if (!this.ConnectionExists(DB))
-                throw new ArgumentException(string.Format("ShartTable {0}.{1} does not exist", DB, Name));
+                throw new ArgumentException(string.Format("Table {0}.{1} does not exist", DB, Name));
 
             string dir = this.GetConnection(DB);
             string path1 = Header.FilePath(dir, Name, this._kernel.DefaultExtension);

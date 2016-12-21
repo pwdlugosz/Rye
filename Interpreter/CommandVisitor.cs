@@ -222,6 +222,28 @@ namespace Rye.Interpreter
                 this._enviro.IO.WriteLine("\tImported '{0}'; {1} record{2}", path, x.RecordCount, x.RecordCount != 1 ? "s" : "");
 
             }
+            else if (context.K_SCRIPT() != null)
+            {
+
+                // Get the expressions //
+                ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
+                ExpressionCollection vals = exp.ToNodes(context.expression());
+                
+                // Get the text //
+                string Text = vals[0].Evaluate().valueSTRING;
+
+                // Get the row delim //
+                char[] RowDelim = (vals.Count > 1 ? vals[1].Evaluate().valueSTRING.ToCharArray() : "\n".ToCharArray());
+
+                // Get the column delim //
+                char[] ColDelim = (vals.Count > 2 ? vals[2].Evaluate().valueSTRING.ToCharArray() : ",".ToCharArray());
+
+                // Get the escape //
+                char Escape = (vals.Count > 3 ? vals[2].Evaluate().valueSTRING.ToCharArray().First() : char.MinValue);
+
+                Exchange.ObjectExchange.ParseTable(x, Text, RowDelim, ColDelim, Escape);
+
+            }
             
             this._enviro.IO.WriteLine();
 
@@ -266,91 +288,187 @@ namespace Rye.Interpreter
         }
 
         // Select / Read //
+        //public override int VisitCommand_read(RyeParser.Command_readContext context)
+        //{
+
+        //    // Notifiy //
+        //    this._enviro.IO.WriteHeader("Select");
+            
+        //    // Get some high level data first, such as thread count, 'where' clause, and source data //
+        //    TabularData data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
+        //    int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
+        //    List<SelectProcessNode> nodes = new List<SelectProcessNode>();
+        //    string alias = (context.base_clause().IDENTIFIER() == null ? data.Header.Name : context.base_clause().IDENTIFIER().GetText());
+
+        //    // Render each node //
+        //    for (int i = 0; i < threads; i++)
+        //    {
+
+        //        // Create an expression visitor //
+        //        ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
+
+        //        // Create the local heap //
+        //        Heap<Cell> lscalars = new Heap<Cell>();
+        //        Heap<CellMatrix> lmatrixes = new Heap<CellMatrix>();
+        //        lscalars.Allocate(SelectProcessNode.ROW_ID, Cell.ZeroValue(CellAffinity.INT));
+        //        lscalars.Allocate(SelectProcessNode.EXTENT_ID, Cell.ZeroValue(CellAffinity.INT));
+        //        lscalars.Allocate(SelectProcessNode.KEY_CHANGE, Cell.FALSE);
+        //        lscalars.Allocate(SelectProcessNode.IS_FIRST, Cell.FALSE);
+        //        lscalars.Allocate(SelectProcessNode.IS_LAST, Cell.FALSE);
+
+        //        // Create a register //
+        //        Register reg = new Register(alias, data.Columns);
+
+        //        // Accumulate the heap and register to the expression visitor //
+        //        exp.AddRegister(alias, reg);
+        //        exp.SetSecondary("LOCAL", lscalars, lmatrixes);
+
+        //        // Process the 'by' clause //
+        //        ExpressionCollection by_clause = (context.by_clause() == null ? null : exp.ToNodes(context.by_clause().expression_or_wildcard_set()));
+
+        //        // Create a matrix visitor //
+        //        MatrixExpressionVisitor mat = new MatrixExpressionVisitor(exp, this._enviro);
+                
+        //        // Create a method visitor //
+        //        MethodVisitor met = new MethodVisitor(exp, mat, this._enviro, threads != 1);
+                
+        //        // Load the local heap //
+        //        if (context.command_declare() != null)
+        //        {
+
+        //            foreach (RyeParser.Unit_declare_scalarContext ctx in context.command_declare().unit_declare_scalar())
+        //            {
+        //                string sname = ctx.IDENTIFIER().GetText();
+        //                CompilerHelper.AppendScalar(this._enviro, lscalars, exp, ctx);
+        //            }
+        //            foreach (RyeParser.Unit_declare_matrixContext ctx in context.command_declare().unit_declare_matrix())
+        //            {
+        //                string sname = ctx.IDENTIFIER().GetText();
+        //                CompilerHelper.AppendMatrix(this._enviro, lmatrixes, exp, ctx);
+        //            }
+
+        //        }
+        //        // Get whatever where clause we need //
+        //        Filter where = CompilerHelper.GetWhere(exp, context.base_clause().where_clause());
+
+        //        // Create the mapping methods //
+        //        MethodCollection map = new MethodCollection();
+        //        foreach (RyeParser.MethodContext ctx in context.map_clause().method())
+        //        {
+        //            map.Add(met.Visit(ctx));
+        //        }
+
+        //        // Build the reducing methods //
+        //        MethodCollection reduce = new MethodCollection();
+        //        if (context.reduce_clause() != null)
+        //        {
+        //            foreach (RyeParser.MethodContext ctx in context.reduce_clause().method())
+        //            {
+        //                reduce.Add(met.Visit(ctx));
+        //            }
+        //        }
+                
+        //        // Render the worker node //
+        //        SelectProcessNode node = new SelectProcessNode(i, this._enviro, data.CreateVolume(i, threads), reg, lscalars, lmatrixes, map, reduce, where, by_clause);
+        //        nodes.Add(node);
+
+        //    }
+
+        //    // Render the reducer //
+        //    SelectProcessConsolidation reducer = new SelectProcessConsolidation(this._enviro);
+
+        //    // Create a process //
+        //    QueryProcess<SelectProcessNode> process = new QueryProcess<SelectProcessNode>(nodes, reducer);
+
+        //    // Run the process //
+        //    Stopwatch sw = Stopwatch.StartNew();
+        //    if (this._enviro.AllowAsync && threads > 1)
+        //    {
+        //        process.ExecuteAsync();
+        //    }
+        //    else
+        //    {
+        //        process.Execute();
+        //    }
+        //    sw.Stop();
+
+        //    // Close the output //
+        //    this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);
+        //    this._enviro.IO.WriteLine();
+
+        //    return 1;
+
+        //}
+
         public override int VisitCommand_read(RyeParser.Command_readContext context)
         {
 
             // Notifiy //
             this._enviro.IO.WriteHeader("Select");
-            
+
+            // Create the select model //
+            SelectModel model = new SelectModel(this._enviro);
+
             // Get some high level data first, such as thread count, 'where' clause, and source data //
             TabularData data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
-            int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
-            List<SelectProcessNode> nodes = new List<SelectProcessNode>();
             string alias = (context.base_clause().IDENTIFIER() == null ? data.Header.Name : context.base_clause().IDENTIFIER().GetText());
+            model.SetFROM(data, alias);
+            
+            int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
+            
+            // Create a visitor //
+            ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
+            MatrixExpressionVisitor mat = new MatrixExpressionVisitor(exp, this._enviro);
+            exp.AddRegister(alias, new Register(alias, data.Columns));
+            exp.SetSecondary(SelectModel.LOCAL_ALIAS, model.LOCALS, model.LOCALM);
 
-            // Render each node //
-            for (int i = 0; i < threads; i++)
+            // Load the local heap //
+            if (context.command_declare() != null)
             {
 
-                // Create an expression visitor //
-                ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
-
-                // Create the local heap //
-                Heap<Cell> lscalars = new Heap<Cell>();
-                Heap<CellMatrix> lmatrixes = new Heap<CellMatrix>();
-                lscalars.Allocate(SelectProcessNode.ROW_ID, Cell.ZeroValue(CellAffinity.INT));
-                lscalars.Allocate(SelectProcessNode.EXTENT_ID, Cell.ZeroValue(CellAffinity.INT));
-                lscalars.Allocate(SelectProcessNode.KEY_CHANGE, Cell.FALSE);
-                lscalars.Allocate(SelectProcessNode.IS_FIRST, Cell.FALSE);
-                lscalars.Allocate(SelectProcessNode.IS_LAST, Cell.FALSE);
-
-                // Create a register //
-                Register reg = new Register(alias, data.Columns);
-
-                // Accumulate the heap and register to the expression visitor //
-                exp.AddRegister(alias, reg);
-                exp.SetSecondary("LOCAL", lscalars, lmatrixes);
-
-                // Process the 'by' clause //
-                ExpressionCollection by_clause = (context.by_clause() == null ? null : exp.ToNodes(context.by_clause().expression_or_wildcard_set()));
-
-                // Create a matrix visitor //
-                MatrixExpressionVisitor mat = new MatrixExpressionVisitor(exp, this._enviro);
-                
-                // Create a method visitor //
-                MethodVisitor met = new MethodVisitor(exp, mat, this._enviro, threads != 1);
-                
-                // Load the local heap //
-                if (context.command_declare() != null)
+                foreach (RyeParser.Unit_declare_scalarContext ctx in context.command_declare().unit_declare_scalar())
                 {
-
-                    foreach (RyeParser.Unit_declare_scalarContext ctx in context.command_declare().unit_declare_scalar())
-                    {
-                        string sname = ctx.IDENTIFIER().GetText();
-                        CompilerHelper.AppendScalar(this._enviro, lscalars, exp, ctx);
-                    }
-                    foreach (RyeParser.Unit_declare_matrixContext ctx in context.command_declare().unit_declare_matrix())
-                    {
-                        string sname = ctx.IDENTIFIER().GetText();
-                        CompilerHelper.AppendMatrix(this._enviro, lmatrixes, exp, ctx);
-                    }
-
+                    string sname = ctx.IDENTIFIER().GetText();
+                    CompilerHelper.AppendScalar(this._enviro, model.LOCALS, exp, ctx);
                 }
-                // Get whatever where clause we need //
-                Filter where = CompilerHelper.GetWhere(exp, context.base_clause().where_clause());
-
-                // Create the mapping methods //
-                MethodCollection map = new MethodCollection();
-                foreach (RyeParser.MethodContext ctx in context.map_clause().method())
+                foreach (RyeParser.Unit_declare_matrixContext ctx in context.command_declare().unit_declare_matrix())
                 {
-                    map.Add(met.Visit(ctx));
+                    string sname = ctx.IDENTIFIER().GetText();
+                    CompilerHelper.AppendMatrix(this._enviro, model.LOCALM, exp, ctx);
                 }
-
-                // Build the reducing methods //
-                MethodCollection reduce = new MethodCollection();
-                if (context.reduce_clause() != null)
-                {
-                    foreach (RyeParser.MethodContext ctx in context.reduce_clause().method())
-                    {
-                        reduce.Add(met.Visit(ctx));
-                    }
-                }
-                
-                // Render the worker node //
-                SelectProcessNode node = new SelectProcessNode(i, this._enviro, data.CreateVolume(i, threads), reg, lscalars, lmatrixes, map, reduce, where, by_clause);
-                nodes.Add(node);
 
             }
+
+            // Get whatever where clause we need //
+            Filter where = CompilerHelper.GetWhere(exp, context.base_clause().where_clause());
+            model.SetWHERE(where);
+
+            // Process the 'by' clause //
+            ExpressionCollection by_clause = (context.by_clause() == null ? null : exp.ToNodes(context.by_clause().expression_or_wildcard_set()));
+            model.AddBY(by_clause);
+
+            // Create the method visitor //
+            MethodVisitor met = new MethodVisitor(exp, mat, this._enviro, threads > 1);
+
+            // Create the 'MAIN/MAP' methods //
+            foreach (RyeParser.MethodContext ctx in context.map_clause().method())
+            {
+                model.AddMAIN(met.Visit(ctx));
+            }
+
+            // Create the 'REDUCE' methods //
+            if (context.reduce_clause() != null)
+            {
+
+                foreach (RyeParser.MethodContext ctx in context.reduce_clause().method())
+                {
+                    model.AddREDUCE(met.Visit(ctx));
+                }
+
+            }
+
+            // Create the nodes //
+            List<SelectProcessNode> nodes = model.RenderNodes(threads);
 
             // Render the reducer //
             SelectProcessConsolidation reducer = new SelectProcessConsolidation(this._enviro);
@@ -507,57 +625,58 @@ namespace Rye.Interpreter
         }
 
         // Aggregates //
-        public override int VisitCommand_aggregate(RyeParser.Command_aggregateContext context)
-        {
 
-            /*
-             * Check the hints:
-             * HINT = 'SORT' => ordered aggregate
-             * HINT = 'HASH' => has table aggregate
-             * 
-             */
-            Cell hint = CompilerHelper.GetHint(this._enviro, context.base_clause());
-            if (hint.valueSTRING.ToUpper() == "SORT")
-            {
-                return this.AggregateOrdered(context);
-            }
-            else if (hint.valueSTRING.ToUpper() == "HASH")
-            {
-                return this.AggregateHashTable(context);
-            }
+        //public override int VisitCommand_aggregate(RyeParser.Command_aggregateContext context)
+        //{
 
-            // Otherwise, lets optimize //
-            TabularData data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
-            int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
-            string alias = (context.base_clause().IDENTIFIER() == null ? data.Header.Name : context.base_clause().IDENTIFIER().GetText());
+        //    /*
+        //     * Check the hints:
+        //     * HINT = 'SORT' => ordered aggregate
+        //     * HINT = 'HASH' => has table aggregate
+        //     * 
+        //     */
+        //    Cell hint = CompilerHelper.GetHint(this._enviro, context.base_clause());
+        //    if (hint.valueSTRING.ToUpper() == "SORT")
+        //    {
+        //        return this.AggregateOrdered(context);
+        //    }
+        //    else if (hint.valueSTRING.ToUpper() == "HASH")
+        //    {
+        //        return this.AggregateHashTable(context);
+        //    }
 
-            // Construct the expression visitor and memory register //
-            ExpressionVisitor in_exp = new ExpressionVisitor(this._enviro);
-            Register in_mem = new Register(alias, data.Columns);
-            in_exp.AddRegister(alias, in_mem);
+        //    // Otherwise, lets optimize //
+        //    TabularData data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
+        //    int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
+        //    string alias = (context.base_clause().IDENTIFIER() == null ? data.Header.Name : context.base_clause().IDENTIFIER().GetText());
 
-            // Get the keys, the aggregates and the where clause //
-            ExpressionCollection keys = in_exp.ToNodes(context.by_clause().expression_or_wildcard_set());
+        //    // Construct the expression visitor and memory register //
+        //    ExpressionVisitor in_exp = new ExpressionVisitor(this._enviro);
+        //    Register in_mem = new Register(alias, data.Columns);
+        //    in_exp.AddRegister(alias, in_mem);
+
+        //    // Get the keys, the aggregates and the where clause //
+        //    ExpressionCollection keys = in_exp.ToNodes(context.by_clause().expression_or_wildcard_set());
             
-            // Check to see if the expression can be reduced to a key //
-            Key k = ExpressionCollection.DecompileToKey(keys);
+        //    // Check to see if the expression can be reduced to a key //
+        //    Key k = ExpressionCollection.DecompileToKey(keys);
 
-            // If the key is not the same length as the expression collection, then the collection must not be all field refs, so use a hash table //
-            if (k.Count != keys.Count)
-            {
-                return this.AggregateHashTable(context);
-            }
+        //    // If the key is not the same length as the expression collection, then the collection must not be all field refs, so use a hash table //
+        //    if (k.Count != keys.Count)
+        //    {
+        //        return this.AggregateHashTable(context);
+        //    }
 
-            // Check if the data set is sorted by the key, if it is, then use the ordered set algorithm //
-            if (KeyComparer.IsWeakSubset(data.SortBy ?? new Key(), k))
-            {
-                return this.AggregateOrdered(context);
-            }
+        //    // Check if the data set is sorted by the key, if it is, then use the ordered set algorithm //
+        //    if (KeyComparer.IsWeakSubset(data.SortBy ?? new Key(), k))
+        //    {
+        //        return this.AggregateOrdered(context);
+        //    }
 
-            // Otherwise, use the hash table algorithm //
-            return this.AggregateHashTable(context);
+        //    // Otherwise, use the hash table algorithm //
+        //    return this.AggregateHashTable(context);
 
-        }
+        //}
 
         private int AggregateHashTable(RyeParser.Command_aggregateContext context)
         {
@@ -780,6 +899,138 @@ namespace Rye.Interpreter
 
         }
 
+        public override int VisitCommand_aggregate(RyeParser.Command_aggregateContext context)
+        {
+
+            // Notify //
+            this._enviro.IO.WriteHeader("Aggregate");
+
+            // Create an aggregate model //
+            AggregateModel model = new AggregateModel(this._enviro);
+
+            // Get some high level data first, such as thread count, 'where' clause, and source data //
+            TabularData data = CompilerHelper.CallData(this._enviro, context.base_clause().table_name());
+            string alias = (context.base_clause().IDENTIFIER() == null ? data.Header.Name : context.base_clause().IDENTIFIER().GetText());
+            model.SetFROM(data, alias);
+
+            // Threads //
+            int threads = CompilerHelper.GetThreadCount(context.base_clause().thread_clause());
+            
+            // Construct the expression visitor and memory register used in the aggregation process //
+            ExpressionVisitor in_exp = new ExpressionVisitor(this._enviro);
+            Register in_mem = new Register(alias, data.Columns);
+            in_exp.AddRegister(alias, in_mem);
+
+            // Get the keys, the aggregates and the where clause //
+            ExpressionCollection keys = in_exp.ToNodes(context.by_clause().expression_or_wildcard_set());
+            AggregateCollection aggs = in_exp.ToReducers(context.over_clause().beta_reduction_list());
+            Filter where = CompilerHelper.GetWhere(in_exp, context.base_clause().where_clause());
+
+            // Add each of the above to the model //
+            model.AddKEY(keys);
+            model.AddAGGREGATE(aggs);
+            model.SetWHERE(where);
+
+            // Create the output expression visitor //
+            Schema out_columns = model.Columns;
+            ExpressionVisitor out_exp = new ExpressionVisitor(this._enviro);
+            Register out_mem = new Register("OUT", out_columns);
+            out_exp.AddRegister("OUT", out_mem); // TODO, think of a better alias to use
+            ExpressionCollection out_keys = out_exp.ToNodes(context.append_method().expression_or_wildcard_set());
+            model.AddFIELD(out_keys);
+
+            // Render the record writer that will be used to fill the output //
+            TabularData out_data = CompilerHelper.RenderData(this._enviro, out_keys, context.append_method());
+            model.SetOUTPUT(out_data, "OUT");
+            
+            // Get the export and sort nodes //
+            MethodSort xsort = CompilerHelper.RenderSortMethod(this._enviro, context.append_method(), out_data);
+            MethodDump xdump = CompilerHelper.RenderDumpMethod(this._enviro, context.append_method(), out_data);
+
+            // Now, decide which model to follow //
+            Cell hint = CompilerHelper.GetHint(this._enviro, context.base_clause());
+            AggregateAlgorithm UseHint = AggregateAlgorithm.HashTable;
+            if (!hint.IsNull)
+            {
+                UseHint = model.ParseHint(hint.valueSTRING);
+            }
+            else
+            {
+                UseHint = model.SuggestedAlgorithm();
+            }
+
+            // Create a stop watch //
+            Stopwatch sw = new Stopwatch();
+            long cost = 0;
+
+            // Ordered //
+            if (UseHint == AggregateAlgorithm.Ordered)
+            {
+
+                // Get the sorted pre-processor //
+                MethodSort PreSort = model.RenderPreProcessor();
+
+                // Gets the nodes //
+                List<AggregateOrderedProcessNode> nodes = model.RenderNodesO(threads);
+
+                // Create the consolidation process //
+                AggregateOrderedConsolidationProcess reducer = new AggregateOrderedConsolidationProcess(this._enviro);
+
+                // Build the query process that will handle this //
+                QueryProcess<AggregateOrderedProcessNode> process = new QueryProcess<AggregateOrderedProcessNode>(nodes, reducer);
+                process.PreProcessor.AddChild(PreSort);
+                process.PostProcessor.AddChildren(xsort, xdump);
+
+                // Run the process //
+                this._enviro.IO.WriteLine("Aggregatge Algorithm - Ordered");
+                sw = Stopwatch.StartNew();
+                if (this._enviro.AllowAsync && threads > 1)
+                    process.ExecuteAsync();
+                else
+                    process.Execute();
+                sw.Stop();
+                cost = reducer.Clicks;
+
+            }
+            // Hash Table //
+            else
+            {
+
+                // Gets the nodes //
+                List<AggregateHashTableProcessNode> nodes = model.RenderNodesHT(threads);
+
+                // Create the consolidation process //
+                AggregateHashTableConsolidationProcess reducer = model.RenderReducerHT();
+
+                // Build the query process that will handle this //
+                QueryProcess<AggregateHashTableProcessNode> process = new QueryProcess<AggregateHashTableProcessNode>(nodes, reducer);
+                process.PostProcessor.AddChildren(xsort, xdump);
+
+                // Run the process //
+                this._enviro.IO.WriteLine("Aggregatge Algorithm - Hash Table");
+                sw = Stopwatch.StartNew();
+                if (this._enviro.AllowAsync && threads > 1)
+                    process.ExecuteAsync();
+                else
+                    process.Execute();
+                sw.Stop();
+                cost = reducer.Clicks;
+
+            }
+
+            // Close the output //
+            this._enviro.IO.WriteLine("Actual Aggregate Cost: {0}", cost);
+            if (xsort.State != 0)
+                this._enviro.IO.WriteLine("Output Data Sort Cost: {0}", xsort.Clicks);
+            if (xdump.State != 0)
+                this._enviro.IO.WriteLine("Output Data Dumped to: {0}", xdump.Path);
+            this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);
+            this._enviro.IO.WriteLine();
+
+            return 1;
+
+        }
+
         // Sort //
         public override int VisitCommand_sort(RyeParser.Command_sortContext context)
         {
@@ -863,12 +1114,147 @@ namespace Rye.Interpreter
         }
 
         // Join //
+        //public override int VisitCommand_join(RyeParser.Command_joinContext context)
+        //{
+
+        //    // Notify //
+        //    this._enviro.IO.WriteHeader("Join");
+                
+        //    // Get each table //
+        //    TabularData DLeft = CompilerHelper.CallData(this._enviro, context.table_name()[0]);
+        //    TabularData DRight = CompilerHelper.CallData(this._enviro, context.table_name()[1]);
+
+        //    // Get the aliases //
+        //    string ALeft = context.IDENTIFIER()[0].GetText();
+        //    string ARight = context.IDENTIFIER()[1].GetText();
+
+        //    // Get the thread count //
+        //    int Threads = CompilerHelper.GetThreadCount(context.thread_clause());
+        //    Threads = Math.Min(Threads, (int)DLeft.ExtentCount);
+
+        //    // Get the hint //
+        //    Cell hint = CompilerHelper.GetHint(this._enviro, context);
+
+        //    // Create an algorithm //
+        //    JoinAlgorithm Engine = new SortMerge();
+        //    if (context.join_predicate() == null || hint.valueSTRING.ToUpper() == "LOOP")
+        //    {
+        //        Engine = new NestedLoop();
+        //    }
+
+        //    // Get the join type //
+        //    JoinType t = this.RenderJoinType(context.join_type());
+
+        //    // Start rendering the nodes //
+        //    List<JoinProcessNode> Nodes = new List<JoinProcessNode>();
+        //    TabularData x = null;
+        //    for (int i = 0; i < Threads; i++)
+        //    {
+
+        //        // Create a record comparer //
+        //        KeyedRecordComparer rc = this.RenderJoinRecordComparer(DLeft.Columns, DRight.Columns, ALeft, ARight, context.join_predicate());
+
+        //        // Create out registers //
+        //        Register MemLeft = new Register(ALeft, DLeft.Columns);
+        //        Register MemRight = new Register(ARight, DRight.Columns);
+
+        //        // Create the expression visitors we'll need //
+        //        ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
+        //        exp.AddRegister(ALeft, MemLeft);
+        //        exp.AddRegister(ARight, MemRight);
+
+        //        // Render the filter //
+        //        Filter F = CompilerHelper.GetWhere(exp, context.where_clause());
+
+        //        // Get the expression we'll return //
+        //        ExpressionCollection select = exp.ToNodes(context.append_method().expression_or_wildcard_set());
+
+        //        // Get the output table //
+        //        TabularData OutSet = CompilerHelper.RenderData(this._enviro, select, context.append_method());
+        //        RecordWriter w = OutSet.OpenWriter();
+
+        //        // Save a copy of the table for the post processor //
+        //        x = x ?? OutSet;
+
+        //        // Create the new join node //
+        //        JoinProcessNode node = new JoinProcessNode(i, this._enviro, Engine, t, DLeft.CreateVolume(i, Threads), MemLeft, DRight.CreateVolume(), MemRight, rc, F, select, w);
+
+        //        // Add the node to collection //
+        //        Nodes.Add(node);
+
+        //    }
+
+        //    // Get the export and sort nodes //
+        //    MethodSort xsort = CompilerHelper.RenderSortMethod(this._enviro, context.append_method(), x);
+        //    MethodDump xdump = CompilerHelper.RenderDumpMethod(this._enviro, context.append_method(), x);
+
+        //    // Create the process //
+        //    JoinConsolidation reducer = new JoinConsolidation(this._enviro);
+        //    QueryProcess<JoinProcessNode> process = new QueryProcess<JoinProcessNode>(Nodes, reducer);
+        //    process.PostProcessor.AddChildren(xsort, xdump);
+
+        //    // Create a record comparer //
+        //    if (Engine.BaseJoinAlgorithmType == JoinAlgorithmType.SortMerge)
+        //    {
+
+        //        KeyedRecordComparer comp = this.RenderJoinRecordComparer(DLeft.Columns, DRight.Columns, ALeft, ARight, context.join_predicate());
+
+        //        if (KeyComparer.IsStrongSubset(DLeft.SortBy, comp.LeftKey))
+        //        {
+        //            this._enviro.IO.WriteLine("Join optimized for '{0}' by using pre-sorted data", DLeft.Header.Name);
+        //        }
+        //        else
+        //        {
+        //            process.PreProcessor.AddChild(new Methods.MethodSort(null, DLeft, comp.LeftKey));
+        //        }
+
+        //        if (KeyComparer.IsStrongSubset(DRight.SortBy, comp.RightKey))
+        //        {
+        //            this._enviro.IO.WriteLine("Join optimized for '{0}' by using pre-sorted data", DRight.Header.Name);
+        //        }
+        //        else
+        //        {
+        //            process.PreProcessor.AddChild(new Methods.MethodSort(null, DRight, comp.RightKey));
+        //        }
+                    
+        //    }
+
+        //    // Run the process //
+        //    Stopwatch sw = Stopwatch.StartNew();
+        //    if (this._enviro.AllowAsync && Threads > 1)
+        //    {
+        //        process.ExecuteAsync();
+        //    }
+        //    else
+        //    {
+        //        process.Execute();
+        //    }
+        //    sw.Stop();
+        //    long TrueCost = reducer.ActualCost + process.PreProcessorClicks;
+
+        //    this._enviro.IO.WriteLine("Join Cost: \n\tActual {0} \n\tEstimated {1}", TrueCost, Engine.Cost(DLeft, DRight, Threads, 1D, JoinImplementationType.Block_VxV));
+        //    this._enviro.IO.WriteLine("IO Calls: {0}", reducer.IOCalls);
+        //    this._enviro.IO.WriteLine("Join Type: {0} : {1}", Engine.BaseJoinAlgorithmType, t);
+        //    if (xsort.State != 0)
+        //        this._enviro.IO.WriteLine("Output Data Sort Cost: {0}", xsort.Clicks);
+        //    if (xdump.State != 0)
+        //        this._enviro.IO.WriteLine("Output Data Dumped to: {0}", xdump.Path);
+        //    this._enviro.IO.WriteLine("Runtime: {0}", sw.Elapsed);
+        //    this._enviro.IO.WriteLine();
+
+        //    return 1;
+
+        //}
+
         public override int VisitCommand_join(RyeParser.Command_joinContext context)
         {
 
             // Notify //
             this._enviro.IO.WriteHeader("Join");
-                
+
+            // Create the model //
+            JoinModel model = new JoinModel(this._enviro);
+
             // Get each table //
             TabularData DLeft = CompilerHelper.CallData(this._enviro, context.table_name()[0]);
             TabularData DRight = CompilerHelper.CallData(this._enviro, context.table_name()[1]);
@@ -876,6 +1262,9 @@ namespace Rye.Interpreter
             // Get the aliases //
             string ALeft = context.IDENTIFIER()[0].GetText();
             string ARight = context.IDENTIFIER()[1].GetText();
+
+            model.SetLEFT(DLeft, ALeft);
+            model.SetRIGHT(DRight, ARight);
 
             // Get the thread count //
             int Threads = CompilerHelper.GetThreadCount(context.thread_clause());
@@ -890,54 +1279,43 @@ namespace Rye.Interpreter
             {
                 Engine = new NestedLoop();
             }
+            model.SetALGORITHM(Engine);
 
             // Get the join type //
             JoinType t = this.RenderJoinType(context.join_type());
+            model.SetTYPE(t);
 
-            // Start rendering the nodes //
-            List<JoinProcessNode> Nodes = new List<JoinProcessNode>();
-            TabularData x = null;
-            for (int i = 0; i < Threads; i++)
-            {
+            // Create a record comparer //
+            KeyedRecordComparer rc = this.RenderJoinRecordComparer(DLeft.Columns, DRight.Columns, ALeft, ARight, context.join_predicate());
+            model.SetPREDICATE(rc);
 
-                // Create a record comparer //
-                KeyedRecordComparer rc = this.RenderJoinRecordComparer(DLeft.Columns, DRight.Columns, ALeft, ARight, context.join_predicate());
+            // Create out registers //
+            Register MemLeft = new Register(ALeft, DLeft.Columns);
+            Register MemRight = new Register(ARight, DRight.Columns);
 
-                // Create out registers //
-                Register MemLeft = new Register(ALeft, DLeft.Columns);
-                Register MemRight = new Register(ARight, DRight.Columns);
+            // Create the expression visitors we'll need //
+            ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
+            exp.AddRegister(ALeft, MemLeft);
+            exp.AddRegister(ARight, MemRight);
 
-                // Create the expression visitors we'll need //
-                ExpressionVisitor exp = new ExpressionVisitor(this._enviro);
-                exp.AddRegister(ALeft, MemLeft);
-                exp.AddRegister(ARight, MemRight);
+            // Render the filter //
+            Filter F = CompilerHelper.GetWhere(exp, context.where_clause());
+            model.SetWHERE(F);
 
-                // Render the filter //
-                Filter F = CompilerHelper.GetWhere(exp, context.where_clause());
+            // Get the expression we'll return //
+            ExpressionCollection select = exp.ToNodes(context.append_method().expression_or_wildcard_set());
+            model.AddRETAIN(select);
 
-                // Get the expression we'll return //
-                ExpressionCollection select = exp.ToNodes(context.append_method().expression_or_wildcard_set());
-
-                // Get the output table //
-                TabularData OutSet = CompilerHelper.RenderData(this._enviro, select, context.append_method());
-                RecordWriter w = OutSet.OpenWriter();
-
-                // Save a copy of the table for the post processor //
-                x = x ?? OutSet;
-
-                // Create the new join node //
-                JoinProcessNode node = new JoinProcessNode(i, this._enviro, Engine, t, DLeft.CreateVolume(i, Threads), MemLeft, DRight.CreateVolume(), MemRight, rc, F, select, w);
-
-                // Add the node to collection //
-                Nodes.Add(node);
-
-            }
+            // Get the output table //
+            TabularData OutSet = CompilerHelper.RenderData(this._enviro, select, context.append_method());
+            model.SetOUTPUT(OutSet);
 
             // Get the export and sort nodes //
-            MethodSort xsort = CompilerHelper.RenderSortMethod(this._enviro, context.append_method(), x);
-            MethodDump xdump = CompilerHelper.RenderDumpMethod(this._enviro, context.append_method(), x);
+            MethodSort xsort = CompilerHelper.RenderSortMethod(this._enviro, context.append_method(), OutSet);
+            MethodDump xdump = CompilerHelper.RenderDumpMethod(this._enviro, context.append_method(), OutSet);
 
             // Create the process //
+            List<JoinProcessNode> Nodes = model.RenderNodes(Threads);
             JoinConsolidation reducer = new JoinConsolidation(this._enviro);
             QueryProcess<JoinProcessNode> process = new QueryProcess<JoinProcessNode>(Nodes, reducer);
             process.PostProcessor.AddChildren(xsort, xdump);
@@ -965,7 +1343,7 @@ namespace Rye.Interpreter
                 {
                     process.PreProcessor.AddChild(new Methods.MethodSort(null, DRight, comp.RightKey));
                 }
-                    
+
             }
 
             // Run the process //

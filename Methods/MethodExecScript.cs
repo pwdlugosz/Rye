@@ -77,7 +77,19 @@ namespace Rye.Methods
 
         public override Method CloneOfMe()
         {
+
+            Heap<Expression> par = new Heap<Expression>();
+            foreach (KeyValuePair<string, Expression> x in this._Parameters.Entries)
+            {
+                par.Allocate(x.Key, x.Value.CloneOfMe());
+            }
+
             return new MethodExecScript(this._Parent, this._engine.Enviro, this._Script, this._Parameters, this._NoPrint);
+        }
+
+        public override List<Expression> InnerExpressions()
+        {
+            return this._Parameters.Values;
         }
 
     }

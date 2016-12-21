@@ -64,6 +64,11 @@ namespace Rye.Methods
                 return x;
             }
         }
+        
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>();
+        }
 
     }
 

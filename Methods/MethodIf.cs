@@ -69,10 +69,15 @@ namespace Rye.Methods
 
         public override Method CloneOfMe()
         {
-            MethodIf node = new MethodIf(this.Parent, this._Condition);
+            MethodIf node = new MethodIf(this.Parent, this._Condition.CloneOfMe());
             foreach (Method t in this._Children)
                 node.AddChild(t.CloneOfMe());
             return node;
+        }
+
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>() { this._Condition.Node };
         }
 
     }

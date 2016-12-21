@@ -432,7 +432,7 @@ namespace Rye.Expressions
         public static Expression Bind(Expression MainNode, Expression ParameterNode, string PointerNodeName)
         {
 
-            // Clone the main node //
+            // Clone the current node //
             Expression t = MainNode.CloneOfMe();
 
             // Decompile t //

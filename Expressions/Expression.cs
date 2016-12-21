@@ -9,7 +9,7 @@ using Rye.Structures;
 namespace Rye.Expressions
 {
 
-    public abstract class Expression
+    public abstract class Expression : IRegisterExtractor
     {
 
         private Expression _ParentNode;
@@ -162,31 +162,16 @@ namespace Rye.Expressions
         }
 
         // Register Handles //
-        public virtual List<Register> GetMemoryRegisters()
+        public virtual Heap<Register> GetMemoryRegisters()
         {
 
-            List<Register> r = new List<Register>();
+            Heap<Register> bag = new Heap<Register>();
             foreach (Expression e in this._Cache)
             {
-                r.AddRange(e.GetMemoryRegisters());
+                bag.Import(e.GetMemoryRegisters());
             }
-            return r;
+            return bag;
        
-        }
-
-        public virtual void AssignMemoryRegister(Register OldMemoryRegister, Register NewMemoryRegister)
-        {
-
-            // Don't procede if we have not child cache elements
-            if (this._Cache.Count == 0)
-                return;
-
-            // Do a recursive seek to update the register //
-            foreach (Expression e in this._Cache)
-            {
-                e.AssignMemoryRegister(OldMemoryRegister, NewMemoryRegister);
-            }
-
         }
 
         // Statics //
@@ -258,6 +243,94 @@ namespace Rye.Expressions
             return -1;
 
         }
+
+        // Clone Support //
+        public static void AssignRegister(Expression E, Register R)
+        {
+
+            // Check if Value is a field ref //
+            if (E is ExpressionFieldRef)
+                (E as ExpressionFieldRef).ForceMemoryRegister(R);
+
+            // Leave if there are no child nodes //
+            if (E.Children.Count == 0)
+                return;
+
+            // Otherwise, go back through all child nodes and recursively call this method //
+            foreach (Expression x in E.Children)
+            {
+                Expression.AssignRegister(x, R);
+            }
+
+        }
+
+        public static void AssignRegister(Expression E, Heap<Register> R)
+        {
+
+            foreach (Register r in R.Values)
+            {
+                Expression.AssignRegister(E, r);
+            }
+
+        }
+
+        public static void AssignCellHeap(Expression E, Heap<Cell> H)
+        {
+
+            // Check if Value is a heap ref //
+            if (E is ExpressionHeapRef)
+                (E as ExpressionHeapRef).ForceHeap(H);
+
+            // Leave if there are no child nodes //
+            if (E.Children.Count == 0)
+                return;
+
+            // Otherwise, go back through all child nodes and recursively call this method //
+            foreach (Expression x in E.Children)
+            {
+                Expression.AssignCellHeap(x, H);
+            }
+
+        }
+
+        public static void AssignMatrixHeap(Expression E, Heap<CellMatrix> H)
+        {
+
+            // Check if Value is a heap ref //
+            if (E is ExpressionMatrixRef)
+                (E as ExpressionMatrixRef).ForceHeap(H);
+
+            // Leave if there are no child nodes //
+            if (E.Children.Count == 0)
+                return;
+
+            // Otherwise, go back through all child nodes and recursively call this method //
+            foreach (Expression x in E.Children)
+            {
+                Expression.AssignMatrixHeap(x, H);
+            }
+
+        }
+
+        public static void ForceAssignRegister(Expression E, Register R)
+        {
+
+            if (E is ExpressionFieldRef)
+            {
+                (E as ExpressionFieldRef).MemoryRegister = R;
+                return;
+            }
+
+            if (E.IsTerminal)
+                return;
+
+            foreach (Expression e in E.Children)
+            {
+                Expression.ForceAssignRegister(E, R);
+            }
+
+        }
+
 
     }
 

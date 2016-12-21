@@ -38,6 +38,11 @@ namespace Rye.Methods
             return new MethodEscapeLoop(this.Parent);
         }
 
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>();
+        }
+
     }
 
 

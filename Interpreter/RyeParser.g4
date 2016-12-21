@@ -45,6 +45,7 @@ command_create
 		create_unit (COMMA create_unit)* SEMI_COLON?
 	RCURL SEMI_COLON
 	(K_READ LCURL K_FROM expression (COMMA expression)* SEMI_COLON RCURL SEMI_COLON)? // path,delim,escape,skip
+	(K_IN K_SCRIPT expression (COMMA expression)* SEMI_COLON)?
 	;
 create_unit
 	: IDENTIFIER K_AS type

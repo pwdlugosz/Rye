@@ -149,6 +149,12 @@ namespace Rye.Query
 
         public override void Consolidate(List<AggregateHashTableProcessNode> Nodes)
         {
+
+            // Get the clicks //
+            foreach (AggregateHashTableProcessNode n in Nodes)
+            {
+                this._Clicks += n.Clicks;
+            }
             
             // Go through an merge groupers accross all headers //
             for (int i = 0; i < this._Sink.ExtentCount; i++)
@@ -156,7 +162,7 @@ namespace Rye.Query
 
                 // Open the left table //
                 KeyValueSet x = KeyValueSet.Open(this._Sink, i, this._By, this._Over);
-
+                
                 // Cross match each grouper //
                 for (int j = i + 1; j < this._Sink.ExtentCount; j++)
                 {
@@ -166,7 +172,9 @@ namespace Rye.Query
 
                     // Update x; entry R is in x and y, R in x will be updated while R in y will be removed; if R is not in both, nothing happens
                     if (y.Count != 0)
+                    {
                         KeyValueSet.Union(x, y);
+                    }
 
                     // Dump the table //
                     KeyValueSet.Resave(this._Sink, y);
@@ -431,7 +439,9 @@ namespace Rye.Query
 
             // Clear deletes //
             foreach (Record r in Deletes)
+            {
                 T2._cache.Remove(r);
+            }
 
         }
 
@@ -454,10 +464,10 @@ namespace Rye.Query
 
             // Create the extent //
             Extent e = Data.ToInterim();
-
+            
             // Load the header //
             e.Header = Sink.RenderHeader((int)Data.SinkID);
-
+            
             // Dump the extent //
             Sink.SetExtent(e);
 
@@ -471,6 +481,7 @@ namespace Rye.Query
             
             // Build the KVS //
             KeyValueSet kvs = new KeyValueSet(Fields, Aggregates);
+            kvs._SinkID = ID;
 
             // Import the interim data //
             kvs.FromInterim(e);
@@ -494,6 +505,9 @@ namespace Rye.Query
 
     }
 
+    /// <summary>
+    /// Aggregates a table using pre-sorted expressions
+    /// </summary>
     public sealed class AggregateOrderedProcessNode : QueryNode
     {
 
@@ -657,6 +671,9 @@ namespace Rye.Query
     
     }
 
+    /// <summary>
+    /// Consolidates pre-sorted aggregated data
+    /// </summary>
     public sealed class AggregateOrderedConsolidationProcess : QueryConsolidation<AggregateOrderedProcessNode>
     {
 
@@ -731,7 +748,7 @@ namespace Rye.Query
             {
                 node.OutputWriter.Close();
             }
-            //this._output.Close();
+            //this._Fields.Close();
 
             // Clicks //
             this._Clicks += rc.Clicks;
@@ -743,6 +760,309 @@ namespace Rye.Query
             get { return this._Clicks; }
         }
 
+
+    }
+
+    /// <summary>
+    /// Describes aggregate algorithms
+    /// </summary>
+    public enum AggregateAlgorithm
+    {
+        HashTable,
+        Ordered
+    }
+
+    /// <summary>
+    /// Provides support for building data aggregations
+    /// </summary>
+    public class AggregateModel
+    {
+
+        private Session _Session;
+
+        // Aggregate Phase Variables //
+        private TabularData _Source;
+        private string _SourceAlias;
+        private ExpressionCollection _Keys;
+        private AggregateCollection _Values;
+        private Filter _Where;
+
+        // Output Phase Variables //
+        private TabularData _OutTable;
+        private string _OutAlias;
+        private ExpressionCollection _OutFields;
+
+        // Hash only variables //
+        Table _Sink = null;
+
+        public AggregateModel(Session Session)
+        {
+            this._Session = Session;
+            this._Keys = new ExpressionCollection();
+            this._Values = new AggregateCollection();
+            this._OutFields = new ExpressionCollection();
+        }
+
+        // Properties //
+        public Schema Columns
+        {
+            get
+            {
+                return Schema.Join(this._Keys.Columns, this._Values.Columns);
+            }
+        }
+
+        // Aggregate Pieces //
+        public void SetFROM(TabularData Value, string Alias)
+        {
+            this._Source = Value;
+            this._SourceAlias = Alias;
+        }
+
+        public void AddKEY(Expression Value, string Alias)
+        {
+            this._Keys.Add(Value, Alias);
+        }
+
+        public void AddKEY(ExpressionCollection Value)
+        {
+            for (int i = 0; i < Value.Count; i++)
+            {
+                this._Keys.Add(Value[i], Value.Alias(i));
+            }
+        }
+
+        public void AddAGGREGATE(Aggregate Value, string Alias)
+        {
+            this._Values.Add(Value, Alias);
+        }
+
+        public void AddAGGREGATE(AggregateCollection Value)
+        {
+            for (int i = 0; i < Value.Count; i++)
+            {
+                this._Values.Add(Value[i], Value.GetAlias(i));
+            }
+        }
+
+        public void SetWHERE(Filter Value)
+        {
+            this._Where = Value;
+        }
+
+        // Consolidate Pieces //
+        public void SetOUTPUT(TabularData Value, string Alias)
+        {
+            this._OutTable = Value;
+            this._OutAlias = Alias;
+        }
+
+        public void AddFIELD(Expression Value, string Alias)
+        {
+            this._OutFields.Add(Value, Alias);
+        }
+
+        public void AddFIELD(ExpressionCollection Value)
+        {
+            for (int i = 0; i < Value.Count; i++)
+            {
+                this._OutFields.Add(Value[i], Value.Alias(i));
+            }
+        }
+
+        // Nodes - Hash table //
+        public AggregateHashTableProcessNode RenderNodeHT(int ThreadID, int ThreadCount)
+        {
+
+            // Potentially build a sink //
+            if (this._Sink == null)
+            {
+                this._Sink = KeyValueSet.DataSink(this._Session, this._Keys, this._Values);
+            }
+
+            // Create our volume //
+            Volume source = this._Source.CreateVolume(ThreadID, ThreadCount);
+
+            // Create the registers //
+            Register mem = new Register(this._SourceAlias, source.Columns);
+            
+            // Create the memory envrioment //
+            CloneFactory spiderweb = new CloneFactory();
+            spiderweb.Append(mem);
+            spiderweb.Append(this._Session.Scalars); // Add in the global scalars
+            spiderweb.Append(this._Session.Matrixes); // Add in the global matrixes
+
+            // Clone our expressions //
+            ExpressionCollection keys = spiderweb.Clone(this._Keys);
+            AggregateCollection vals = spiderweb.Clone(this._Values);
+            Filter where = spiderweb.Clone(this._Where);
+
+            // Render the node //
+            return new AggregateHashTableProcessNode(ThreadID, this._Session, source, keys, vals, where, mem, this._Sink);
+
+        }
+
+        public List<AggregateHashTableProcessNode> RenderNodesHT(int ThreadCount)
+        {
+
+            List<AggregateHashTableProcessNode> nodes = new List<AggregateHashTableProcessNode>();
+
+            for (int i = 0; i < ThreadCount; i++)
+            {
+                nodes.Add(this.RenderNodeHT(i, ThreadCount));
+            }
+
+            return nodes;
+
+        }
+
+        public AggregateHashTableConsolidationProcess RenderReducerHT()
+        {
+
+            // Potentially build a sink //
+            if (this._Sink == null)
+            {
+                this._Sink = KeyValueSet.DataSink(this._Session, this._Keys, this._Values);
+            }
+
+            // Create memory //
+            Register mem = new Register(this._OutAlias, this._Sink.Columns);
+
+            // Create the memory envrioment //
+            CloneFactory spiderweb = new CloneFactory();
+            spiderweb.Append(mem);
+            spiderweb.Append(this._Session.Scalars); // Add in the global scalars
+            spiderweb.Append(this._Session.Matrixes); // Add in the global matrixes
+            
+            // Clone the output expressions //
+            ExpressionCollection output = spiderweb.Clone(this._OutFields);
+
+            // Create the output writer //
+            RecordWriter outstream = this._OutTable.OpenWriter();
+
+            // Create the reducer - note that it doesnt matter that the keys/values are not assinged to a register //
+            return new AggregateHashTableConsolidationProcess(this._Session, this._Keys, this._Values, outstream, output, mem, this._Sink);
+
+        }
+
+        // Nods - Sort merge //
+        public AggregateOrderedProcessNode RenderNodeO(int ThreadID, int ThreadCount)
+        {
+
+            // Create our volume //
+            Volume source = this._Source.CreateVolume(ThreadID, ThreadCount);
+
+            // Create the registers //
+            Register mem = new Register(this._SourceAlias, source.Columns);
+
+            // Create the memory envrioment //
+            CloneFactory spiderweb = new CloneFactory();
+            spiderweb.Append(mem);
+            spiderweb.Append(this._Session.Scalars); // Add in the global scalars
+            spiderweb.Append(this._Session.Matrixes); // Add in the global matrixes
+
+            // Clone our expressions //
+            ExpressionCollection keys = spiderweb.Clone(this._Keys);
+            AggregateCollection vals = spiderweb.Clone(this._Values);
+            Filter where = spiderweb.Clone(this._Where);
+
+            // Create the out memory //
+            Register omem = new Register(this._OutAlias, Schema.Join(keys.Columns, vals.Columns));
+
+            // Create the select memory web //
+            CloneFactory outweb = new CloneFactory();
+            outweb.Append(omem);
+            outweb.Append(this._Session.Scalars); // Add in the global scalars
+            outweb.Append(this._Session.Matrixes); // Add in the global matrixes
+
+            // Clone the output fields //
+            ExpressionCollection select = outweb.Clone(this._OutFields);
+
+            // Open a writer //
+            RecordWriter stream = this._OutTable.OpenWriter();
+
+            // Render the node //
+            return new AggregateOrderedProcessNode(ThreadID, this._Session, source, keys, vals, where, mem, select, omem, stream);
+
+        }
+
+        public List<AggregateOrderedProcessNode> RenderNodesO(int ThreadCount)
+        {
+
+            List<AggregateOrderedProcessNode> nodes = new List<AggregateOrderedProcessNode>();
+
+            for (int i = 0; i < ThreadCount; i++)
+            {
+                nodes.Add(this.RenderNodeO(i, ThreadCount));
+            }
+
+            return nodes;
+
+        }
+
+        // Optimization //
+        public AggregateAlgorithm SuggestedAlgorithm()
+        {
+
+            // Check if any of the expressions are volatile //
+            if (this._Keys.IsVolatile)
+            {
+                return AggregateAlgorithm.HashTable;
+            }
+
+            // Check if the data is already sorted //
+            Key k = ExpressionCollection.DecompileToKey(this._Keys);
+            if (k.Count != this._Keys.Count)
+            {
+                return AggregateAlgorithm.HashTable;
+            }
+            if (KeyComparer.IsWeakSubset(this._Source.SortBy ?? new Key(), k))
+            {
+                return AggregateAlgorithm.Ordered;
+            }
+
+            return AggregateAlgorithm.HashTable;
+
+        }
+
+        public AggregateAlgorithm ParseHint(string Value)
+        {
+
+            // Check if any of the expressions are volatile; even though we have a hint, we may not be able to override //
+            if (this._Keys.IsVolatile)
+            {
+                return AggregateAlgorithm.HashTable;
+            }
+
+            string[] ht = new string[] { "0", "HT", "HASH", "HASH_TABLE", "HASHTABLE" };
+            string[] o = new string[] { "1", "O", "ORDER", "S", "SORT" };
+
+            if (ht.Contains(Value, StringComparer.OrdinalIgnoreCase))
+                return AggregateAlgorithm.HashTable;
+
+            if (o.Contains(Value, StringComparer.OrdinalIgnoreCase))
+                return AggregateAlgorithm.Ordered;
+
+            return AggregateAlgorithm.HashTable;
+
+        }
+
+        public Methods.MethodSort RenderPreProcessor()
+        {
+
+            // Create a memory location //
+            Register mem = new Register(this._SourceAlias, this._Source.Columns);
+
+            // Create a web //
+            CloneFactory web = new CloneFactory();
+            web.Append(mem);
+
+            // Generate the expression collection //
+            ExpressionCollection keys = web.Clone(this._Keys);
+            
+            return new Methods.MethodSort(null, this._Source, keys, mem, Key.Build(keys.Count));
+
+        }
 
     }
 

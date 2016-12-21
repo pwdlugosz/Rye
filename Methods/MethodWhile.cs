@@ -73,10 +73,15 @@ namespace Rye.Methods
 
         public override Method CloneOfMe()
         {
-            Method node = new MethodWhile(this.Parent, this._control);
+            Method node = new MethodWhile(this.Parent, this._control.CloneOfMe());
             foreach (Method t in this._Children)
                 node.AddChild(t.CloneOfMe());
             return node;
+        }
+
+        public override List<Expression> InnerExpressions()
+        {
+            return new List<Expression>() { this._control };
         }
 
     }
