@@ -390,7 +390,7 @@ namespace Rye.Methods
                         throw new ArgumentException(string.Format("Variable passed has affinity '{0}' but '{1}' must be '{2}'", Parameters.Affinity(name), name, this.ParameterAffinity(name)));
 
                 }
-                // Otherwise, fix the paramter collection by adding a null value //
+                // Otherwise, fix the paramter collection by adding a null Value //
                 else if (this.CanBeNull(i))
                 {
 
@@ -487,7 +487,7 @@ namespace Rye.Methods
 
         public DynamicStructureMethod(Method Parent, MemoryStructure NameSpace, string Name, ParameterCollection Parameters, bool CanBeAsync,
             Action<ParameterCollection> Main)
-            : this(Parent, NameSpace, Name, Parameters, CanBeAsync, (x) => { }, Main, (x) => { })
+            : this(Parent, NameSpace, Name, Parameters, CanBeAsync, (OriginalNode) => { }, Main, (OriginalNode) => { })
         {
         }
      
@@ -566,7 +566,7 @@ namespace Rye.Methods
 
         public override Method CloneOfMe()
         {
-            return new LibraryMethod(this._Parent, this._Name, this._Parameters.CloneOfMe(), this.CanBeAsync, this._BeginInvoke, this._Invoke, this._EndInvoke);
+            return new LibraryMethod(this._Parent, this._Name, this._Parameters, this.CanBeAsync, this._BeginInvoke, this._Invoke, this._EndInvoke);
         }
 
         public override bool CanBeAsync
@@ -585,7 +585,12 @@ namespace Rye.Methods
             // Expression Collections //
             foreach (ExpressionCollection x in this._Parameters.ExpressionVectors.Values)
             {
-                val.AddRange(x.Nodes);
+
+                foreach (Expression y in x.Nodes)
+                {
+                    val.Add(y);
+                }
+
             }
 
             // Expressions //

@@ -142,6 +142,13 @@ namespace Rye.Expressions
             return sb.ToString();
         }
 
+        public Lambda CloneOfMe()
+        {
+
+            return new Lambda(this._Name, this._Expression.CloneOfMe(), this._Pointers);
+
+        }
+
     }
 
 }

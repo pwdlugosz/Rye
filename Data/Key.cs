@@ -160,6 +160,35 @@ namespace Rye.Data
             get { return this.Count * 8; }
         }
 
+        public byte[] Bash()
+        {
+
+            byte[] b = new byte[4 + this.Count * 8];
+            Cell c = new Cell(this.Count);
+            b[0] = c.B0;
+            b[1] = c.B1;
+            b[2] = c.B2;
+            b[3] = c.B3;
+
+            // Write main data //
+            for (int i = 0; i < this.Count; i++)
+            {
+                c = new Cell(this[i], (int)this.Affinity(i));
+                b[4 + i * 8] = c.B0;
+                b[5 + i * 8] = c.B1;
+                b[6 + i * 8] = c.B2;
+                b[7 + i * 8] = c.B3;
+                b[8 + i * 8] = c.B4;
+                b[9 + i * 8] = c.B5;
+                b[10 + i * 8] = c.B6;
+                b[11 + i * 8] = c.B7;
+
+            }
+
+            return b;
+
+        }
+        
         /// <summary>
         /// Compares two keys only on their field offsets, not their affinities
         /// </summary>

@@ -13,60 +13,101 @@ using System.IO;
 namespace Rye.Libraries
 {
 
-    public sealed class TableFunctionLibrary : FunctionLibrary
+
+    // BaseTable Library //
+    public sealed class TableLibrary : Library
     {
 
-        public const string LIBRARY_NAME = "TABLIX";
+        public const string M_IMPORT = "IMPORT";
+        public const string M_EXPORT = "EXPORT";
+        public const string M_ABOUT = "ABOUT";
 
-        public TableFunctionLibrary(Session Session)
-            : base(Session)
+        private static string[] _MethodNames = new string[]
         {
-            this.LibName = LIBRARY_NAME;
-        }
+            M_IMPORT,
+            M_EXPORT,
+            M_ABOUT
+        };
 
-        // Functions //
-        public const string ROW_COUNT = "ROW_COUNT";
-        public const string COLUMN_COUNT = "COLUMN_COUNT";
-        public const string EXTENT_COUNT = "EXTENT_COUNT";
-        public const string CELL_COUNT = "CELL_COUNT";
-        public const string IS_SORTED = "IS_SORTED";
-        public const string IS_SORTED_BY = "IS_SORTED_BY";
-        public const string EXISTS = "EXISTS";
+        public const string F_ROW_COUNT = "ROW_COUNT";
+        public const string F_COLUMN_COUNT = "COLUMN_COUNT";
+        public const string F_EXTENT_COUNT = "EXTENT_COUNT";
+        public const string F_CELL_COUNT = "CELL_COUNT";
+        public const string F_IS_SORTED = "IS_SORTED";
+        public const string F_IS_SORTED_BY = "IS_SORTED_BY";
+        public const string F_EXISTS = "EXISTS";
 
         private static string[] _FunctionNames =
         {
-            ROW_COUNT,
-            COLUMN_COUNT,
-            EXTENT_COUNT,
-            CELL_COUNT,
-            IS_SORTED,
-            IS_SORTED_BY,
-            EXISTS
+            F_ROW_COUNT,
+            F_COLUMN_COUNT,
+            F_EXTENT_COUNT,
+            F_CELL_COUNT,
+            F_IS_SORTED,
+            F_IS_SORTED_BY,
+            F_EXISTS
         };
 
-        public override string[] Names
+        public TableLibrary(Session Session)
+            : base(Session, "TABLIX")
         {
-            get { return _FunctionNames; }
         }
 
-        public override CellFunction RenderFunction(string Name)
+        public override Method GetMethod(Method Parent, string Name, ParameterCollection Parameters)
         {
 
             switch (Name.ToUpper())
             {
-                case ROW_COUNT:
+                case M_IMPORT:
+                    return this.Method_Import(Parent, Parameters);
+                case M_EXPORT:
+                    return this.Method_Export(Parent, Parameters);
+                case M_ABOUT:
+                    return this.Method_About(Parent, Parameters);
+            }
+            throw new ArgumentException(string.Format("Method '{0}' does not exist", Name));
+
+        }
+
+        public override ParameterCollectionSigniture GetMethodSigniture(string Name)
+        {
+
+            switch (Name.ToUpper())
+            {
+                case M_IMPORT:
+                    return ParameterCollectionSigniture.Parse(M_IMPORT, "Loads a file into an existing table", "DATA|The table to load|T|false;PATH|The flat file location|Value|false;DELIM|The column delimitor|Value|false;ESCAPE|The escape sequence character|Value|true;SKIP|The number of lines to skip|Value|true");
+                case M_EXPORT:
+                    return ParameterCollectionSigniture.Parse(M_EXPORT, "Exports a table into a new file", "DATA|The table to export|T|false;PATH|The path to the exported file|Value|false;DELIM|The column delimitor|Value|false");
+                case M_ABOUT:
+                    return ParameterCollectionSigniture.Parse(M_ABOUT, "Prints meta data abouta table", "DATA|The table to export|T|false");
+            }
+            throw new ArgumentException(string.Format("Method '{0}' does not exist", Name));
+
+        }
+
+        public override string[] MethodNames
+        {
+            get { return _MethodNames; }
+        }
+
+        public override CellFunction GetFunction(string Name)
+        {
+
+            switch (Name.ToUpper())
+            {
+                case F_ROW_COUNT:
                     return this.LambdaRowCount();
-                case COLUMN_COUNT:
+                case F_COLUMN_COUNT:
                     return this.LambdaColumnCount();
-                case EXTENT_COUNT:
+                case F_EXTENT_COUNT:
                     return this.LambdaExtentCount();
-                case CELL_COUNT:
+                case F_CELL_COUNT:
                     return this.LambdaCellCount();
-                case IS_SORTED:
+                case F_IS_SORTED:
                     return this.LambdaIsSorted();
-                case IS_SORTED_BY:
+                case F_IS_SORTED_BY:
                     return this.LambdaIsSortedBy();
-                case EXISTS:
+                case F_EXISTS:
                     return this.LambdaExists();
 
             };
@@ -75,185 +116,15 @@ namespace Rye.Libraries
 
         }
 
-        private CellFunction LambdaRowCount()
+        public override string[] FunctionNames
         {
-
-            Func<Cell[], Cell> lambda = (x) =>
+            get
             {
-                string[] name = x[0].valueSTRING.Split('.');
-                TabularData t = this._Session.GetTabularData(name[0], name[1]);
-                return new Cell(t.RecordCount);
-            };
-            return new CellFunctionFixedShell(ROW_COUNT, 1, CellAffinity.INT, lambda);
-
-        }
-
-        private CellFunction LambdaColumnCount()
-        {
-
-            Func<Cell[], Cell> lambda = (x) =>
-            {
-                string[] name = x[0].valueSTRING.Split('.');
-                TabularData t = this._Session.GetTabularData(name[0], name[1]);
-                return new Cell(t.Columns.Count);
-            };
-            return new CellFunctionFixedShell(COLUMN_COUNT, 1, CellAffinity.INT, lambda);
-
-        }
-
-        private CellFunction LambdaExtentCount()
-        {
-
-            Func<Cell[], Cell> lambda = (x) =>
-            {
-                string[] name = x[0].valueSTRING.Split('.');
-                TabularData t = this._Session.GetTabularData(name[0], name[1]);
-                return new Cell(t.ExtentCount);
-            };
-            return new CellFunctionFixedShell(EXTENT_COUNT, 1, CellAffinity.INT, lambda);
-
-        }
-
-        private CellFunction LambdaCellCount()
-        {
-
-            Func<Cell[], Cell> lambda = (x) =>
-            {
-                string[] name = x[0].valueSTRING.Split('.');
-                TabularData t = this._Session.GetTabularData(name[0], name[1]);
-                return new Cell(t.CellCount);
-            };
-            return new CellFunctionFixedShell(CELL_COUNT, 1, CellAffinity.INT, lambda);
-
-        }
-
-        private CellFunction LambdaIsSorted()
-        {
-
-            Func<Cell[], Cell> lambda = (x) =>
-            {
-
-                string[] name = x[0].valueSTRING.Split('.');
-                TabularData t = this._Session.GetTabularData(name[0], name[1]);
-                return new Cell(t.IsSorted);
-
-            };
-            return new CellFunctionFixedShell(IS_SORTED, 1, CellAffinity.INT, lambda);
-
-        }
-
-        private CellFunction LambdaIsSortedBy()
-        {
-
-            Func<Cell[], Cell> lambda = (x) =>
-            {
-                    
-                string[] name = x[0].valueSTRING.Split('.');
-                TabularData t = this._Session.GetTabularData(name[0], name[1]);
-                string values = x[1].valueSTRING;
-                Key k = Key.Parse(values);
-                return new Cell(t.IsSortedBy(k));
-                    
-            };
-            return new CellFunctionFixedShell(IS_SORTED_BY, 2, CellAffinity.INT, lambda);
-
-        }
-
-        private CellFunction LambdaExists()
-        {
-
-            Func<Cell[], Cell> lambda = (x) =>
-            {
-
-                string[] name = x[0].valueSTRING.Split('.');
-                return new Cell(this._Session.TabularDataExists(name[0], name[1]));
-
-            };
-            return new CellFunctionFixedShell(EXISTS, 1, CellAffinity.BOOL, lambda);
-
-        }
-
-
-    }
-
-    public sealed class TableMethodLibrary : MethodLibrary
-    {
-
-        public const string LIBRARY_NAME = "TABLIX";
-        public const string IMPORT = "IMPORT";
-        public const string EXPORT = "EXPORT";
-        public const string ABOUT = "ABOUT";
-        
-        public TableMethodLibrary(Session Session)
-            : base(Session)
-        {
-            this.Build();
-            this.LibName = LIBRARY_NAME;
+                return _FunctionNames;
+            }
         }
 
         // Methods //
-
-        private static string[] _MethodNames = new string[]
-        {
-            IMPORT,
-            EXPORT,
-            ABOUT
-        };
-
-        private Heap2<string, string> _CompressedSig;
-
-        /*
-        * Name | Description | Affinity | Can Be Null?
-        * 
-        * Affinity can be:
-        * Value: expression
-        * V: vector
-        * M: matrix expression
-        * T: table (or extent)
-        * 
-        */
-
-        private void Build()
-        {
-
-            this._CompressedSig = new Heap2<string, string>();
-
-            this._CompressedSig.Allocate(TableMethodLibrary.IMPORT, "Loads a file into an existing table", "DATA|The table to load|T|false;PATH|The flat file location|Value|false;DELIM|The column delimitor|Value|false;ESCAPE|The escape sequence character|Value|true;SKIP|The number of lines to skip|Value|true");
-            this._CompressedSig.Allocate(TableMethodLibrary.EXPORT, "Exports a table into a new file", "DATA|The table to export|T|false;PATH|The path to the exported file|Value|false;DELIM|The column delimitor|Value|false");
-            this._CompressedSig.Allocate(TableMethodLibrary.ABOUT, "Prints meta data abouta table", "DATA|The table to export|T|false");
-            
-        }
-
-        public override Method RenderMethod(Method Parent, string Name, ParameterCollection Parameters)
-        {
-
-            switch (Name.ToUpper())
-            {
-                case TableMethodLibrary.IMPORT:
-                    return this.Method_Import(Parent, Parameters);
-                case TableMethodLibrary.EXPORT:
-                    return this.Method_Export(Parent, Parameters);
-                case TableMethodLibrary.ABOUT:
-                    return this.Method_About(Parent, Parameters);
-            }
-            throw new ArgumentException(string.Format("Method '{0}' does not exist", Name));
-
-        }
-
-        public override ParameterCollectionSigniture RenderSigniture(string Name)
-        {
-
-            if (this._CompressedSig.Exists(Name))
-                return ParameterCollectionSigniture.Parse(Name, this._CompressedSig[Name].Item1, this._CompressedSig[Name].Item2);
-            throw new ArgumentException(string.Format("Method '{0}' does not exist", Name));
-
-        }
-
-        public override string[] Names
-        {
-            get { return _MethodNames; }
-        }
-
         private Method Method_Export(Method Parent, ParameterCollection Parameters)
         {
 
@@ -266,7 +137,7 @@ namespace Rye.Libraries
                 this._Session.Kernel.TextDump(Data, Path, Delim);
 
             };
-            return new LibraryMethod(Parent, EXPORT, Parameters, false, kappa);
+            return new LibraryMethod(Parent, M_EXPORT, Parameters, false, kappa);
 
         }
 
@@ -284,7 +155,7 @@ namespace Rye.Libraries
                 this._Session.Kernel.TextPop(Data, Path, Delim, Escape, Skip);
 
             };
-            return new LibraryMethod(Parent, EXPORT, Parameters, false, kappa);
+            return new LibraryMethod(Parent, M_EXPORT, Parameters, false, kappa);
 
         }
 
@@ -298,11 +169,111 @@ namespace Rye.Libraries
                 this._Session.IO.WriteLine(Data.InfoString);
 
             };
-            return new LibraryMethod(Parent, ABOUT, Parameters, false, kappa);
+            return new LibraryMethod(Parent, M_ABOUT, Parameters, false, kappa);
+
+        }
+
+        // Functions //
+        private CellFunction LambdaRowCount()
+        {
+
+            Func<Cell[], Cell> lambda = (x) =>
+            {
+                string[] name = x[0].valueSTRING.Split('.');
+                TabularData t = this._Session.GetTabularData(name[0], name[1]);
+                return new Cell(t.RecordCount);
+            };
+            return new CellFunctionFixedShell(F_ROW_COUNT, 1, CellAffinity.INT, lambda);
+
+        }
+
+        private CellFunction LambdaColumnCount()
+        {
+
+            Func<Cell[], Cell> lambda = (x) =>
+            {
+                string[] name = x[0].valueSTRING.Split('.');
+                TabularData t = this._Session.GetTabularData(name[0], name[1]);
+                return new Cell(t.Columns.Count);
+            };
+            return new CellFunctionFixedShell(F_COLUMN_COUNT, 1, CellAffinity.INT, lambda);
+
+        }
+
+        private CellFunction LambdaExtentCount()
+        {
+
+            Func<Cell[], Cell> lambda = (x) =>
+            {
+                string[] name = x[0].valueSTRING.Split('.');
+                TabularData t = this._Session.GetTabularData(name[0], name[1]);
+                return new Cell(t.ExtentCount);
+            };
+            return new CellFunctionFixedShell(F_EXTENT_COUNT, 1, CellAffinity.INT, lambda);
+
+        }
+
+        private CellFunction LambdaCellCount()
+        {
+
+            Func<Cell[], Cell> lambda = (x) =>
+            {
+                string[] name = x[0].valueSTRING.Split('.');
+                TabularData t = this._Session.GetTabularData(name[0], name[1]);
+                return new Cell(t.CellCount);
+            };
+            return new CellFunctionFixedShell(F_CELL_COUNT, 1, CellAffinity.INT, lambda);
+
+        }
+
+        private CellFunction LambdaIsSorted()
+        {
+
+            Func<Cell[], Cell> lambda = (x) =>
+            {
+
+                string[] name = x[0].valueSTRING.Split('.');
+                TabularData t = this._Session.GetTabularData(name[0], name[1]);
+                return new Cell(t.IsSorted);
+
+            };
+            return new CellFunctionFixedShell(F_IS_SORTED, 1, CellAffinity.INT, lambda);
+
+        }
+
+        private CellFunction LambdaIsSortedBy()
+        {
+
+            Func<Cell[], Cell> lambda = (x) =>
+            {
+
+                string[] name = x[0].valueSTRING.Split('.');
+                TabularData t = this._Session.GetTabularData(name[0], name[1]);
+                string values = x[1].valueSTRING;
+                Key k = Key.Parse(values);
+                return new Cell(t.IsSortedBy(k));
+
+            };
+            return new CellFunctionFixedShell(F_IS_SORTED_BY, 2, CellAffinity.INT, lambda);
+
+        }
+
+        private CellFunction LambdaExists()
+        {
+
+            Func<Cell[], Cell> lambda = (x) =>
+            {
+
+                string[] name = x[0].valueSTRING.Split('.');
+                return new Cell(this._Session.TabularDataExists(name[0], name[1]));
+
+            };
+            return new CellFunctionFixedShell(F_EXISTS, 1, CellAffinity.BOOL, lambda);
 
         }
 
 
     }
+
 
 }

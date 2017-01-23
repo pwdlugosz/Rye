@@ -12,7 +12,7 @@ namespace Rye.Expressions
     public static class Analytics
     {
 
-        // These next two tell us if the node is just a simple field or static value //
+        // These next two tell us if the node is just a simple field or static Value //
         public static bool IsFlatFieldNode(Expression Node)
         {
             if (Node.Affinity == ExpressionAffinity.Field && Node.IsTerminal) return true;
@@ -414,14 +414,14 @@ namespace Rye.Expressions
         public static bool IsEqNode(Expression Node)
         {
             if (!Node.IsResult) return false;
-            if ((Node as ExpressionResult).InnerFunction.NameSig == BaseFunctionLibrary.TOKEN_BOOL_EQ) return true;
+            if ((Node as ExpressionResult).InnerFunction.NameSig == BaseLibrary.TOKEN_BOOL_EQ) return true;
             return false;
         }
 
         public static bool IsAndNode(Expression Node)
         {
             if (!Node.IsResult) return false;
-            if ((Node as ExpressionResult).InnerFunction.NameSig == BaseFunctionLibrary.FUNC_AND) return true;
+            if ((Node as ExpressionResult).InnerFunction.NameSig == BaseLibrary.FUNC_AND) return true;
             return false;
         }
 
@@ -430,7 +430,7 @@ namespace Rye.Expressions
 
             if (!Node.IsResult) return false;
             string t = (Node as ExpressionResult).InnerFunction.NameSig;
-            string[] s = { BaseFunctionLibrary.FUNC_OR, BaseFunctionLibrary.FUNC_XOR, BaseFunctionLibrary.SPECIAL_IF };
+            string[] s = { BaseLibrary.FUNC_OR, BaseLibrary.FUNC_XOR, BaseLibrary.SPECIAL_IF };
             return s.Contains(t);
 
         }
@@ -453,7 +453,7 @@ namespace Rye.Expressions
         public static bool IsAndTree(Expression Node)
         {
 
-            // If the node does not have a boolean return value //
+            // If the node does not have a boolean return Value //
             if (Node.ReturnAffinity() != CellAffinity.BOOL)
                 return false;
 

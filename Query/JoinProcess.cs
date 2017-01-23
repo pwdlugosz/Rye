@@ -97,6 +97,14 @@ namespace Rye.Query
             }
         }
 
+        public override long Clicks
+        {
+            get
+            {
+                return this.ActualCost;
+            }
+        }
+
     }
 
     /// <summary>
@@ -171,16 +179,16 @@ namespace Rye.Query
          * The CROSS JOIN is implemented using a nested loop in the base class
          * 
          * There are two key implementations:
-         *      Value x Value
-         *      V x V
+         *      Value OriginalNode Value
+         *      V OriginalNode V
          * 
          * The following can be derived from the above
-         *      Value x V
-         *      Value x T
-         *      V x T
-         *      T x T
+         *      Value OriginalNode V
+         *      Value OriginalNode T
+         *      V OriginalNode T
+         *      T OriginalNode T
          *      
-         * The 'Block' joins, implement V x V via Value x Value in blocks
+         * The 'Block' joins, implement V OriginalNode V via Value OriginalNode Value in blocks
          * 
          */
 
@@ -317,7 +325,7 @@ namespace Rye.Query
 
         }
 
-        // Value x Value //
+        // Value OriginalNode Value //
         public abstract long InnerJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory, RecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream);
 
@@ -327,7 +335,7 @@ namespace Rye.Query
         public abstract long AntiLeftJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory, RecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream, BitArray NullReferenceMap);
 
-        // V x V //
+        // V OriginalNode V //
         public abstract long InnerJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, RecordComparer JoinPredicate,
             Filter Where, ExpressionCollection Output, RecordWriter OutputStream);
 
@@ -714,7 +722,7 @@ namespace Rye.Query
             this.BaseJoinAlgorithmType = JoinAlgorithmType.SortMerge;
         }
 
-        // Value x Value Joins //
+        // Value OriginalNode Value Joins //
         public override long InnerJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory, 
             RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
@@ -733,7 +741,7 @@ namespace Rye.Query
             return this.SortMergeBase(LeftExtent, LeftMemory, RightExtent, RightMemory, JoinPredicate, Where, Output, OutputStream, NullReferenceMap, false, true);
         }
 
-        // V x V Joins //
+        // V OriginalNode V Joins //
         public override long InnerJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory, 
             RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
@@ -1239,7 +1247,7 @@ namespace Rye.Query
             this.BaseJoinAlgorithmType = JoinAlgorithmType.NestedLoop;
         }
 
-        // Value x Value Joins //
+        // Value OriginalNode Value Joins //
         public override long InnerJoin(Extent LeftExtent, Register LeftMemory, Extent RightExtent, Register RightMemory,
             RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
@@ -1258,7 +1266,7 @@ namespace Rye.Query
             return this.NestedLoopBase(LeftExtent, LeftMemory, RightExtent, RightMemory, JoinPredicate, Where, Output, OutputStream, NullReferenceMap, false, true);
         }
 
-        // V x V Joins //
+        // V OriginalNode V Joins //
         public override long InnerJoin(Volume LeftVolume, Register LeftMemory, Volume RightVolume, Register RightMemory,
             RecordComparer JoinPredicate, Filter Where, ExpressionCollection Output, RecordWriter OutputStream)
         {
@@ -1415,10 +1423,8 @@ namespace Rye.Query
     /// <summary>
     /// Provides a system to join tables
     /// </summary>
-    public class JoinModel
+    public class JoinModel : QueryModel
     {
-
-        protected Session _Session;
 
         protected JoinAlgorithm _BaseAlgorithm;
         protected JoinType _BaseType;
@@ -1427,13 +1433,19 @@ namespace Rye.Query
         protected string _LeftAlias;
         protected string _RightAlias;
         protected TabularData _Output;
-        protected RecordComparer _JoinPredicate;
+        protected KeyedRecordComparer _JoinPredicate;
         protected Filter _Where;
         protected ExpressionCollection _Fields;
-        
+
+        // Supplemental nodes //
+        private Methods.MethodDump _PostDumpNode;
+        private Methods.MethodSort _PostSortNode;
+        private Methods.MethodSort _LeftPreSort;
+        private Methods.MethodSort _RightPreSort;
+
         public JoinModel(Session Session)
+            :base(Session)
         {
-            this._Session = Session;
             this._BaseAlgorithm = new SortMerge();
             this._BaseType = JoinType.Inner;
             this._Where = Filter.TrueForAll;
@@ -1457,7 +1469,7 @@ namespace Rye.Query
             this._Output = Value;
         }
 
-        public void SetPREDICATE(RecordComparer Value)
+        public void SetPREDICATE(KeyedRecordComparer Value)
         {
             this._JoinPredicate = Value;
         }
@@ -1492,7 +1504,57 @@ namespace Rye.Query
             this._BaseAlgorithm = Value;
         }
 
+        public void SetDUMP(Methods.MethodDump Value)
+        {
+            this._PostDumpNode = Value;
+        }
+
+        public void SetSORT(Methods.MethodSort Value)
+        {
+            this._PostSortNode = Value;
+        }
+
         // Create a single process node //
+        public void Optimize()
+        {
+
+            // Save the algorithm //
+            JoinAlgorithmType t = this._BaseAlgorithm.BaseJoinAlgorithmType;
+            bool LeftIsSortedCorrectly = false;
+            bool RightIsSortedCorrectly = false;
+
+            // Check the left table //
+            if (KeyComparer.IsStrongSubset(this._LeftTable.SortBy, this._JoinPredicate.LeftKey))
+            {
+                this._LeftPreSort = null;
+                LeftIsSortedCorrectly = true;
+            }
+
+            // Check the right table //
+            if (KeyComparer.IsStrongSubset(this._RightTable.SortBy, this._JoinPredicate.RightKey))
+            {
+                this._RightPreSort = null;
+                RightIsSortedCorrectly = true;
+            }
+
+            // If both the left and right tables are sorted correctly and we're using a nested loop algorithm, switch to sort merge //
+            if (LeftIsSortedCorrectly && RightIsSortedCorrectly && t != JoinAlgorithmType.SortMerge)
+            {
+                this._BaseAlgorithm = new SortMerge();
+            }
+
+            // Check if we need to sort the data //
+            if (!LeftIsSortedCorrectly && t == JoinAlgorithmType.SortMerge)
+            {
+                this._LeftPreSort = new Methods.MethodSort(null, this._LeftTable, this._JoinPredicate.LeftKey);
+            }
+            if (!RightIsSortedCorrectly && t == JoinAlgorithmType.SortMerge)
+            {
+                this._RightPreSort = new Methods.MethodSort(null, this._RightTable, this._JoinPredicate.RightKey);
+            }
+
+        }
+
         public JoinProcessNode RenderNode(int ThreadID, int ThreadCount)
         {
 
@@ -1537,7 +1599,106 @@ namespace Rye.Query
 
         }
 
+        public QueryProcess<JoinProcessNode> RenderProcess(int ThreadCount)
+        {
 
+            // Build the process //
+            List<JoinProcessNode> nodes = this.RenderNodes(ThreadCount);
+            JoinConsolidation reducer = new JoinConsolidation(this._Session);
+            QueryProcess<JoinProcessNode> process = new QueryProcess<JoinProcessNode>(nodes, reducer);
+
+            // Add the pre-processing nodes //
+            if (this._LeftPreSort != null) process.PreProcessor.AddChild(this._LeftPreSort);
+            if (this._RightPreSort != null) process.PreProcessor.AddChild(this._RightPreSort);
+
+            // Add the post processing nodes //
+            if (this._PostSortNode != null) process.PostProcessor.AddChild(this._PostSortNode);
+            if (this._PostDumpNode != null) process.PostProcessor.AddChild(this._PostDumpNode);
+
+            return process;
+
+        }
+
+        // Execution //
+        private void BuildCompileString()
+        {
+
+            //this._Message.Append("--- JOIN ------------------------------------\n");
+            this._Message.Append(string.Format("From: {0} AS {1} AND {2} AS {3}\n", this._LeftTable.Header.Name, this._LeftAlias, this._RightTable.Header.Name, this._RightAlias));
+            if (!this._Where.Default)
+                this._Message.Append(string.Format("Where: {0}\n", this._Where.UnParse(null)));
+            this._Message.Append(string.Format("Using the {0} algorithm\n", (this._BaseAlgorithm.BaseJoinAlgorithmType == JoinAlgorithmType.SortMerge ? "sort merge" : "nested loop")));
+            if (this._PostSortNode != null)
+                this._Message.Append(string.Format("Sorting output data with cost: {0}\n", this._PostSortNode.Clicks));
+            if (this._PostDumpNode != null)
+                this._Message.Append(string.Format("Dumping output data to {0}\n", this._PostDumpNode.Path));
+            if (this._BaseAlgorithm.BaseJoinAlgorithmType == JoinAlgorithmType.SortMerge)
+            {
+
+                if (this._LeftPreSort == null)
+                    this._Message.Append(string.Format("Join optimized for {0} using pre-sorted data\n", this._LeftTable.Header.Name));
+                else
+                    this._Message.Append(string.Format("Join requires sorting for {0}\n", this._LeftTable.Header.Name));
+
+                if (this._RightPreSort == null)
+                    this._Message.Append(string.Format("Join optimized for {0} using pre-sorted data\n", this._RightTable.Header.Name));
+                else
+                    this._Message.Append(string.Format("Join requires sorting for {0}\n", this._RightTable.Header.Name));
+
+            }
+
+        }
+
+        public override void ExecuteConcurrent(int ThreadCount)
+        {
+
+            // Fix the threads //
+            this.ThreadCount = ThreadCount;
+
+            // Optimize //
+            this.Optimize();
+
+            // Build response //
+            this.BuildCompileString();
+
+            // Create the process //
+            QueryProcess<JoinProcessNode> process = this.RenderProcess(ThreadCount);
+
+            // Run the algorithm //
+            this._Timer = System.Diagnostics.Stopwatch.StartNew();
+            process.ExecuteThreaded();
+            this._Timer.Stop();
+
+            // Append the run string //
+            this._Message.Append(string.Format("Runtime: {0}, over {1} thread(s), with cost {2}\n\n", this._Timer.Elapsed, this.ThreadCount, process.Reducer.Clicks));
+
+        }
+
+        public override void ExecuteAsynchronous()
+        {
+
+            // Fix the threads //
+            this.ThreadCount = ThreadCount;
+
+            // Optimize //
+            this.Optimize();
+
+            // Build response //
+            this.BuildCompileString();
+
+            // Create the process //
+            QueryProcess<JoinProcessNode> process = this.RenderProcess(ThreadCount);
+
+            // Run the algorithm //
+            this._Timer = System.Diagnostics.Stopwatch.StartNew();
+            process.Execute();
+            this._Timer.Stop();
+
+            // Append the run string //
+            this._Message.Append(string.Format("Runtime: {0}, over {1} thread(s), with cost {2}\n\n", this._Timer.Elapsed, this.ThreadCount, process.Reducer.Clicks));
+
+
+        }
 
     }
 

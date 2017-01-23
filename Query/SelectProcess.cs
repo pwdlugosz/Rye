@@ -133,7 +133,7 @@ namespace Rye.Query
                 // Set up the current values //
                 this._main.Value = stream.ReadNext();
 
-                // Conditionally set the lag value //
+                // Conditionally set the lag Value //
                 if (this._hasKC)
                 {
                     if (!stream.EndOfData)
@@ -151,8 +151,8 @@ namespace Rye.Query
                     first = false;
                 if (this._hasKC)
                 {
-                    bool b = !rc.Equals(this._key1.Evaluate(), this._key2.Evaluate());
-                    this._lscalar[this._kcptr] = new Cell(b);
+                    bool Mem = !rc.Equals(this._key1.Evaluate(), this._key2.Evaluate());
+                    this._lscalar[this._kcptr] = new Cell(Mem);
                 }
 
                 // Perform our actions //
@@ -293,7 +293,7 @@ namespace Rye.Query
                 // Set up the current values //
                 this._main.Value = stream.ReadNext();
 
-                // Conditionally set the lag value //
+                // Conditionally set the lag Value //
                 if (!stream.EndOfData)
                     this._peek.Value = stream.Read();
                 else
@@ -353,7 +353,7 @@ namespace Rye.Query
     /// <summary>
     /// Given various inputs, this method will render a SELECT query process node and consolidator
     /// </summary>
-    public class SelectModel
+    public class SelectModel : QueryModel
     {
 
         public const string DEFAULT_ALIAS = "T";
@@ -366,9 +366,6 @@ namespace Rye.Query
         public const string NAME_IS_FIRST = "IS_FIRST";
         public const string NAME_IS_LAST = "IS_LAST";
 
-        // Other control variables //
-        protected Session _Session;
-        
         // Can't be null section
         private TabularData _Source; // FROM;
         private string _SourceAlias = DEFAULT_ALIAS; 
@@ -383,9 +380,8 @@ namespace Rye.Query
 
         // Constructor //
         public SelectModel(Session Control)
+            :base(Control)
         {
-
-            this._Session = Control;
 
             // Fill the ancilary variables //
             this._Main = new MethodCollection();
@@ -572,6 +568,72 @@ namespace Rye.Query
             }
 
             return nodes;
+
+        }
+
+        // Execution //
+        private void BuildCompileString()
+        {
+
+            //this._Message.Append("--- SELECT ------------------------------------\n");
+            this._Message.Append(string.Format("From: {0}\n", this._Source.Header.Name));
+            if (!this._Where.Default)
+                this._Message.Append(string.Format("Where: {0}\n", this._Where.UnParse(this._Source.Columns)));
+            if (this._By.Count != 0)
+                this._Message.Append(string.Format("By: {0}\n", this._By.Unparse(this._Source.Columns)));
+            if (this._LocalS.Count + this._LocalM.Count != 0)
+                this._Message.Append(string.Format("Local: {0} scalar(s), {1} matrix(es)\n", this._LocalS.Count, this._LocalM.Count));
+            this._Message.Append(string.Format("Main: {0} action(s)\n", this._Main.Count));
+            if (this._Reduce.Count != 0)
+                this._Message.Append(string.Format("Reduce: {0} action(s)\n", this._Reduce.Count));
+
+        }
+
+        public override void ExecuteAsynchronous()
+        {
+
+            // Set the thread count //
+            this.ThreadCount = 1;
+
+            // Build the process //
+            List<SelectProcessNode> nodes = this.RenderNodes(this.ThreadCount);
+            SelectProcessConsolidation reducer = new SelectProcessConsolidation(this._Session);
+            QueryProcess<SelectProcessNode> process = new QueryProcess<SelectProcessNode>(nodes, reducer);
+
+            // Compile strings //
+            this.BuildCompileString();
+
+            // Run the process //
+            this._Timer = System.Diagnostics.Stopwatch.StartNew();
+            process.Execute();
+            this._Timer.Stop();
+
+            // Append the run string //
+            this._Message.Append(string.Format("Runtime: {0}, over {1} thread(s)\n\n", this._Timer.Elapsed, this.ThreadCount));
+
+        }
+
+        public override void ExecuteConcurrent(int ThreadCount)
+        {
+
+            // Set this thread count //
+            this.ThreadCount = ThreadCount;
+
+            // Build the process //
+            List<SelectProcessNode> nodes = this.RenderNodes(this.ThreadCount);
+            SelectProcessConsolidation reducer = new SelectProcessConsolidation(this._Session);
+            QueryProcess<SelectProcessNode> process = new QueryProcess<SelectProcessNode>(nodes, reducer);
+
+            // Compile strings //
+            this.BuildCompileString();
+
+            // Run the process //
+            this._Timer = System.Diagnostics.Stopwatch.StartNew();
+            process.ExecuteThreaded();
+            this._Timer.Stop();
+
+            // Append the run string //
+            this._Message.Append(string.Format("Runtime: {0}, over {1} thread(s)\n\n", this._Timer.Elapsed, this.ThreadCount));
 
         }
 

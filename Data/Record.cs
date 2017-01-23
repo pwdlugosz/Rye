@@ -22,7 +22,7 @@ namespace Rye.Data
         /// <summary>
         /// Creates a record with a pre-defined size
         /// </summary>
-        /// <param name="Size">The size of the record's element cache</param>
+        /// <param name="PageSize">The size of the record's element cache</param>
         public Record(int Size)
         {
             this._data = new Cell[Size];
@@ -95,7 +95,7 @@ namespace Rye.Data
         /// <summary>
         /// Converts the record to a string with a defined deliminator
         /// </summary>
-        /// <param name="Delim">The delim to space each cell value</param>
+        /// <param name="Delim">The delim to space each cell Value</param>
         /// <returns>A string representation of the record</returns>
         public string ToString(char Delim)
         {
@@ -369,7 +369,7 @@ namespace Rye.Data
         /// </summary>
         /// <param name="Columns">A schema representing the record types</param>
         /// <param name="Text">Text representing the record</param>
-        /// <param name="Delim">A delim value partitioning fields</param>
+        /// <param name="Delim">A delim Value partitioning fields</param>
         /// <returns>A record</returns>
         public static Record Parse(Schema Columns, string Text, char[] Delim)
         {
@@ -389,7 +389,7 @@ namespace Rye.Data
         /// </summary>
         /// <param name="Columns">A schema representing the record types</param>
         /// <param name="Text">Text representing the record</param>
-        /// <param name="Delim">A delim value partitioning fields</param>
+        /// <param name="Delim">A delim Value partitioning fields</param>
         /// <returns>A record</returns>
         public static Record Parse(Schema Columns, string Text, char Delim)
         {
@@ -412,7 +412,7 @@ namespace Rye.Data
         /// </summary>
         /// <param name="Columns">A schema representing the record types</param>
         /// <param name="Text">Text representing the record</param>
-        /// <param name="Delim">A delim value partitioning fields</param>
+        /// <param name="Delim">A delim Value partitioning fields</param>
         /// <returns>A record</returns>
         public static Record TryParse(Schema Columns, string Text, char[] Delim)
         {
@@ -431,7 +431,7 @@ namespace Rye.Data
         /// </summary>
         /// <param name="Columns">A schema representing the record types</param>
         /// <param name="Text">Text representing the record</param>
-        /// <param name="Delim">A delim value partitioning fields</param>
+        /// <param name="Delim">A delim Value partitioning fields</param>
         /// <returns>A record</returns>
         public static Record TryParse(Schema Columns, string Text, char Delim)
         {

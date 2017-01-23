@@ -10,6 +10,7 @@ using Rye.Expressions;
 using ScrapySharp;
 using ScrapySharp.Network;
 using ScrapySharp.Extensions;
+using Rye.Data.Spectre;
 
 namespace Rye
 {
@@ -20,9 +21,9 @@ namespace Rye
         static void Main(string[] args)
         {
 
-            Program.DebugRun(args);
+            //Program.DebugRun(args);
             //Program.ReleaseRun(args);
-            //Program.ShellRun();
+            Program.ShellRun();
             string z = Console.ReadLine();
 
         }
@@ -32,38 +33,47 @@ namespace Rye
 
             System.Diagnostics.Stopwatch sw = Stopwatch.StartNew();
 
-            //ScrapySharp.Network.ScrapingBrowser browser = new ScrapySharp.Network.ScrapingBrowser();
+            //List<int> u = new List<int>() { 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15 };
 
-            //ScrapySharp.Network.WebPage page = browser.NavigateToPage(new Uri("https://www.medicare.gov/find-a-plan/results/planresults/plan-details.aspx?TT=PUBLIC&HM=False&CNTY=36010|Allen|OH0&SL=2&CY=2017&ADL=-1&MPL=-1&PTL=MAPD&NWC=0|1&AD=0&MOA=0|1&CGO=0|1&FIPSCC=39003&ZC=45877&SP=100&HS=3&elink=yes&cntrctid=H3655&plnid=032&sgmntid=0&DIID=-1"));
+            //Console.WriteLine("Find {0} : {1}", 0, u.BinarySearch(0));
+            //Console.WriteLine("Find {0} : {1}", 7, u.BinarySearch(7));
+            //Console.WriteLine("Find {0} : {1}", 9, ~u.BinarySearch(9));
+            //Console.WriteLine("Find {0} : {1}", 16, ~u.BinarySearch(16));
 
-            //string[] tags = new string[]
-            //{
-            //    "ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewInpatientCareVal",
-            //    "ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewOutpatientPrescriptionDrugsVal",
-            //    "ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewDentalServicesVal",
-            //    "ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewAllOtherServicesVal",
-            //    "ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewTotalMonthlyEstimateVal",
-            //    "ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewTotalAnnualEstimateVal",
-            //    "ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_DrugCostPanel_AverageAnnualDrugCostValue",
-            //    "ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewPartBPremiumVal",
-            //    "ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanOverviewPanel_lblOverviewTotalPremiumVal",
-            //    "ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanBenefitsPanel_BenefitsMonthlyPlanPremiumText",
-            //    "ctl00_ctl00_ctl00_MCGMainContentPlaceHolder_ToolContentPlaceHolder_PlanFinderContentPlaceHolder_PlanDetailTabContainer_PlanBenefitsPanel_BenefitsMonthlyDrugPremiumText"
-            //};
 
-            //foreach (string  x in tags)
-            //{
-            //    var y = page.Html.CssSelect("#" + x).ToArray();
-            //    if (y.Length > 0)
-            //    {
-            //        Console.WriteLine(y.First().InnerHtml);
-            //    }
-            //    else
-            //    {
-            //        Console.WriteLine("Empty");
-            //    }
+            //Console.WriteLine("::::::::::::::::::::::::::::::::: Complete :::::::::::::::::::::::::::::::::");
+            //Console.WriteLine("Run Time: {0}", sw.Elapsed);
+            //string z = Console.ReadLine();
 
-            //}
+            //return;
+
+            Rye.Data.Spectre.Host h = new Data.Spectre.Host();
+            Schema s = new Schema("Key int, Value double, xyz int");
+            //HeapDreamTable x = new HeapDreamTable(h, "TEMP", s);
+            ScribeTable x = new HeapScribeTable(h, "Temp", @"C:\Users\pwdlu_000\Documents\Rye Projects\Temp", s, Page.DEFAULT_SIZE);
+            //ScribeTable OriginalNode = new SortedScribeTable(h, "Temp", @"C:\Users\pwdlu_000\Documents\Rye Projects\Temp", s, Page.DEFAULT_SIZE, new Key(0));
+            RandomCell rng = new RandomCell(127);
+            BPlusTree tree = new BPlusTree(x, new Key(1,2));
+
+            Rye.Data.Spectre.WriteStream writer = x.OpenWriter();
+            for (int i = 0; i < 2000000; i++)
+            {
+
+                Record r = Record.Stitch(rng.NextLong(0, 100), rng.NextDoubleGauss(), new Cell(i));
+                x.Insert(r);
+                tree.Insert(r);
+
+            }
+            writer.Close();
+
+            Console.WriteLine(x.MetaData());
+
+            tree.Print(@"C:\Users\pwdlu_000\Documents\Rye Projects\BPlusTree.txt");
+
+            h.ShutDown();
+
+            //ScribeTable table = h.PageCache.Buffer(h, @"C:\Users\pwdlu_000\Documents\Rye Projects\Temp\Temp.ryev1", true);
+            //table.Dump(@"C:\Users\pwdlu_000\Documents\Rye Projects\Test2.txt");
 
             Console.WriteLine("::::::::::::::::::::::::::::::::: Complete :::::::::::::::::::::::::::::::::");
             Console.WriteLine("Run Time: {0}", sw.Elapsed);
@@ -84,22 +94,14 @@ namespace Rye
             Session enviro = new Session(k, new CommandLineCommunicator(), true);
             Exchange.WebProvider web = new Exchange.WebProvider();
 
-            // Add in the method library //
-            enviro.SetMethodLibrary(new Libraries.FileMethodLibrary(enviro));
-            enviro.SetMethodLibrary(new Libraries.TableMethodLibrary(enviro));
-            enviro.SetMethodLibrary(new Libraries.MSOfficeLibrary(enviro));
-            enviro.SetMethodLibrary(new Libraries.SystemMethodLibrary(enviro));
-            enviro.SetMethodLibrary(new Libraries.WebMathodLibrary(enviro, web));
-            enviro.SetMethodLibrary(new Libraries.ExchangeLibrary(enviro));
-
-            // Add the function libraries //
-            enviro.SetFunctionLibrary(new Libraries.FileFunctionLibrary(enviro));
-            enviro.SetFunctionLibrary(new Libraries.TableFunctionLibrary(enviro));
-            enviro.SetFunctionLibrary(new Libraries.FinanceFunctionLibrary(enviro));
-            enviro.SetFunctionLibrary(new Libraries.SystemFunctionLibrary(enviro));
-            enviro.SetFunctionLibrary(new Libraries.ExchangeFunctionLibrary(enviro));
-            enviro.SetFunctionLibrary(new Libraries.WebFunctionLibrary(enviro, web));
-            
+            // Load the libraries //
+            enviro.SetLibrary(new Libraries.FileLibrary(enviro));
+            enviro.SetLibrary(new Libraries.TableLibrary(enviro));
+            enviro.SetLibrary(new Libraries.WebLibrary(enviro));
+            enviro.SetLibrary(new Libraries.SystemLibrary(enviro));
+            enviro.SetLibrary(new Libraries.FinanceLibrary(enviro));
+            enviro.SetLibrary(new Libraries.MiningLibrary(enviro));
+            enviro.SetLibrary(new Libraries.MSOfficeLibrary(enviro));
 
             // Create a script process //
             RyeScriptProcessor runner = new RyeScriptProcessor(enviro);
@@ -108,7 +110,6 @@ namespace Rye
             runner.Execute(script);
 
             // Close down the kernel space //
-            enviro.Kernel.BaseIO = enviro.IO;
             enviro.Kernel.ShutDown();
 
             sw.Stop();
@@ -138,20 +139,13 @@ namespace Rye
             Exchange.WebProvider web = new Exchange.WebProvider();
 
             // Add in the method library //
-            enviro.SetMethodLibrary(new Libraries.FileMethodLibrary(enviro));
-            enviro.SetMethodLibrary(new Libraries.TableMethodLibrary(enviro));
-            enviro.SetMethodLibrary(new Libraries.MSOfficeLibrary(enviro));
-            enviro.SetMethodLibrary(new Libraries.SystemMethodLibrary(enviro));
-            enviro.SetMethodLibrary(new Libraries.WebMathodLibrary(enviro, web));
-            enviro.SetMethodLibrary(new Libraries.ExchangeLibrary(enviro));
-
-            // Add the function libraries //
-            enviro.SetFunctionLibrary(new Libraries.FileFunctionLibrary(enviro));
-            enviro.SetFunctionLibrary(new Libraries.TableFunctionLibrary(enviro));
-            enviro.SetFunctionLibrary(new Libraries.FinanceFunctionLibrary(enviro));
-            enviro.SetFunctionLibrary(new Libraries.SystemFunctionLibrary(enviro));
-            enviro.SetFunctionLibrary(new Libraries.ExchangeFunctionLibrary(enviro));
-            enviro.SetFunctionLibrary(new Libraries.WebFunctionLibrary(enviro, web));
+            enviro.SetLibrary(new Libraries.FileLibrary(enviro));
+            enviro.SetLibrary(new Libraries.TableLibrary(enviro));
+            enviro.SetLibrary(new Libraries.WebLibrary(enviro));
+            enviro.SetLibrary(new Libraries.SystemLibrary(enviro));
+            enviro.SetLibrary(new Libraries.FinanceLibrary(enviro));
+            enviro.SetLibrary(new Libraries.MiningLibrary(enviro));
+            enviro.SetLibrary(new Libraries.MSOfficeLibrary(enviro));
             
             // Create a script process //
             RyeScriptProcessor runner = new RyeScriptProcessor(enviro);

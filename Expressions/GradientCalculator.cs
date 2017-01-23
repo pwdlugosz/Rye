@@ -53,61 +53,61 @@ namespace Rye.Expressions
             switch (name_sig)
             {
 
-                case BaseFunctionLibrary.UNI_PLUS:
+                case BaseLibrary.UNI_PLUS:
                     t = GradientOfUniPlus(Node, X);
                     break;
-                case BaseFunctionLibrary.UNI_MINUS:
+                case BaseLibrary.UNI_MINUS:
                     t = GradientOfUniMinus(Node, X);
                     break;
 
-                case BaseFunctionLibrary.OP_ADD:
+                case BaseLibrary.OP_ADD:
                     t = GradientOfAdd(Node, X);
                     break;
-                case BaseFunctionLibrary.OP_SUB:
+                case BaseLibrary.OP_SUB:
                     t = GradientOfSubtract(Node, X);
                     break;
-                case BaseFunctionLibrary.OP_MUL:
+                case BaseLibrary.OP_MUL:
                     t = GradientOfMultiply(Node, X);
                     break;
-                case BaseFunctionLibrary.OP_DIV:
+                case BaseLibrary.OP_DIV:
                     t = GradientOfDivide(Node, X);
                     break;
 
-                case BaseFunctionLibrary.FUNC_LOG:
+                case BaseLibrary.FUNC_LOG:
                     t = GradientOfLog(Node, X);
                     break;
-                case BaseFunctionLibrary.FUNC_EXP:
+                case BaseLibrary.FUNC_EXP:
                     t = GradientOfExp(Node, X);
                     break;
-                case BaseFunctionLibrary.FUNC_POWER:
+                case BaseLibrary.FUNC_POWER:
                     t = GradientOfPowerLower(Node, X);
                     break;
 
-                case BaseFunctionLibrary.FUNC_SIN:
+                case BaseLibrary.FUNC_SIN:
                     t = GradientOfSin(Node, X);
                     break;
-                case BaseFunctionLibrary.FUNC_COS:
+                case BaseLibrary.FUNC_COS:
                     t = GradientOfCos(Node, X);
                     break;
-                case BaseFunctionLibrary.FUNC_TAN:
+                case BaseLibrary.FUNC_TAN:
                     t = GradientOfTan(Node, X);
                     break;
 
-                case BaseFunctionLibrary.FUNC_SINH:
+                case BaseLibrary.FUNC_SINH:
                     t = GradientOfSinh(Node, X);
                     break;
-                case BaseFunctionLibrary.FUNC_COSH:
+                case BaseLibrary.FUNC_COSH:
                     t = GradientOfCosh(Node, X);
                     break;
-                case BaseFunctionLibrary.FUNC_TANH:
+                case BaseLibrary.FUNC_TANH:
                     t = GradientOfTanh(Node, X);
                     break;
 
-                case BaseFunctionLibrary.FUNC_LOGIT:
+                case BaseLibrary.FUNC_LOGIT:
                     t = GradientOfLogit(Node, X);
                     break;
 
-                case BaseFunctionLibrary.FUNC_NDIST:
+                case BaseLibrary.FUNC_NDIST:
                     t = GradientOfNDIST(Node, X);
                     break;
                 
@@ -338,7 +338,7 @@ namespace Rye.Expressions
 
         }
 
-        // F(X) = tan(X), F'(X) = Power(cos(x) , -2.00)
+        // F(X) = tan(X), F'(X) = Power(cos(OriginalNode) , -2.00)
         private static Expression GradientOfTan(Expression Node, ExpressionPointer X)
         {
 
@@ -346,12 +346,12 @@ namespace Rye.Expressions
             ExpressionResult t = new ExpressionResult(null, new CellFuncFVCos());
             t.AddChildNode(Node.Children[0]);
 
-            // power(cos(G(x)),2) //
+            // power(cos(G(OriginalNode)),2) //
             ExpressionResult u = new ExpressionResult(t, new CellFuncFVPower());
             u.AddChildNode(t);
             u.AddChildNode(new ExpressionValue(null, new Cell(-2.00)));
 
-            // power(cos(G(x)),2) * G'(X) //
+            // power(cos(G(OriginalNode)),2) * G'(X) //
             ExpressionResult v = new ExpressionResult(Node.ParentNode, new CellBinMult());
             v.AddChildNode(u);
             v.AddChildNode(Gradient(t.Children[0], X));
@@ -394,7 +394,7 @@ namespace Rye.Expressions
 
         }
 
-        // F(X) = tanh(X), F'(X) = Power(cosh(x) , -2.00)
+        // F(X) = tanh(X), F'(X) = Power(cosh(OriginalNode) , -2.00)
         private static Expression GradientOfTanh(Expression Node, ExpressionPointer X)
         {
 
@@ -402,12 +402,12 @@ namespace Rye.Expressions
             ExpressionResult t = new ExpressionResult(null, new CellFuncFVCosh());
             t.AddChildNode(Node.Children[0]);
 
-            // power(cosh(G(x)),2) //
+            // power(cosh(G(OriginalNode)),2) //
             ExpressionResult u = new ExpressionResult(t, new CellFuncFVPower());
             u.AddChildNode(t);
             u.AddChildNode(new ExpressionValue(null, new Cell(-2.00)));
 
-            // power(cosh(G(x)),2) * G'(X) //
+            // power(cosh(G(OriginalNode)),2) * G'(X) //
             ExpressionResult v = new ExpressionResult(Node.ParentNode, new CellBinMult());
             v.AddChildNode(u);
             v.AddChildNode(Gradient(Node.Children[0], X));

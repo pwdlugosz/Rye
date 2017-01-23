@@ -170,7 +170,7 @@ namespace Rye.Query
                     // Get the right side of the comparison //
                     KeyValueSet y = KeyValueSet.Open(this._Sink, j, this._By, this._Over);
 
-                    // Update x; entry R is in x and y, R in x will be updated while R in y will be removed; if R is not in both, nothing happens
+                    // Update OriginalNode; entry R is in OriginalNode and NewNode, R in OriginalNode will be updated while R in NewNode will be removed; if R is not in both, nothing happens
                     if (y.Count != 0)
                     {
                         KeyValueSet.Union(x, y);
@@ -181,12 +181,12 @@ namespace Rye.Query
 
                 }
 
-                // Output 'x' //
+                // Output 'OriginalNode' //
                 x.WriteToFinal(this._output, this._Select, this._MemoryLocation);
 
             }
 
-            // Drop the table //
+            // FreeAll the table //
             this._Session.Kernel.RequestDropTable(this._Sink.Header.Path);
 
             // Close the stream //
@@ -194,7 +194,7 @@ namespace Rye.Query
 
         }
 
-        public long Clicks
+        public override long Clicks
         {
             get { return this._Clicks; }
         }
@@ -336,7 +336,7 @@ namespace Rye.Query
             foreach (KeyValuePair<Record, CompoundRecord> t in this._cache)
             {
 
-                // Assign the value to the register //
+                // Assign the Value to the register //
                 MemoryLocation.Value = Record.Join(t.Key, this._Reducers.Evaluate(t.Value));
 
                 // Evaluate the record //
@@ -596,13 +596,13 @@ namespace Rye.Query
                                 this._BeginEdgeValue = this._WorkingValue;
                             }
 
-                            // Update the key and re-set the value //
+                            // Update the key and re-set the Value //
                             this._WorkingKey = r;
                             this._WorkingValue = this._Over.Initialize();
 
                         }
 
-                        // Accumulate the value //
+                        // Accumulate the Value //
                         this._Over.Accumulate(this._WorkingValue);
 
                     } // End where 
@@ -755,7 +755,7 @@ namespace Rye.Query
 
         }
 
-        public long Clicks
+        public override long Clicks
         {
             get { return this._Clicks; }
         }
@@ -775,10 +775,8 @@ namespace Rye.Query
     /// <summary>
     /// Provides support for building data aggregations
     /// </summary>
-    public class AggregateModel
+    public class AggregateModel : QueryModel
     {
-
-        private Session _Session;
 
         // Aggregate Phase Variables //
         private TabularData _Source;
@@ -792,15 +790,24 @@ namespace Rye.Query
         private string _OutAlias;
         private ExpressionCollection _OutFields;
 
+        // Supplemental nodes //
+        private Methods.MethodDump _PostDumpNode;
+        private Methods.MethodSort _PostSortNode;
+
         // Hash only variables //
         Table _Sink = null;
 
+        // Other variables //
+        private string _Hint = null;
+
         public AggregateModel(Session Session)
+            :base(Session)
         {
-            this._Session = Session;
+
             this._Keys = new ExpressionCollection();
             this._Values = new AggregateCollection();
             this._OutFields = new ExpressionCollection();
+            this._Where = Filter.TrueForAll;
         }
 
         // Properties //
@@ -868,6 +875,22 @@ namespace Rye.Query
             {
                 this._OutFields.Add(Value[i], Value.Alias(i));
             }
+        }
+
+        // Other pieces //
+        public void SetHINT(string Value)
+        {
+            this._Hint = Value;
+        }
+
+        public void SetDUMP(Methods.MethodDump Value)
+        {
+            this._PostDumpNode = Value;
+        }
+
+        public void SetSORT(Methods.MethodSort Value)
+        {
+            this._PostSortNode = Value;
         }
 
         // Nodes - Hash table //
@@ -945,6 +968,22 @@ namespace Rye.Query
 
         }
 
+        public QueryProcess<AggregateHashTableProcessNode> RenderProcessHT(int ThreadCount)
+        {
+
+            // Build the process //
+            List<AggregateHashTableProcessNode> nodes = this.RenderNodesHT(ThreadCount);
+            AggregateHashTableConsolidationProcess reducer = this.RenderReducerHT();
+            QueryProcess<AggregateHashTableProcessNode> process = new QueryProcess<AggregateHashTableProcessNode>(nodes, reducer);
+
+            // Add the post processing nodes //
+            if (this._PostSortNode != null) process.PostProcessor.AddChild(this._PostSortNode);
+            if (this._PostDumpNode != null) process.PostProcessor.AddChild(this._PostDumpNode);
+
+            return process;
+
+        }
+
         // Nods - Sort merge //
         public AggregateOrderedProcessNode RenderNodeO(int ThreadID, int ThreadCount)
         {
@@ -1000,6 +1039,25 @@ namespace Rye.Query
 
         }
 
+        public QueryProcess<AggregateOrderedProcessNode> RenderProcessO(int ThreadCount)
+        {
+
+            // Build the process //
+            List<AggregateOrderedProcessNode> nodes = this.RenderNodesO(ThreadCount);
+            AggregateOrderedConsolidationProcess reducer = new AggregateOrderedConsolidationProcess(this._Session);
+            QueryProcess<AggregateOrderedProcessNode> process = new QueryProcess<AggregateOrderedProcessNode>(nodes, reducer);
+
+            // Add the pre-processor nodes //
+            process.PreProcessor.AddChild(this.RenderPreProcessor());
+
+            // Add the post processing nodes //
+            if (this._PostSortNode != null) process.PostProcessor.AddChild(this._PostSortNode);
+            if (this._PostDumpNode != null) process.PostProcessor.AddChild(this._PostDumpNode);
+
+            return process;
+
+        }
+
         // Optimization //
         public AggregateAlgorithm SuggestedAlgorithm()
         {
@@ -1047,6 +1105,23 @@ namespace Rye.Query
 
         }
 
+        public AggregateAlgorithm GetAlgorithm()
+        {
+
+            // Figure out which algorithm to use //
+            AggregateAlgorithm algorithm = AggregateAlgorithm.HashTable;
+            if (this._Hint == null)
+            {
+                algorithm = this.SuggestedAlgorithm();
+            }
+            else
+            {
+                algorithm = this.ParseHint(this._Hint);
+            }
+            return algorithm;
+
+        }
+
         public Methods.MethodSort RenderPreProcessor()
         {
 
@@ -1061,6 +1136,113 @@ namespace Rye.Query
             ExpressionCollection keys = web.Clone(this._Keys);
             
             return new Methods.MethodSort(null, this._Source, keys, mem, Key.Build(keys.Count));
+
+        }
+
+        // Execution //
+        private void BuildCompileString()
+        {
+
+            //this._Message.Append("--- AGGREGATE ------------------------------------\n");
+            this._Message.Append(string.Format("From: {0}\n", this._Source.Header.Name));
+            if (!this._Where.Default)
+                this._Message.Append(string.Format("Where: {0}\n", this._Where.UnParse(this._Source.Columns)));
+            this._Message.Append(string.Format("Grouping by {0} key(s)\n", this._Keys.Count));
+            this._Message.Append(string.Format("Aggregating {0} Value(s)\n", this._Values.Count));
+            this._Message.Append(string.Format("Using the {0} algorithm\n", (this.GetAlgorithm() == AggregateAlgorithm.HashTable ? "hash table" : "natural order")));
+            if (this._PostSortNode != null)
+                this._Message.Append(string.Format("Sorting output data with cost: {0}\n", this._PostSortNode.Clicks));
+            if (this._PostDumpNode != null)
+                this._Message.Append(string.Format("Dumping output data to {0}\n", this._PostDumpNode.Path));
+
+        }
+
+        public override void ExecuteConcurrent(int ThreadCount)
+        {
+
+            // Fix the threads //
+            this.ThreadCount = ThreadCount;
+
+            // Build response //
+            this.BuildCompileString();
+
+            // Figure out which algorithm to use //
+            AggregateAlgorithm algorithm = this.GetAlgorithm();
+
+            // Do the hash table process //
+            if (algorithm == AggregateAlgorithm.HashTable)
+            {
+
+                QueryProcess<AggregateHashTableProcessNode> process = this.RenderProcessHT(this.ThreadCount);
+
+                this._Timer = System.Diagnostics.Stopwatch.StartNew();
+                process.ExecuteThreaded();
+                this._Timer.Stop();
+
+                // Append the run string //
+                this._Message.Append(string.Format("Runtime: {0}, over {1} thread(s), with cost {2}\n\n", this._Timer.Elapsed, this.ThreadCount, process.Reducer.Clicks));
+
+            }
+            else
+            {
+
+                QueryProcess<AggregateOrderedProcessNode> process = this.RenderProcessO(this.ThreadCount);
+
+                this._Timer = System.Diagnostics.Stopwatch.StartNew();
+                process.ExecuteThreaded();
+                this._Timer.Stop();
+
+                // Append the run string //
+                this._Message.Append(string.Format("Pre-processor sort cost {0}\n", process.PreProcessorClicks));
+                this._Message.Append(string.Format("Runtime: {0}, over {1} thread(s), with cost {2}\n\n", this._Timer.Elapsed, this.ThreadCount, process.Reducer.Clicks));
+
+
+            }
+
+
+        }
+
+        public override void ExecuteAsynchronous()
+        {
+
+            // Fix the threads //
+            this.ThreadCount = 1;
+
+            // Build response //
+            this.BuildCompileString();
+
+            // Figure out which algorithm to use //
+            AggregateAlgorithm algorithm = this.GetAlgorithm();
+
+            // Do the hash table process //
+            if (algorithm == AggregateAlgorithm.HashTable)
+            {
+
+                QueryProcess<AggregateHashTableProcessNode> process = this.RenderProcessHT(this.ThreadCount);
+
+                this._Timer = System.Diagnostics.Stopwatch.StartNew();
+                process.Execute();
+                this._Timer.Stop();
+
+                // Append the run string //
+                this._Message.Append(string.Format("Runtime: {0}, over {1} thread(s), with cost {2}\n\n", this._Timer.Elapsed, this.ThreadCount, process.Reducer.Clicks));
+
+            }
+            else
+            {
+
+                QueryProcess<AggregateOrderedProcessNode> process = this.RenderProcessO(this.ThreadCount);
+
+                this._Timer = System.Diagnostics.Stopwatch.StartNew();
+                process.Execute();
+                this._Timer.Stop();
+
+                // Append the run string //
+                this._Message.Append(string.Format("Pre-processor sort cost {0}\n", process.PreProcessorClicks));
+                this._Message.Append(string.Format("Runtime: {0}, over {1} thread(s), with cost {2}\n\n", this._Timer.Elapsed, this.ThreadCount, process.Reducer.Clicks));
+
+
+            }
 
         }
 

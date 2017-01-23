@@ -73,7 +73,7 @@ namespace Rye.Exchange
     //            Record r = caster.Render(ReadStream);
 
     //            // Append the record //
-    //            Consumer.Insert(r);
+    //            Consumer.InsertKey(r);
 
     //            // Increment the tracker //
     //            Ticks++;
@@ -108,7 +108,7 @@ namespace Rye.Exchange
     //            Record r = caster.Render(ReadStream);
 
     //            // Append the record //
-    //            w.Insert(r);
+    //            w.InsertKey(r);
 
     //        }
 
@@ -119,7 +119,7 @@ namespace Rye.Exchange
 
     //    }
 
-    //    public static Table ConsumeReader(DbDataReader ReadStream, Kernel Driver, string Dir, string Name, long MaxRecordCount)
+    //    public static BaseTable ConsumeReader(DbDataReader ReadStream, Kernel Driver, string Dir, string Name, long MaxRecordCount)
     //    {
 
     //        // Get the columns //
@@ -132,7 +132,7 @@ namespace Rye.Exchange
     //        RyeOLEDBRecordConverter caster = new RyeOLEDBRecordConverter(input, valid);
 
     //        // Create the extent //
-    //        Table t = new Table(Driver, Dir, Name, input, MaxRecordCount);
+    //        BaseTable t = new BaseTable(Driver, Dir, Name, input, MaxRecordCount);
     //        RecordWriter w = t.OpenUncheckedWriter(input.GetHashCode());
 
     //        // Consume the data //
@@ -143,7 +143,7 @@ namespace Rye.Exchange
     //            Record r = caster.Render(ReadStream);
 
     //            // Append the record //
-    //            w.Insert(r);
+    //            w.InsertKey(r);
 
     //        }
 
@@ -164,7 +164,7 @@ namespace Rye.Exchange
     //        return RyeOLEDBHelper.ConsumeReader(T.CreateDataReader(), Name, MaxRecordCount);
     //    }
 
-    //    public static Table ConsumeTable(System.Data.DataTable T, Kernel Driver, string Dir, string Name, long MaxRecordCount)
+    //    public static BaseTable ConsumeTable(System.Data.DataTable T, Kernel Driver, string Dir, string Name, long MaxRecordCount)
     //    {
     //        return RyeOLEDBHelper.ConsumeReader(T.CreateDataReader(), Driver, Dir, Name, MaxRecordCount);
     //    }
@@ -191,49 +191,49 @@ namespace Rye.Exchange
     //    {
     //    }
 
-    //    public Record Render(DbDataRecord Element)
+    //    public Record Render(DbDataRecord Key)
     //    {
 
-    //        if (Element.FieldCount != this._BaseSchema.Count)
-    //            throw new ArgumentException(string.Format("Record passed has {0} elements but schema expects {1} elements", Element.FieldCount, this._BaseSchema.Count));
+    //        if (Key.FieldCount != this._BaseSchema.Count)
+    //            throw new ArgumentException(string.Format("Record passed has {0} elements but schema expects {1} elements", Key.FieldCount, this._BaseSchema.Count));
 
     //        RecordBuilder rb = new RecordBuilder();
     //        for (int i = 0; i < this._BaseSchema.Count; i++)
     //        {
 
-    //            if (Element.IsDBNull(i) || Element[i] == null || !this._ValidFields[i])
+    //            if (Key.IsDBNull(i) || Key[i] == null || !this._ValidFields[i])
     //            {
     //                rb.Add(new Cell(this._BaseSchema.ColumnAffinity(i)));
     //            }
     //            if (this._BaseSchema.ColumnAffinity(i) == CellAffinity.BOOL)
     //            {
-    //                rb.Add(Element.GetBoolean(i));
+    //                rb.Add(Key.GetBoolean(i));
     //            }
     //            else if (this._BaseSchema.ColumnAffinity(i) == CellAffinity.INT)
     //            {
-    //                rb.Add(Element.GetInt64(i));
+    //                rb.Add(Key.GetInt64(i));
     //            }
     //            else if (this._BaseSchema.ColumnAffinity(i) == CellAffinity.DOUBLE)
     //            {
-    //                rb.Add(Element.GetDouble(i));
+    //                rb.Add(Key.GetDouble(i));
     //            }
     //            else if (this._BaseSchema.ColumnAffinity(i) == CellAffinity.DATE_TIME)
     //            {
-    //                rb.Add(Element.GetDateTime(i));
+    //                rb.Add(Key.GetDateTime(i));
     //            }
     //            else if (this._BaseSchema.ColumnAffinity(i) == CellAffinity.STRING)
     //            {
-    //                rb.Add(Element.GetString(i));
+    //                rb.Add(Key.GetString(i));
     //            }
     //            else if (this._BaseSchema.ColumnAffinity(i) == CellAffinity.BLOB)
     //            {
-    //                byte[] b = new byte[this._BaseSchema.ColumnSize(i)];
-    //                Element.GetBytes(i, 0, b, 0, b.Length);
-    //                rb.Add(b);
+    //                byte[] Mem = new byte[this._BaseSchema.ColumnSize(i)];
+    //                Key.GetBytes(i, 0, Mem, 0, Mem.Length);
+    //                rb.Add(Mem);
     //            }
     //            else
     //            {
-    //                rb.Add(Cell.TryUnBoxInto(Element[i], this._BaseSchema.ColumnAffinity(i)));
+    //                rb.Add(Cell.TryUnBoxInto(Key[i], this._BaseSchema.ColumnAffinity(i)));
     //            }
 
     //        }
@@ -278,9 +278,9 @@ namespace Rye.Exchange
     //            }
     //            else if (this._BaseSchema.ColumnAffinity(i) == CellAffinity.BLOB)
     //            {
-    //                byte[] b = new byte[this._BaseSchema.ColumnSize(i)];
-    //                Stream.GetBytes(i, 0, b, 0, b.Length);
-    //                rb.Add(b);
+    //                byte[] Mem = new byte[this._BaseSchema.ColumnSize(i)];
+    //                Stream.GetBytes(i, 0, Mem, 0, Mem.Length);
+    //                rb.Add(Mem);
     //            }
     //            else
     //            {
@@ -293,49 +293,49 @@ namespace Rye.Exchange
 
     //    }
 
-    //    public Record Render(System.Data.IDataRecord Element)
+    //    public Record Render(System.Data.IDataRecord Key)
     //    {
 
-    //        if (Element.FieldCount != this._BaseSchema.Count)
-    //            throw new ArgumentException(string.Format("Record passed has {0} elements but schema expects {1} elements", Element.FieldCount, this._BaseSchema.Count));
+    //        if (Key.FieldCount != this._BaseSchema.Count)
+    //            throw new ArgumentException(string.Format("Record passed has {0} elements but schema expects {1} elements", Key.FieldCount, this._BaseSchema.Count));
 
     //        RecordBuilder rb = new RecordBuilder();
     //        for (int i = 0; i < this._BaseSchema.Count; i++)
     //        {
 
-    //            if (Element.IsDBNull(i) || Element[i] == null || !this._ValidFields[i])
+    //            if (Key.IsDBNull(i) || Key[i] == null || !this._ValidFields[i])
     //            {
     //                rb.Add(new Cell(this._BaseSchema.ColumnAffinity(i)));
     //            }
     //            if (this._BaseSchema.ColumnAffinity(i) == CellAffinity.BOOL)
     //            {
-    //                rb.Add(Element.GetBoolean(i));
+    //                rb.Add(Key.GetBoolean(i));
     //            }
     //            else if (this._BaseSchema.ColumnAffinity(i) == CellAffinity.INT)
     //            {
-    //                rb.Add(Element.GetInt64(i));
+    //                rb.Add(Key.GetInt64(i));
     //            }
     //            else if (this._BaseSchema.ColumnAffinity(i) == CellAffinity.DOUBLE)
     //            {
-    //                rb.Add(Element.GetDouble(i));
+    //                rb.Add(Key.GetDouble(i));
     //            }
     //            else if (this._BaseSchema.ColumnAffinity(i) == CellAffinity.DATE_TIME)
     //            {
-    //                rb.Add(Element.GetDateTime(i));
+    //                rb.Add(Key.GetDateTime(i));
     //            }
     //            else if (this._BaseSchema.ColumnAffinity(i) == CellAffinity.STRING)
     //            {
-    //                rb.Add(Element.GetString(i));
+    //                rb.Add(Key.GetString(i));
     //            }
     //            else if (this._BaseSchema.ColumnAffinity(i) == CellAffinity.BLOB)
     //            {
-    //                byte[] b = new byte[this._BaseSchema.ColumnSize(i)];
-    //                Element.GetBytes(i, 0, b, 0, b.Length);
-    //                rb.Add(b);
+    //                byte[] Mem = new byte[this._BaseSchema.ColumnSize(i)];
+    //                Key.GetBytes(i, 0, Mem, 0, Mem.Length);
+    //                rb.Add(Mem);
     //            }
     //            else
     //            {
-    //                rb.Add(Cell.TryUnBoxInto(Element[i], this._BaseSchema.ColumnAffinity(i)));
+    //                rb.Add(Cell.TryUnBoxInto(Key[i], this._BaseSchema.ColumnAffinity(i)));
     //            }
 
     //        }

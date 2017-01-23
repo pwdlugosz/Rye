@@ -12,21 +12,21 @@ namespace Rye.Exchange
     {
 
         // ShartTable / Shard Exchange //
-        //public static Extent TableToExtent(Table Data)
+        //public static Extent TableToExtent(BaseTable Data)
         //{
 
         //    return Data.PopFirstOrGrow();
 
         //}
 
-        //public static Table ExtentToTable(Kernel Driver, Extent Data, string Dir, string Name)
+        //public static BaseTable ExtentToTable(Kernel Driver, Extent Data, string Dir, string Name)
         //{
 
-        //    Table t = Table.CreateShardedTable(Driver, Dir, Name, Data.Columns);
+        //    BaseTable t = BaseTable.CreateShardedTable(Driver, Dir, Name, Data.Columns);
         //    RecordWriter w = t.OpenUncheckedWriter(Data.Columns.GetHashCode());
         //    foreach (Record r in Data.Records)
         //    {
-        //        w.Insert(r);
+        //        w.InsertKey(r);
         //    }
         //    w.Close();
 

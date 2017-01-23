@@ -19,7 +19,7 @@ namespace Rye.Data
         private static string[] _DateMonthFull = { "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER" };
         private static string[] _DateMonthAbrev = { "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" };
         private static string[] _DateAMTokens = { "AM", "A.M." };
-        private static string[] _DatePMToekns = { "PM", "P.M." };
+        private static string[] _DatePMToekns = { "PM", "Key.M." };
 
         private static char[] _NegativeTokens = { '-', '~' };
 
@@ -198,7 +198,7 @@ namespace Rye.Data
             if (_NullTokens.Contains(Text.Trim(), StringComparer.OrdinalIgnoreCase))
                 return Cell.NULL_STRING;
 
-            // Yield value //
+            // Yield Value //
             return new Cell(Text);
 
         }

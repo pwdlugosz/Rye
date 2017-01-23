@@ -9,6 +9,9 @@ using Rye.Expressions;
 namespace Rye.Query
 {
 
+    /// <summary>
+    /// Support for deleting data via one thread
+    /// </summary>
     public sealed class DeleteProcessNode : QueryNode
     {
 
@@ -78,6 +81,9 @@ namespace Rye.Query
 
     }
 
+    /// <summary>
+    /// Support for consolidating delete nodes
+    /// </summary>
     public sealed class DeleteProcessConsolidation : QueryConsolidation<DeleteProcessNode>
     {
 
@@ -105,5 +111,118 @@ namespace Rye.Query
 
     }
 
+    /// <summary>
+    /// Support for building delete nodes
+    /// </summary>
+    public class DeleteModel : QueryModel
+    {
+
+        public const string DEFAULT_ALIAS = "T";
+
+        // Can't be null section
+        private TabularData _Source; // FROM;
+        private string _SourceAlias = DEFAULT_ALIAS;
+        
+        // Can be null //
+        private Filter _Where;
+
+        public DeleteModel(Session Session)
+            :base(Session)
+        {
+            this._Where = Filter.TrueForAll;
+        }
+
+        public void SetFROM(TabularData Value, string Alias)
+        {
+            this._Source = Value;
+            this._SourceAlias = Alias;
+        }
+
+        public void SetWHERE(Filter Where)
+        {
+            this._Where = Where;
+        }
+
+        // Node Rendering //
+        public DeleteProcessNode RenderNode(int ThreadID, int ThreadCount)
+        {
+
+            // Create the volume //
+            Volume source = this._Source.CreateVolume(ThreadID, ThreadCount);
+
+            // Create two registers //
+            Register current = new Register(this._SourceAlias, source.Columns);
+
+            // Create the memory envrioment //
+            CloneFactory spiderweb = new CloneFactory();
+            spiderweb.Append(current);
+            spiderweb.Append(this._Session.Scalars); // Add in the global scalars
+            spiderweb.Append(this._Session.Matrixes); // Add in the global matrixes
+
+            // Create clones of all our inputs //
+            Filter where = spiderweb.Clone(this._Where);
+
+            // Return a node //
+            return new DeleteProcessNode(ThreadID, this._Session, (this._Source is Table ? this._Source as Table : null), source, where, current);
+
+        }
+
+        public List<DeleteProcessNode> RenderNodes(int ThreadCount)
+        {
+
+            List<DeleteProcessNode> nodes = new List<DeleteProcessNode>();
+
+            for (int i = 0; i < ThreadCount; i++)
+            {
+                nodes.Add(this.RenderNode(i, ThreadCount));
+            }
+
+            return nodes;
+
+        }
+
+        public void BuildCompileString()
+        {
+
+            //this._Message.Append("--- DELETE ------------------------------------\n");
+            this._Message.Append(string.Format("From: {0}\n", this._Source.Header.Name));
+            if (!this._Where.Default)
+                this._Message.Append(string.Format("Where: {0}\n", this._Where.UnParse(this._Source.Columns)));
+
+        }
+
+        public override void ExecuteConcurrent(int ThreadCount)
+        {
+
+            this.ThreadCount = ThreadCount;
+
+            List<DeleteProcessNode> nodes = this.RenderNodes(this.ThreadCount);
+            DeleteProcessConsolidation reducer = new DeleteProcessConsolidation(this._Session);
+            QueryProcess<DeleteProcessNode> process = new QueryProcess<DeleteProcessNode>(nodes, reducer);
+
+            this._Timer = System.Diagnostics.Stopwatch.StartNew();
+            process.ExecuteThreaded();
+            this._Timer.Stop();
+
+        }
+
+        public override void ExecuteAsynchronous()
+        {
+
+            this.ThreadCount = 1;
+
+            List<DeleteProcessNode> nodes = this.RenderNodes(this.ThreadCount);
+            DeleteProcessConsolidation reducer = new DeleteProcessConsolidation(this._Session);
+            QueryProcess<DeleteProcessNode> process = new QueryProcess<DeleteProcessNode>(nodes, reducer);
+
+            this._Timer = System.Diagnostics.Stopwatch.StartNew();
+            process.Execute();
+            this._Timer.Stop();
+
+        }
+
+
+
+    }
 
 }

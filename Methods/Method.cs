@@ -11,7 +11,7 @@ namespace Rye.Methods
 {
 
     /// <summary>
-    /// Base class for TNode; TNodes perform a task, contrast to an FNode which return
+    /// Base class for all actions; unlike expressions, actions do not return anything
     /// </summary>
     public abstract class Method
     {
@@ -174,6 +174,10 @@ namespace Rye.Methods
             return "Method";
         }
 
+        /// <summary>
+        /// Gets all expressions used by this method
+        /// </summary>
+        /// <returns></returns>
         public virtual List<Expression> InnerExpressions()
         {
 
@@ -183,6 +187,21 @@ namespace Rye.Methods
                 val.AddRange(x.InnerExpressions());
             }
             return val;
+
+        }
+
+        /// <summary>
+        /// Using the original method, adds cloned children to a designated clone
+        /// </summary>
+        /// <param name="Orignal">The prime method</param>
+        /// <param name="Clone">The clone</param>
+        public static void AppendClonedChildren(Method Orignal, Method Clone)
+        {
+
+            foreach (Method m in Orignal.Children)
+            {
+                Clone.AddChild(m.CloneOfMe());
+            }
 
         }
 

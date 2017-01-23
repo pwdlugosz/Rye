@@ -12,6 +12,9 @@ using Rye.Libraries;
 namespace Rye.Data
 {
 
+    /// <summary>
+    /// Holds runtime variables, data and functions
+    /// </summary>
     public sealed class Session
     {
 
@@ -28,15 +31,16 @@ namespace Rye.Data
         private Heap<Cell> _scalars;
         private Heap<CellMatrix> _matrixes;
         private Heap<Lambda> _lambdas;
-        private Heap<FunctionLibrary> _functions;
-        private Heap<MethodLibrary> _methods;
+        //private Heap<FunctionLibrary> _functions;
+        //private Heap<MethodLibrary> _methods;
+        private Heap<Library> _Library;
         private Kernel _kernel;
         private Communicator _comm;
         private string _name_space = DEFAULT_NAMESPACE;
         private Interpreter.ExpressionVisitor _vis;
         private RandomCell _generator;
 
-        public Session(Kernel Driver, Communicator IO, bool AllowAsync)
+        public Session(Kernel Driver, Communicator IO, bool AllowConcurrent)
         {
 
             // Generate all our data objects //
@@ -55,19 +59,22 @@ namespace Rye.Data
             this._lambdas = new Heap<Lambda>();
             this._lambdas.Identifier = "GLOBAL";
 
-            this._functions = new Heap<FunctionLibrary>();
-            this._functions.Identifier = "GLOBAL";
+            //this._functions = new Heap<FunctionLibrary>();
+            //this._functions.Identifier = "GLOBAL";
 
-            this._methods = new Heap<MethodLibrary>();
-            this._methods.Identifier = "GLOBAL";
+            //this._methods = new Heap<MethodLibrary>();
+            //this._methods.Identifier = "GLOBAL";
+
+            this._Library = new Heap<Library>();
+            this._Library.Identifier = "GLOBAL";
             
             // Load our use objects //
             this._kernel = Driver;
             this._comm = IO;
-            this.AllowAsync = AllowAsync;
+            this.AllowConcurrent = AllowConcurrent;
 
             // Add in the base function library //
-            this._functions.Allocate("BASE", new BaseFunctionLibrary(this));
+            this._Library.Allocate("BASE", new BaseLibrary(this));
 
             // Build a visitor //
             this._vis = new Interpreter.ExpressionVisitor(this);
@@ -75,7 +82,7 @@ namespace Rye.Data
             // RNG //
             this._generator = new RandomCell();
             
-            // Default Page Size //
+            // Default DataPageX PageSize //
             this.DefualtPageSize = Kernel.DefaultPageSize;
 
             // Add in time variables to the heap //
@@ -99,7 +106,7 @@ namespace Rye.Data
             get { return this._comm; }
         }
 
-        public bool AllowAsync
+        public bool AllowConcurrent
         {
             get;
             set;
@@ -211,7 +218,7 @@ namespace Rye.Data
 
         }
 
-        // Tables //
+        // Spectre //
         public bool TableExists(string DB, string Name)
         {
             
@@ -229,7 +236,7 @@ namespace Rye.Data
         {
 
             if (!this.ConnectionExists(DB))
-                throw new ArgumentException(string.Format("Table {0}.{1} does not exist", DB, Name));
+                throw new ArgumentException(string.Format("BaseTable {0}.{1} does not exist", DB, Name));
 
             string dir = this.GetConnection(DB);
             string path1 = Header.FilePath(dir, Name, this._kernel.DefaultExtension);
@@ -359,82 +366,146 @@ namespace Rye.Data
         }
 
         // Functions //
-        public bool FunctionLibraryExists(string Name)
+        //public bool FunctionLibraryExists(string Name)
+        //{
+        //    return this._functions.PageExists(Name);
+        //}
+
+        //public FunctionLibrary GetFunctionLibrary(string Name)
+        //{
+        //    return this._functions[Name];
+        //}
+
+        //public void SetFunctionLibrary(string Name, FunctionLibrary Value)
+        //{
+        //    this._functions.Reallocate(Name, Value);
+        //}
+
+        //public void SetFunctionLibrary(FunctionLibrary Value)
+        //{
+        //    this.SetFunctionLibrary(Value.LibName, Value);
+        //}
+
+        //public bool FunctionExists(string NameSpace, string Name)
+        //{
+        //    if (!this._functions.PageExists(NameSpace))
+        //        return false;
+        //    return this._functions[NameSpace].PageExists(Name);
+        //}
+
+        //public CellFunction GetFunction(string Namespace, string Name)
+        //{
+        //    return this._functions[Namespace].RenderFunction(Name);
+        //}
+
+        //public FunctionLibrary SystemLibrary
+        //{
+        //    get { return this._functions[SYS_REF]; }
+        //}
+
+        //// Methods //
+        //public bool MethodLibraryExists(string Name)
+        //{
+        //    return this._methods.PageExists(Name);
+        //}
+
+        //public MethodLibrary GetMethodLibrary(string Name)
+        //{
+        //    return this._methods[Name];
+        //}
+
+        //public void SetMethodLibrary(string Name, MethodLibrary Value)
+        //{
+        //    this._methods.Reallocate(Name, Value);
+        //}
+
+        //public void SetMethodLibrary(MethodLibrary Value)
+        //{
+        //    this.SetMethodLibrary(Value.LibName, Value);
+        //}
+
+        //public bool MethodExists(string NameSpace, string Name)
+        //{
+        //    if (!this._methods.PageExists(NameSpace))
+        //        return false;
+        //    return this._methods[NameSpace].PageExists(Name);
+        //}
+
+        //public Method GetMethod(string Namespace, string Name, Method Parent, ParameterCollection Parameters)
+        //{
+        //    return this._methods[Namespace].RenderMethod(Parent, Name, Parameters);
+        //}
+
+        //public ParameterCollectionSigniture GetMethodSigniture(string Namespace, string Name)
+        //{
+        //    return this._methods[Namespace].RenderSigniture(Name);
+        //}
+
+        public bool LibraryExists(string Name)
         {
-            return this._functions.Exists(Name);
+            return this._Library.Exists(Name);
         }
 
-        public FunctionLibrary GetFunctionLibrary(string Name)
+        public Library GetLibrary(string Name)
         {
-            return this._functions[Name];
+            return this._Library[Name];
         }
 
-        public void SetFunctionLibrary(string Name, FunctionLibrary Value)
+        public void SetLibrary(string Name, Library Value)
         {
-            this._functions.Reallocate(Name, Value);
+            this._Library.Reallocate(Name, Value);
         }
 
-        public void SetFunctionLibrary(FunctionLibrary Value)
+        public void SetLibrary(Library Value)
         {
-            this.SetFunctionLibrary(Value.LibName, Value);
+            this.SetLibrary(Value.LibraryName, Value);
         }
 
-        public bool FunctionExists(string NameSpace, string Name)
+        public bool LibraryExists(string NameSpace, string Name)
         {
-            if (!this._functions.Exists(NameSpace))
+            if (!this._Library.Exists(NameSpace))
                 return false;
-            return this._functions[NameSpace].Exists(Name);
-        }
-
-        public CellFunction GetFunction(string Namespace, string Name)
-        {
-            return this._functions[Namespace].RenderFunction(Name);
-        }
-
-        public FunctionLibrary SystemLibrary
-        {
-            get { return this._functions[SYS_REF]; }
-        }
-
-        // Methods //
-        public bool MethodLibraryExists(string Name)
-        {
-            return this._methods.Exists(Name);
-        }
-
-        public MethodLibrary GetMethodLibrary(string Name)
-        {
-            return this._methods[Name];
-        }
-
-        public void SetMethodLibrary(string Name, MethodLibrary Value)
-        {
-            this._methods.Reallocate(Name, Value);
-        }
-
-        public void SetMethodLibrary(MethodLibrary Value)
-        {
-            this.SetMethodLibrary(Value.LibName, Value);
-        }
-
-        public bool MethodExists(string NameSpace, string Name)
-        {
-            if (!this._methods.Exists(NameSpace))
-                return false;
-            return this._methods[NameSpace].Exists(Name);
+            return true;
         }
 
         public Method GetMethod(string Namespace, string Name, Method Parent, ParameterCollection Parameters)
         {
-            return this._methods[Namespace].RenderMethod(Parent, Name, Parameters);
+            return this._Library[Namespace].GetMethod(Parent, Name, Parameters);
         }
 
         public ParameterCollectionSigniture GetMethodSigniture(string Namespace, string Name)
         {
-            return this._methods[Namespace].RenderSigniture(Name);
+            return this._Library[Namespace].GetMethodSigniture(Name);
         }
 
-        // Meta data //
+        public bool MethodExists(string NameSpace, string Name)
+        {
+            if (!this._Library.Exists(NameSpace))
+                return false;
+            return this._Library[NameSpace].MethodExists(Name);
+        }
+
+        public CellFunction GetFunction(string Namespace, string Name)
+        {
+            return this._Library[Namespace].GetFunction(Name);
+        }
+
+        public bool FunctionExists(string NameSpace, string Name)
+        {
+            if (!this._Library.Exists(NameSpace))
+                return false;
+            return this._Library[NameSpace].FunctionExists(Name);
+        }
+
+        public Library SystemLibrary
+        {
+            get 
+            { 
+                return this._Library[SYS_REF]; 
+            }
+        }
+
+        // Header data //
         public string MemoryDump
         {
 
@@ -479,26 +550,18 @@ namespace Rye.Data
                     sb.AppendLine("\t" + lam.Name);
 
                 // Function
-                sb.AppendLine("FUNCTION LIBRARIES");
-                if (this._functions.Count == 0)
+                sb.AppendLine("LIBRARIES");
+                if (this._Library.Count == 0)
                     sb.AppendLine("\t<EMPTY>");
-                foreach (FunctionLibrary flib in this._functions.Values)
+                foreach (Library flib in this._Library.Values)
                 {
-                    sb.AppendLine("\t" + flib.LibName);
-                    foreach (string name in flib.Names)
+                    sb.AppendLine("\tMETHODS: " + flib.LibraryName);
+                    foreach (string name in flib.MethodNames)
                     {
                         sb.AppendLine("\t\t" + name);
                     }
-                }
-
-                // Function
-                sb.AppendLine("METHOD LIBRARIES");
-                if (this._methods.Count == 0)
-                    sb.AppendLine("\t<EMPTY>");
-                foreach (MethodLibrary mlib in this._methods.Values)
-                {
-                    sb.AppendLine("\t" + mlib.LibName);
-                    foreach (string name in mlib.Names)
+                    sb.AppendLine("\tFUNCTIONS: " + flib.LibraryName);
+                    foreach (string name in flib.FunctionNames)
                     {
                         sb.AppendLine("\t\t" + name);
                     }
@@ -506,7 +569,7 @@ namespace Rye.Data
 
                 // Kernel Dump 
                 sb.AppendLine("KERNEL CACHE");
-                sb.AppendLine("\tTables");
+                sb.AppendLine("\tSpectre");
                 foreach (string m in this._kernel.TableNames)
                 {
                     sb.AppendLine("\t\t" + m);
@@ -522,145 +585,6 @@ namespace Rye.Data
 
             }
 
-
-        }
-
-    }
-
-    public abstract class Communicator
-    {
-
-        public string BREAKER_LINE = "----------------------------------------------------------------------";
-        public string HEADER_LINE = "----------------------------------- {0} -----------------------------------";
-        public string NEW_LINE = "\n";
-
-        public Communicator()
-        {
-        }
-
-        public bool Supress
-        {
-            get;
-            set;
-        }
-
-        public abstract void Write(string Message, params object[] Paramters);
-
-        public virtual void WriteLine(string Message, params object[] Parameters)
-        {
-            this.Write(Message + "\n", Parameters);
-        }
-
-        public virtual void WriteLine(string Message)
-        {
-            this.WriteLine(Message);
-        }
-
-        public virtual void WriteLine()
-        {
-            this.Write(NEW_LINE);
-        }
-
-        public virtual void WriteBreaker()
-        {
-            this.WriteLine(BREAKER_LINE);
-        }
-
-        public virtual void WriteHeader(string Message)
-        {
-            this.WriteLine(BlankHeader(Message.Length), Message);
-        }
-
-        public static string BlankHeader(int StringSize)
-        {
-            int len = (StringSize > 70 ? 1 : (70 - StringSize) / 2 + 1);
-
-            string s = new string('-', len);
-            return s + "{0}" + s;
-        }
-
-        public abstract void ShutDown();
-
-    }
-
-    public sealed class CommandLineCommunicator : Communicator
-    {
-
-        public CommandLineCommunicator()
-            : base()
-        {
-        }
-
-        public override void Write(string Message, params object[] Paramters)
-        {
-
-            if (this.Supress)
-                return;
-            Console.Write(Message,Paramters);
-
-        }
-
-        public override void WriteLine(string Message)
-        {
-
-            if (this.Supress)
-                return;
-            Console.WriteLine(Message);
-
-        }
-
-        public override void ShutDown()
-        {
- 	        
-        }
-
-    }
-
-    public sealed class HybridCommunicator : Communicator
-    {
-
-        private System.IO.StreamWriter _FileLog;
-
-        public HybridCommunicator(string Path)
-            : base()
-        {
-            this._FileLog = new System.IO.StreamWriter(Path, false);
-        }
-
-        public HybridCommunicator()
-            : this(HybridCommunicator.RandomLogFile())
-        {
-        }
-
-        public override void Write(string Message, params object[] Paramters)
-        {
-            if (this.Supress)
-                return;
-            Console.Write(Message,Paramters);
-            this._FileLog.WriteLine(Message, Paramters);
-        }
-
-        public override void WriteLine(string Message)
-        {
-            if (this.Supress)
-                return;
-            Console.WriteLine(Message);
-            this._FileLog.WriteLine(Message);
-        }
-
-        public override void ShutDown()
-        {
-            this._FileLog.Flush();
-            this._FileLog.Close();
-        }
-
-        public static string RandomLogFile()
-        {
-
-            string Dir = Kernel.RyeLogDir;
-            DateTime now = DateTime.Now;
-            string Name = string.Format("Log_{0}{1}{2}_{3}{4}{5}.txt", now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Millisecond);
-            return Dir + Name;
 
         }
 

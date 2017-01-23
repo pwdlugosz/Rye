@@ -61,13 +61,25 @@ namespace Rye.Interpreter
         public static int GetThreadCount(RyeParser.Thread_clauseContext context)
         {
             
+            // If missing assume 1 //
             if (context == null)
                 return 1;
 
+            // if MAX then return the max //
             if (context.K_MAX() != null)
                 return Environment.ProcessorCount;
 
-            return int.Parse(context.LITERAL_INT().GetText());
+            // Get the requested processor count //
+            int threads = int.Parse(context.LITERAL_INT().GetText());
+
+            // Handle threads <= 0, then make them 1 //
+            if (threads <= 0)
+                threads = 1;
+            // Otherwise, cap them at the max //
+            else
+                threads = Math.Min(Environment.ProcessorCount, threads);
+
+            return threads;
 
         }
 
@@ -115,7 +127,7 @@ namespace Rye.Interpreter
         public static TabularData RenderData(Session Enviro, ExpressionCollection Nodes, RyeParser.ActAppendContext context)
         {
 
-            // Get the Page Size //
+            // Get the DataPageX PageSize //
             long size = CompilerHelper.RenderPageSize(Enviro, context.append_method().page_size());
                 
             // Check if we need to create the table or just open it //
@@ -151,7 +163,7 @@ namespace Rye.Interpreter
         public static TabularData RenderData(Session Enviro, ExpressionCollection Nodes, RyeParser.Append_methodContext context)
         {
 
-            // Get the Page Size //
+            // Get the DataPageX PageSize //
             long size = CompilerHelper.RenderPageSize(Enviro, context.page_size());
 
             // Check if we need to create the table or just open it //
@@ -293,10 +305,10 @@ namespace Rye.Interpreter
             // Get the name of the lambda that already exists //
             string sname_fx = context.lambda_name()[1].IDENTIFIER().GetText();
             
-            // Look for the original lambda, f(x) //
+            // Look for the original lambda, f(OriginalNode) //
             Lambda l = Enviro.GetLambda(sname_fx);
 
-            // Get the x variable, to calculate f'(x) //
+            // Get the OriginalNode variable, to calculate f'(OriginalNode) //
             string x = context.IDENTIFIER()[0].GetText();
 
             // Calculate the gradient //
@@ -353,7 +365,7 @@ namespace Rye.Interpreter
 
         }
 
-        // Page Size //
+        // DataPageX PageSize //
         public static long RenderPageSize(Session Enviro, RyeParser.Page_sizeContext context)
         {
 

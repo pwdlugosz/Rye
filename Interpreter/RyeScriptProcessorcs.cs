@@ -18,12 +18,30 @@ namespace Rye.Interpreter
             this.Enviro = Enviro;
         }
 
+        /// <summary>
+        /// Represents the depth level of the script processor. For example, when using Rye's 'EXECUTE' command, the processor spawns a new processor; if the base
+        /// processor has an inception level of 1, then the processor running in the 'EXECUTE' command will have an inception level of 2. This tells us how deep down the
+        /// rabbit hole the program is.
+        /// </summary>
+        public int InceptionDepth
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Base runtime environment
+        /// </summary>
         public Session Enviro
         {
             get;
             private set;
         }
 
+        /// <summary>
+        /// Executes a script
+        /// </summary>
+        /// <param name="Script"></param>
         public void Execute(string Script)
         {
 
@@ -101,6 +119,10 @@ namespace Rye.Interpreter
 
         }
 
+        /// <summary>
+        /// Executes a script in debug mode; unlike the 'Execute' command, this will throw any compile time exceptions
+        /// </summary>
+        /// <param name="Script"></param>
         public void ExecuteDebug(string Script)
         {
 

@@ -52,6 +52,11 @@ namespace Rye.Query
 
         public abstract void Consolidate(List<Q> Nodes);
 
+        public virtual long Clicks
+        {
+            get { return 0; }
+        }
+
     }
 
     public sealed class QueryProcess<Q> where Q : QueryNode
@@ -101,14 +106,14 @@ namespace Rye.Query
 
         }
 
-        public void ExecuteAsync()
+        public void ExecuteThreaded()
         {
 
             // Preprocessor //
             this.RunPreProcessor();
 
             // Nodes //
-            this.RunNodesAsync();
+            this.RunNodesThreaded();
             
             // Consolidate //
             this.RunConsolidator();
@@ -134,6 +139,14 @@ namespace Rye.Query
             }
         }
 
+        public QueryConsolidation<Q> Reducer
+        {
+            get 
+            { 
+                return this._Consolidator; 
+            }
+        }
+
         // Private methods //
         public void RunPreProcessor()
         {
@@ -155,7 +168,7 @@ namespace Rye.Query
 
         }
 
-        private void RunNodesAsync()
+        private void RunNodesThreaded()
         {
 
             List<Task> t = new List<Task>();

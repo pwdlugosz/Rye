@@ -8,7 +8,7 @@ namespace Rye.Data
 {
 
     /// <summary>
-    /// Represents a collection of Name, Type, Type Size, and Nullness; this forms the basis of horse structured datasets
+    /// Represents a collection of Name, Type, Type PageSize, and Nullness; this forms the basis of horse structured datasets
     /// </summary>
     public sealed class Schema
     {
@@ -30,7 +30,7 @@ namespace Rye.Data
          *      -- Null bit
          * -- Bools (BOOL) take up 1 byte
          * -- Longs (INT), Dates (DATE), floating points (DOUBLE) all take up 8 bytes
-         * -- Strings take up 4 + 2 x n bytes of data (4 == length, each n takes up 2 bytes)
+         * -- Strings take up 4 + 2 OriginalNode n bytes of data (4 == length, each n takes up 2 bytes)
          * -- Blobs take up 4 + n bytes of data
          * 
          */
@@ -106,6 +106,19 @@ namespace Rye.Data
                     c.Add(new Cell(this.ColumnAffinity(i)));
                 }
                 return new Record(c.ToArray());
+            }
+        }
+
+        public Record MaxRecord
+        {
+            get
+            {
+                RecordBuilder rb = new RecordBuilder();
+                for (int i = 0; i < this.Count; i++)
+                {
+                    rb.Add(Cell.MaxValue(this.ColumnAffinity(i), this.ColumnSize(i)));
+                }
+                return rb.ToRecord();
             }
         }
 
@@ -333,7 +346,7 @@ namespace Rye.Data
         /// <param name="Name">The column name</param>
         /// <param name="Affinity">The column affinity</param>
         /// <param name="Nullable">A boolean, true means the column can be nulls, false means the column cannot be null</param>
-        /// <param name="Size">The size in bytes; this will be ignored if the affinity is not variable (not string or blob)</param>
+        /// <param name="PageSize">The size in bytes; this will be ignored if the affinity is not variable (not string or blob)</param>
         public void Add(string Name, CellAffinity Affinity, bool Nullable, int Size)
         {
 
@@ -368,7 +381,7 @@ namespace Rye.Data
         /// </summary>
         /// <param name="Name">The column name</param>
         /// <param name="Affinity">The column affinity</param>
-        /// <param name="Size">The size in bytes; this will be ignored if the affinity is not variable (not string or blob)</param>
+        /// <param name="PageSize">The size in bytes; this will be ignored if the affinity is not variable (not string or blob)</param>
         public void Add(string Name, CellAffinity Affinity, int Size)
         {
             this.Add(Name, Affinity, false, Size);
@@ -387,7 +400,7 @@ namespace Rye.Data
         /// <summary>
         /// Adds a columns based on a text expression
         /// </summary>
-        /// <param name="Expression">A text expression [Name] [Type].[Size] [Nullable]</param>
+        /// <param name="Expression">A text expression [Name] [Type].[PageSize] [Nullable]</param>
         public void Add(string Expression)
         {
 
@@ -425,7 +438,7 @@ namespace Rye.Data
                     n = false;
             }
 
-            // Accumulate the value //
+            // Accumulate the Value //
             this.Add(name, ca, n, Size);
 
         }
@@ -602,7 +615,7 @@ namespace Rye.Data
             }
         }
 
-        // Meta data //
+        // Header data //
         /// <summary>
         /// Returns a string representation of the schema: NAME TYPE(.SIZE)? NULLABLE
         /// </summary>
@@ -778,7 +791,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Returns a unique hash code value based on the schema's type and order; two schema with identical field types and 
+        /// Returns a unique hash code Value based on the schema's type and order; two schema with identical field types and 
         /// </summary>
         /// <returns>An integer hash code</returns>
         public override int GetHashCode()
@@ -867,7 +880,7 @@ namespace Rye.Data
         /// Fixes a (potentially) invalid column size passed
         /// </summary>
         /// <param name="Affinity">The desired affinity</param>
-        /// <param name="Size">The initial size</param>
+        /// <param name="PageSize">The initial size</param>
         /// <returns>The fixed size</returns>
         public static int FixSize(CellAffinity Affinity, int Size)
         {
@@ -929,6 +942,16 @@ namespace Rye.Data
 
             return columns;
 
+        }
+
+        public static List<Record> ToRecords(Schema Element)
+        {
+            return Element._Cache;
+        }
+
+        public static Schema FromRecords(List<Record> Element)
+        {
+            return new Schema(Element);
         }
 
 

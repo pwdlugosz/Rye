@@ -93,7 +93,7 @@ namespace Rye.Expressions
             string name = x.InnerFunction.NameSig;
 
             // Check that the node is either - or / //
-            if (name != BaseFunctionLibrary.OP_SUB && name != BaseFunctionLibrary.OP_DIV && name != BaseFunctionLibrary.OP_DIV2)
+            if (name != BaseLibrary.OP_SUB && name != BaseLibrary.OP_DIV && name != BaseLibrary.OP_DIV2)
                 return Node;
 
             // Build an equality checker //
@@ -104,11 +104,11 @@ namespace Rye.Expressions
                 return Node;
 
             // Check for A - A -> 0 //
-            if (name == BaseFunctionLibrary.OP_SUB)
+            if (name == BaseLibrary.OP_SUB)
                 return new ExpressionValue(Node.ParentNode, Cell.ZeroValue(CellAffinity.DOUBLE));
 
             // Check for A - A -> 0 //
-            if (name == BaseFunctionLibrary.OP_DIV || name == BaseFunctionLibrary.OP_DIV2)
+            if (name == BaseLibrary.OP_DIV || name == BaseLibrary.OP_DIV2)
                 return new ExpressionValue(Node.ParentNode, Cell.OneValue(CellAffinity.DOUBLE));
 
             return Node;
@@ -129,16 +129,16 @@ namespace Rye.Expressions
             string name = x.InnerFunction.NameSig;
 
             // Check that the node is either -A, +A, !A //
-            if (name != BaseFunctionLibrary.UNI_MINUS && name != BaseFunctionLibrary.UNI_PLUS && name != BaseFunctionLibrary.UNI_NOT)
+            if (name != BaseLibrary.UNI_MINUS && name != BaseLibrary.UNI_PLUS && name != BaseLibrary.UNI_NOT)
                 return Node;
 
             // Check for the child being a constant //
             if (Node.Children[0].Affinity == ExpressionAffinity.Value)
             {
                 Cell c = (Node.Children[0] as ExpressionValue).InnerValue;
-                if (name == BaseFunctionLibrary.UNI_MINUS)
+                if (name == BaseLibrary.UNI_MINUS)
                     c = -c;
-                if (name == BaseFunctionLibrary.UNI_NOT)
+                if (name == BaseLibrary.UNI_NOT)
                     c = !c;
                 return new ExpressionValue(Node.ParentNode, c);
             }
@@ -151,11 +151,11 @@ namespace Rye.Expressions
             string sub_name = (Node.Children[0] as ExpressionResult).InnerFunction.NameSig;
 
             // Check for -(-A) //
-            if (name == BaseFunctionLibrary.UNI_MINUS && sub_name == BaseFunctionLibrary.UNI_MINUS)
+            if (name == BaseLibrary.UNI_MINUS && sub_name == BaseLibrary.UNI_MINUS)
                 return Node.Children[0].Children[0];
 
             // Check for !(!A) //
-            if (name == BaseFunctionLibrary.UNI_NOT && sub_name == BaseFunctionLibrary.UNI_NOT)
+            if (name == BaseLibrary.UNI_NOT && sub_name == BaseLibrary.UNI_NOT)
                 return Node.Children[0].Children[0];
 
             return Node;
@@ -174,7 +174,7 @@ namespace Rye.Expressions
             ExpressionResult x = (Node as ExpressionResult);
             string name = x.InnerFunction.NameSig;
 
-            if (name != BaseFunctionLibrary.OP_ADD && name != BaseFunctionLibrary.OP_SUB)
+            if (name != BaseLibrary.OP_ADD && name != BaseLibrary.OP_SUB)
                 return Node;
 
             // Look for A + 0 or A - 0 -> A //
@@ -185,14 +185,14 @@ namespace Rye.Expressions
             }
 
             // Look for 0 + A -> A //
-            if (IsStaticZero(Node.Children[0]) && name == BaseFunctionLibrary.OP_ADD)
+            if (IsStaticZero(Node.Children[0]) && name == BaseLibrary.OP_ADD)
             {
                 this._Tocks++;
                 return Node.Children[1];
             }
 
             // Look for 0 - A -> -A //
-            if (IsStaticZero(Node.Children[0]) && name == BaseFunctionLibrary.OP_SUB)
+            if (IsStaticZero(Node.Children[0]) && name == BaseLibrary.OP_SUB)
             {
                 this._Tocks++;
                 Expression t = new ExpressionResult(Node.ParentNode, new CellUniMinus());
@@ -201,7 +201,7 @@ namespace Rye.Expressions
             }
 
             // Look for A + -B -> A - B //
-            if (IsUniNegative(Node.Children[1]) && name == BaseFunctionLibrary.OP_ADD)
+            if (IsUniNegative(Node.Children[1]) && name == BaseLibrary.OP_ADD)
             {
                 this._Tocks++;
                 Expression t = new ExpressionResult(Node.ParentNode, new CellBinMinus());
@@ -211,7 +211,7 @@ namespace Rye.Expressions
             }
 
             // Look for -A + B -> B - A //
-            if (IsUniNegative(Node.Children[0]) && name == BaseFunctionLibrary.OP_ADD)
+            if (IsUniNegative(Node.Children[0]) && name == BaseLibrary.OP_ADD)
             {
                 this._Tocks++;
                 Expression t = new ExpressionResult(Node.ParentNode, new CellBinMinus());
@@ -221,7 +221,7 @@ namespace Rye.Expressions
             }
 
             // Look for A - -B -> A + B //
-            if (IsUniNegative(Node.Children[1]) && name == BaseFunctionLibrary.OP_SUB)
+            if (IsUniNegative(Node.Children[1]) && name == BaseLibrary.OP_SUB)
             {
                 this._Tocks++;
                 Expression t = new ExpressionResult(Node.ParentNode, new CellBinPlus());
@@ -247,10 +247,10 @@ namespace Rye.Expressions
             ExpressionResult x = (Node as ExpressionResult);
             string name = x.InnerFunction.NameSig;
 
-            if (name != BaseFunctionLibrary.OP_MUL
-                && name != BaseFunctionLibrary.OP_DIV
-                && name != BaseFunctionLibrary.OP_DIV2
-                && name != BaseFunctionLibrary.OP_MOD)
+            if (name != BaseLibrary.OP_MUL
+                && name != BaseLibrary.OP_DIV
+                && name != BaseLibrary.OP_DIV2
+                && name != BaseLibrary.OP_MOD)
                 return Node;
 
             // A * 1 or A / 1 or A /? 1 or A % 1 //
@@ -261,7 +261,7 @@ namespace Rye.Expressions
             }
 
             // 1 * A //
-            if (IsStaticOne(Node.Children[0]) && name == BaseFunctionLibrary.OP_MUL)
+            if (IsStaticOne(Node.Children[0]) && name == BaseLibrary.OP_MUL)
             {
                 this._Tocks++;
                 return Node.Children[1];
@@ -277,7 +277,7 @@ namespace Rye.Expressions
             }
 
             // -1 * A //
-            if (IsStaticMinusOne(Node.Children[0]) && name == BaseFunctionLibrary.OP_MUL)
+            if (IsStaticMinusOne(Node.Children[0]) && name == BaseLibrary.OP_MUL)
             {
                 this._Tocks++;
                 Expression t = new ExpressionResult(Node.ParentNode, new CellUniMinus());
@@ -293,14 +293,14 @@ namespace Rye.Expressions
             }
 
             // A * 0, A /? 0 //
-            if (IsStaticZero(Node.Children[1]) && (name == BaseFunctionLibrary.OP_MUL || name == BaseFunctionLibrary.OP_DIV2))
+            if (IsStaticZero(Node.Children[1]) && (name == BaseLibrary.OP_MUL || name == BaseLibrary.OP_DIV2))
             {
                 this._Tocks++;
                 return new ExpressionValue(Node.ParentNode, new Cell(0.00));
             }
 
             // A / 0, A % 0 //
-            if (IsStaticZero(Node.Children[1]) && (name == BaseFunctionLibrary.OP_DIV || name == BaseFunctionLibrary.OP_MOD))
+            if (IsStaticZero(Node.Children[1]) && (name == BaseLibrary.OP_DIV || name == BaseLibrary.OP_MOD))
             {
                 this._Tocks++;
                 return new ExpressionValue(Node.ParentNode, Cell.NULL_DOUBLE);
@@ -335,7 +335,7 @@ namespace Rye.Expressions
             ExpressionResult x = (Node as ExpressionResult);
             string name = x.InnerFunction.NameSig;
 
-            if (name != BaseFunctionLibrary.FUNC_POWER)
+            if (name != BaseLibrary.FUNC_POWER)
                 return Node;
 
             // Check the second argument of power(A,B) looking for B == 1 //
@@ -372,7 +372,7 @@ namespace Rye.Expressions
             if (Node.Affinity == ExpressionAffinity.Result)
             {
                 ExpressionResult x = (Node as ExpressionResult);
-                if (x.InnerFunction.NameSig == BaseFunctionLibrary.UNI_MINUS && IsStaticOne(x.Children[0]))
+                if (x.InnerFunction.NameSig == BaseLibrary.UNI_MINUS && IsStaticOne(x.Children[0]))
                     return true;
             }
             return false;
@@ -383,7 +383,7 @@ namespace Rye.Expressions
             if (Node.Affinity == ExpressionAffinity.Result)
             {
                 ExpressionResult x = (Node as ExpressionResult);
-                return x.InnerFunction.NameSig == BaseFunctionLibrary.UNI_MINUS;
+                return x.InnerFunction.NameSig == BaseLibrary.UNI_MINUS;
             }
             return false;
         }

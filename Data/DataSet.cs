@@ -37,6 +37,11 @@ namespace Rye.Data
             get;
         }
 
+        public abstract IConcurrentWriteManager ConcurrentWriteManager
+        {
+            get;
+        }
+
         // Methods //
         public abstract Volume CreateVolume();
 
@@ -54,6 +59,11 @@ namespace Rye.Data
         public abstract RecordWriter OpenWriter();
 
         public abstract RecordWriter OpenUncheckedWriter(int Key);
+
+        internal virtual void CursorClose()
+        {
+            // do nothing
+        }
 
         // Costs //
         public abstract long CellCount
@@ -78,6 +88,7 @@ namespace Rye.Data
         private Header _Head;
         private Key _OrderBy;
         private long _MaxRecords = 0;
+        private ConcurrentExtentWriteManager _WriteManager;
         
         // Constructor //
         public Extent(Schema NewColumns, Header NewHeader, List<Record> NewCache, Key NewOrderBy)
@@ -88,6 +99,7 @@ namespace Rye.Data
             this._OrderBy = NewOrderBy;
             this._Head = NewHeader;
             this._MaxRecords = NewHeader.PageSize / NewColumns.RecordDiskCost;
+            this._WriteManager = new ConcurrentExtentWriteManager(this);
 
         }
 
@@ -228,7 +240,7 @@ namespace Rye.Data
             {
                 StringBuilder sb = new StringBuilder();
                 sb.Append(string.Format("Name: {0}", this.Header.Name));
-                sb.Append(string.Format("Page Size: {0}", this.Header.PageSize));
+                sb.Append(string.Format("DataPageX PageSize: {0}", this.Header.PageSize));
                 sb.Append(string.Format("Record Count: {0}", this.Header.RecordCount));
                 sb.Append(string.Format("Disk Location: {0}", this.Header.IsMemoryOnly ? "<Memory>" : this.Header.Path));
                 sb.Append(string.Format("Directory: {0}", this.Header.IsMemoryOnly ? "<Memory>" : this.Header.Directory));
@@ -239,6 +251,14 @@ namespace Rye.Data
                 }
                 return sb.ToString();
 
+            }
+        }
+
+        public override IConcurrentWriteManager ConcurrentWriteManager
+        {
+            get 
+            { 
+                return this._WriteManager; 
             }
         }
 
@@ -410,6 +430,11 @@ namespace Rye.Data
                 return new UncheckedExtentWriter(this);
             return new ExtentWriter(this);
         }
+        
+        internal override void CursorClose()
+        {
+            this._WriteManager.Collapse();
+        }
 
         // Statics //
         public static void SetCache(Extent DataToSet, Extent DataToImport)
@@ -508,13 +533,14 @@ namespace Rye.Data
         protected const int OFFSET_COUNT = 1;
         public const int RECORD_LEN = 2;
 
-        //protected List<Header> _Cache;
+        //protected List<Header> _Data;
         protected Extent _Refs; // The move to virtual headers is designed to reduce the memory footprint and make IO faster
         protected Schema _Columns;
         protected Header _Head;
         protected Key _OrderBy;
         protected object _lock = new object();
         protected Kernel _IO;
+        protected IConcurrentWriteManager _WriteManager;
 
         // Constructors //
         public Table(Kernel K, Header H, Schema S, List<Record> R, Key SortedKeySet)
@@ -527,6 +553,7 @@ namespace Rye.Data
             this._OrderBy = SortedKeySet;
             this._Refs = new Extent(new Schema("ID INT, COUNT INT"), t, R, SortedKeySet);
             this._IO = K;
+            this._WriteManager = new ConcurrentTableWriteManager(this);
 
         }
 
@@ -541,11 +568,14 @@ namespace Rye.Data
             this._Refs = new Extent(new Schema("ID INT, COUNT INT"), t);
             this._IO = IO;
 
+            // Must drop the current table first //
+            this._IO.RequestDropTable(Location.Path);
+                
             if (Flush)
             {
-                this._IO.RequestDropTable(Location.Path);
                 this._IO.RequestFlushTable(this);
             }
+            this._WriteManager = new ConcurrentTableWriteManager(this);
 
         }
 
@@ -621,6 +651,14 @@ namespace Rye.Data
         {
             get { return this._IO; }
             set { this._IO = value; }
+        }
+
+        public override IConcurrentWriteManager ConcurrentWriteManager
+        {
+            get 
+            { 
+                return this._WriteManager; 
+            }
         }
 
         // Volumes //
@@ -762,6 +800,8 @@ namespace Rye.Data
                     throw new Exception("The schema passed for the current record set does not match the ShartTable");
                 if (Data.Header.PageSize != this.Header.PageSize)
                     throw new Exception("The data set passed is too large");
+                if (Data.Count == 0)
+                    throw new Exception("Can't add an empty extent");
 
                 // Call the pre-serializer to ensure the record count is correct //
                 Data.PreSerialize();
@@ -855,15 +895,12 @@ namespace Rye.Data
         }
 
         /* ## Thread Safe ##*/
-        internal virtual void CursorClose(Extent Data)
+        internal override void CursorClose()
         {
 
             lock (this._lock)
             {
-                // Dont flush if zero records otherwise we may run into trouble when we buffer again //
-                if (Data.Count == 0)
-                    return;
-                this.AddExtent(Data);
+                this._WriteManager.Collapse();
                 this._IO.RequestFlushTable(this);
             }
 
@@ -924,7 +961,7 @@ namespace Rye.Data
 
                 StringBuilder sb = new StringBuilder();
                 sb.AppendLine(string.Format("Name: {0}", this.Header.Name));
-                sb.AppendLine(string.Format("Page Size: {0}", this.Header.PageSize));
+                sb.AppendLine(string.Format("DataPageX PageSize: {0}", this.Header.PageSize));
                 sb.AppendLine(string.Format("Path: {0}", this.Header.Path));
                 sb.AppendLine(string.Format("Memory Cost: {0}", this.MemCost));
                 sb.AppendLine(string.Format("Disk Cost: {0}", this.DiskCost));
@@ -1800,5 +1837,6 @@ namespace Rye.Data
         }
 
     }
+
 
 }

@@ -60,20 +60,20 @@ namespace Rye.Aggregates
         {
             /*
              * 0: weight sum
-             * 1: x sum
-             * 2: x sum2
-             * 3: y sum
-             * 4: y sum2
-             * 5: x * y
+             * 1: OriginalNode sum
+             * 2: OriginalNode sum2
+             * 3: NewNode sum
+             * 4: NewNode sum2
+             * 5: OriginalNode * NewNode
              * 
              */
             return Record.Stitch
             (
                 Cell.ZeroValue(this._MapW.ReturnAffinity()), // weight
-                Cell.ZeroValue(this._MapX.ReturnAffinity()), // avg x
-                Cell.ZeroValue(this._MapX.ReturnAffinity()), // avg x^2
-                Cell.ZeroValue(this._MapY.ReturnAffinity()), // avg y
-                Cell.ZeroValue(this._MapY.ReturnAffinity()), // avg y^2
+                Cell.ZeroValue(this._MapX.ReturnAffinity()), // avg OriginalNode
+                Cell.ZeroValue(this._MapX.ReturnAffinity()), // avg OriginalNode^2
+                Cell.ZeroValue(this._MapY.ReturnAffinity()), // avg NewNode
+                Cell.ZeroValue(this._MapY.ReturnAffinity()), // avg NewNode^2
                 Cell.ZeroValue(this._MapY.ReturnAffinity())  // avg xy
             );
         }

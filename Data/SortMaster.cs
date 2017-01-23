@@ -273,7 +273,7 @@ namespace Rye.Data
             if (A.ExtentCount == 1)
                 return Clicks;
 
-            // Step two: do cartesian sort n x (n - 1) //
+            // Step two: do cartesian sort n OriginalNode (n - 1) //
             while (ptr_FirstShard < A.ExtentCount)
             {
 
@@ -327,7 +327,7 @@ namespace Rye.Data
             if (A.ExtentCount == 1)
                 return Clicks;
 
-            // Step two: do cartesian sort n x (n - 1) //
+            // Step two: do cartesian sort n OriginalNode (n - 1) //
             while (ptr_FirstShard < Extents.Length)
             {
 

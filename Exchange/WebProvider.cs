@@ -104,7 +104,7 @@ namespace Rye.Exchange
 
                     // Set the posting attributes //
                     req.Method = "POST";
-                    req.ContentType = "application/x-www-form-urlencoded";
+                    req.ContentType = "application/OriginalNode-www-form-urlencoded";
 
                     // Set the posting variables //
                     byte[] hash = System.Text.Encoding.ASCII.GetBytes(PostString);

@@ -77,7 +77,9 @@ namespace Rye.Methods
 
         public override List<Expression> InnerExpressions()
         {
-            return new List<Expression>() { this._Condition.Node };
+            List<Expression> x = new List<Expression>() { this._Condition.Node };
+            x.AddRange(base.InnerExpressions());
+            return x;
         }
 
     }

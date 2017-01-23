@@ -20,7 +20,7 @@ namespace Rye.Data
         /// <summary>
         /// Initializes a class with a predefined size
         /// </summary>
-        /// <param name="Size">The size of compound record</param>
+        /// <param name="PageSize">The size of compound record</param>
         public CompoundRecord(int Size)
         {
             this._cache = new Record[Size];

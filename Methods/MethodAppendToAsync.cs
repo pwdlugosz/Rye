@@ -9,7 +9,7 @@ using Rye.Expressions;
 namespace Rye.Methods
 {
     
-    public sealed class MethodAppendToAsync : Method
+    public sealed class MethodAppendToAsync2 : Method
     {
 
         private Table _tParentData;
@@ -19,7 +19,7 @@ namespace Rye.Methods
         private bool _IsTable = false;
         private long _Writes = 0;
 
-        public MethodAppendToAsync(Method Parent, Table UseParentData, ExpressionCollection UseFields)
+        public MethodAppendToAsync2(Method Parent, Table UseParentData, ExpressionCollection UseFields)
             : base(Parent)
         {
 
@@ -33,7 +33,7 @@ namespace Rye.Methods
 
         }
 
-        public MethodAppendToAsync(Method Parent, Extent UseParentData, ExpressionCollection UseFields)
+        public MethodAppendToAsync2(Method Parent, Extent UseParentData, ExpressionCollection UseFields)
             : base(Parent)
         {
 
@@ -106,15 +106,22 @@ namespace Rye.Methods
 
             // Invoke the child nodes, which is usually the sort and export nodes //
             this.InvokeChildren();
-
+            
         }
 
         public override Method CloneOfMe()
         {
+
+            Method x;
             if (this._IsTable)
-                return new MethodAppendToAsync(this.Parent, this._tParentData, this._Fields.CloneOfMe());
+                x = new MethodAppendToAsync2(this.Parent, this._tParentData, this._Fields.CloneOfMe());
             else
-                return new MethodAppendToAsync(this.Parent, this._eParentData, this._Fields.CloneOfMe());
+                x = new MethodAppendToAsync2(this.Parent, this._eParentData, this._Fields.CloneOfMe());
+
+            Method.AppendClonedChildren(this, x);
+
+            return x;
+
         }
 
         public override string Message()
@@ -123,7 +130,7 @@ namespace Rye.Methods
         }
 
         /*
-        public static Method Optimize(Method Parent, Table UseParentData, ExpressionCollection UseFields)
+        public static Method Optimize(Method Parent, BaseTable UseParentData, ExpressionCollection UseFields)
         {
 
             if (UseParentData.Columns.GetHashCode() == UseFields.Columns.GetHashCode())
@@ -149,11 +156,89 @@ namespace Rye.Methods
 
     }
 
+    public sealed class MethodAppendToAsync : Method
+    {
+
+        private TabularData _Source;
+        private IConcurrentWriteManager _Manager;
+        private Extent _WorkData;
+        private ExpressionCollection _Fields;
+        private long _Writes = 0;
+
+        public MethodAppendToAsync(Method Parent, TabularData UseParentData, ExpressionCollection UseFields)
+            : base(Parent)
+        {
+
+            if (UseParentData.Columns.Count != UseFields.Columns.Count)
+                throw new ArgumentException("Output table and fields passed are not compatible");
+
+            this._Source = UseParentData;
+            this._Manager = UseParentData.ConcurrentWriteManager;
+            this._Fields = UseFields;
+            this._WorkData = UseParentData.ConcurrentWriteManager.GetExtent();
+
+        }
+
+        public override void Invoke()
+        {
+
+            // Sink the cache to the parent data //
+            if (this._WorkData.IsFull)
+            {
+                this._Manager.AddExtent(this._WorkData);
+                this._WorkData = this._Manager.GetExtent();
+            }
+
+            // Accumulate the record //
+            this._WorkData.Add(this._Fields.Evaluate());
+            this._Writes++;
+
+        }
+
+        public override void EndInvoke()
+        {
+
+            // Append the data to the table //
+            if (this._WorkData.Count > 0)
+            {
+                this._Manager.AddExtent(this._WorkData);
+                this._Manager.Collapse();
+            }
+            
+            // Invoke the child nodes, which is usually the sort and export nodes //
+            this.InvokeChildren();
+
+        }
+
+        public override Method CloneOfMe()
+        {
+
+            Method x = new MethodAppendToAsync(this.Parent, this._Source, this._Fields.CloneOfMe());
+            
+            Method.AppendClonedChildren(this, x);
+
+            return x;
+
+        }
+
+        public override string Message()
+        {
+            return string.Format("Append: {0}", this._Writes);
+        }
+
+        public override List<Expression> InnerExpressions()
+        {
+            return this._Fields.Nodes.ToList();
+        }
+
+    }
+
+
     /*
     public sealed class MethodAppendToAsyncFast : Method
     {
 
-        private Table _tParentData;
+        private BaseTable _tParentData;
         private Extent _eParentData;
         private Extent _RecordCache;
         private ExpressionCollection _Fields;
@@ -164,7 +249,7 @@ namespace Rye.Methods
         private int _CurrentCount = 0;
         private int _MaxCount = 0;
 
-        public MethodAppendToAsyncFast(Method Parent, Table UseParentData, ExpressionCollection UseFields)
+        public MethodAppendToAsyncFast(Method Parent, BaseTable UseParentData, ExpressionCollection UseFields)
             : base(Parent)
         {
 
@@ -227,7 +312,7 @@ namespace Rye.Methods
             }
 
             // Accumulate the record //
-            this._RecordCache._Cache.Add(this._Fields.Evaluate());
+            this._RecordCache._Data.Add(this._Fields.Evaluate());
             this._CurrentCount++;
             this._Writes++;
             

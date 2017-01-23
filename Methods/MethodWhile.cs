@@ -81,7 +81,9 @@ namespace Rye.Methods
 
         public override List<Expression> InnerExpressions()
         {
-            return new List<Expression>() { this._control };
+            List<Expression> x = new List<Expression>() { this._control };
+            x.AddRange(base.InnerExpressions());
+            return x;
         }
 
     }

@@ -145,7 +145,7 @@ namespace Rye.Expressions
     {
 
         public CellUniPlus()
-            : base(BaseFunctionLibrary.UNI_PLUS, "+")
+            : base(BaseLibrary.UNI_PLUS, "+")
         {
         }
 
@@ -160,7 +160,7 @@ namespace Rye.Expressions
     {
 
         public CellUniMinus()
-            : base(BaseFunctionLibrary.UNI_MINUS, "-")
+            : base(BaseLibrary.UNI_MINUS, "-")
         { 
         }
 
@@ -175,7 +175,7 @@ namespace Rye.Expressions
     {
 
         public CellUniNot()
-            : base(BaseFunctionLibrary.UNI_NOT, "!")
+            : base(BaseLibrary.UNI_NOT, "!")
         {
         }
 
@@ -190,7 +190,7 @@ namespace Rye.Expressions
     {
 
         public CellUniAutoInc()
-            : base(BaseFunctionLibrary.UNI_AUTO_INC, "++")
+            : base(BaseLibrary.UNI_AUTO_INC, "++")
         {
         }
 
@@ -205,7 +205,7 @@ namespace Rye.Expressions
     {
 
         public CellUniAutoDec()
-            : base(BaseFunctionLibrary.UNI_AUTO_DEC, "--")
+            : base(BaseLibrary.UNI_AUTO_DEC, "--")
         {
         }
 
@@ -256,7 +256,7 @@ namespace Rye.Expressions
     {
 
         public CellBinPlus()
-            : base(BaseFunctionLibrary.OP_ADD, "+")
+            : base(BaseLibrary.OP_ADD, "+")
         {
         }
 
@@ -271,7 +271,7 @@ namespace Rye.Expressions
     {
 
         public CellBinMinus()
-            : base(BaseFunctionLibrary.OP_SUB, "-")
+            : base(BaseLibrary.OP_SUB, "-")
         {
         }
 
@@ -286,7 +286,7 @@ namespace Rye.Expressions
     {
 
         public CellBinMult()
-            : base(BaseFunctionLibrary.OP_MUL, "*")
+            : base(BaseLibrary.OP_MUL, "*")
         {
         }
 
@@ -301,7 +301,7 @@ namespace Rye.Expressions
     {
 
         public CellBinDiv()
-            : base(BaseFunctionLibrary.OP_DIV, "/")
+            : base(BaseLibrary.OP_DIV, "/")
         {
         }
 
@@ -316,7 +316,7 @@ namespace Rye.Expressions
     {
 
         public CellBinDiv2()
-            : base(BaseFunctionLibrary.OP_DIV2, "/?")
+            : base(BaseLibrary.OP_DIV2, "/?")
         {
         }
 
@@ -331,7 +331,7 @@ namespace Rye.Expressions
     {
 
         public CellBinMod()
-            : base(BaseFunctionLibrary.OP_MOD, "%")
+            : base(BaseLibrary.OP_MOD, "%")
         {
         }
 
@@ -387,7 +387,7 @@ namespace Rye.Expressions
     {
 
         public CellBoolEQ()
-            : base(BaseFunctionLibrary.BOOL_EQ, "==")
+            : base(BaseLibrary.BOOL_EQ, "==")
         {
         }
 
@@ -402,7 +402,7 @@ namespace Rye.Expressions
     {
 
         public CellBoolNEQ()
-            : base(BaseFunctionLibrary.BOOL_NEQ, "!=")
+            : base(BaseLibrary.BOOL_NEQ, "!=")
         {
         }
 
@@ -417,7 +417,7 @@ namespace Rye.Expressions
     {
 
         public CellBoolLT()
-            : base(BaseFunctionLibrary.BOOL_LT, "<")
+            : base(BaseLibrary.BOOL_LT, "<")
         {
         }
 
@@ -432,7 +432,7 @@ namespace Rye.Expressions
     {
 
         public CellBoolLTE()
-            : base(BaseFunctionLibrary.BOOL_LTE, "<=")
+            : base(BaseLibrary.BOOL_LTE, "<=")
         {
         }
 
@@ -447,7 +447,7 @@ namespace Rye.Expressions
     {
 
         public CellBoolGT()
-            : base(BaseFunctionLibrary.BOOL_GT, ">")
+            : base(BaseLibrary.BOOL_GT, ">")
         {
         }
 
@@ -462,7 +462,7 @@ namespace Rye.Expressions
     {
 
         public CellBoolGTE()
-            : base(BaseFunctionLibrary.BOOL_GTE, ">=")
+            : base(BaseLibrary.BOOL_GTE, ">=")
         {
         }
 
@@ -517,7 +517,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKYear()
-            : base(BaseFunctionLibrary.FUNC_YEAR, 1, CellAffinity.INT)
+            : base(BaseLibrary.FUNC_YEAR, 1, CellAffinity.INT)
         {
         }
 
@@ -532,7 +532,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKMonth()
-            : base(BaseFunctionLibrary.FUNC_MONTH, 1, CellAffinity.INT)
+            : base(BaseLibrary.FUNC_MONTH, 1, CellAffinity.INT)
         {
         }
 
@@ -547,7 +547,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKDay()
-            : base(BaseFunctionLibrary.FUNC_DAY, 1, CellAffinity.INT)
+            : base(BaseLibrary.FUNC_DAY, 1, CellAffinity.INT)
         {
         }
 
@@ -562,7 +562,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKHour()
-            : base(BaseFunctionLibrary.FUNC_HOUR, 1, CellAffinity.INT)
+            : base(BaseLibrary.FUNC_HOUR, 1, CellAffinity.INT)
         {
         }
 
@@ -577,7 +577,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKMinute()
-            : base(BaseFunctionLibrary.FUNC_MINUTE, 1, CellAffinity.INT)
+            : base(BaseLibrary.FUNC_MINUTE, 1, CellAffinity.INT)
         {
         }
 
@@ -592,7 +592,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKSecond()
-            : base(BaseFunctionLibrary.FUNC_SECOND, 1, CellAffinity.INT)
+            : base(BaseLibrary.FUNC_SECOND, 1, CellAffinity.INT)
         {
         }
 
@@ -607,7 +607,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKMillisecond()
-            : base(BaseFunctionLibrary.FUNC_MILLISECOND, 1, CellAffinity.INT)
+            : base(BaseLibrary.FUNC_MILLISECOND, 1, CellAffinity.INT)
         {
         }
 
@@ -622,7 +622,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKTicks()
-            : base(BaseFunctionLibrary.FUNC_TIMESPAN, 1, CellAffinity.STRING)
+            : base(BaseLibrary.FUNC_TIMESPAN, 1, CellAffinity.STRING)
         {
         }
 
@@ -639,7 +639,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKSubstring()
-            : base(BaseFunctionLibrary.FUNC_SUBSTR, 3, CellAffinity.STRING)
+            : base(BaseLibrary.FUNC_SUBSTR, 3, CellAffinity.STRING)
         {
         }
 
@@ -654,7 +654,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKLeft()
-            : base(BaseFunctionLibrary.FUNC_SLEFT, 2, CellAffinity.STRING)
+            : base(BaseLibrary.FUNC_SLEFT, 2, CellAffinity.STRING)
         {
         }
 
@@ -674,7 +674,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKRight()
-            : base(BaseFunctionLibrary.FUNC_SRIGHT, 2, CellAffinity.STRING)
+            : base(BaseLibrary.FUNC_SRIGHT, 2, CellAffinity.STRING)
         {
         }
 
@@ -694,7 +694,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKReplace()
-            : base(BaseFunctionLibrary.FUNC_REPLACE, 3, CellAffinity.STRING)
+            : base(BaseLibrary.FUNC_REPLACE, 3, CellAffinity.STRING)
         {
         }
 
@@ -714,7 +714,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKPosition()
-            : base(BaseFunctionLibrary.FUNC_POSITION, 3, CellAffinity.INT)
+            : base(BaseLibrary.FUNC_POSITION, 3, CellAffinity.INT)
         {
         }
 
@@ -734,7 +734,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKLength()
-            : base(BaseFunctionLibrary.FUNC_LENGTH, 1, CellAffinity.INT)
+            : base(BaseLibrary.FUNC_LENGTH, 1, CellAffinity.INT)
         {
         }
 
@@ -754,7 +754,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKTrim()
-            : base(BaseFunctionLibrary.FUNC_TRIM, 1, CellAffinity.INT)
+            : base(BaseLibrary.FUNC_TRIM, 1, CellAffinity.INT)
         {
         }
 
@@ -780,7 +780,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKIsNull()
-            : base(BaseFunctionLibrary.FUNC_IS_NULL, 1, CellAffinity.BOOL)
+            : base(BaseLibrary.FUNC_IS_NULL, 1, CellAffinity.BOOL)
         {
         }
 
@@ -795,7 +795,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKIsNotNull()
-            : base(BaseFunctionLibrary.FUNC_IS_NOT_NULL, 1, CellAffinity.BOOL)
+            : base(BaseLibrary.FUNC_IS_NOT_NULL, 1, CellAffinity.BOOL)
         {
         }
 
@@ -810,7 +810,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKTypeOf()
-            : base(BaseFunctionLibrary.FUNC_TYPEOF, 1, CellAffinity.INT)
+            : base(BaseLibrary.FUNC_TYPEOF, 1, CellAffinity.INT)
         {
         }
 
@@ -825,7 +825,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKSTypeOf()
-            : base(BaseFunctionLibrary.FUNC_STYPEOF, 1, CellAffinity.STRING)
+            : base(BaseLibrary.FUNC_STYPEOF, 1, CellAffinity.STRING)
         {
         }
 
@@ -845,7 +845,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKRound()
-            : base(BaseFunctionLibrary.FUNC_ROUND, -1, CellAffinity.DOUBLE)
+            : base(BaseLibrary.FUNC_ROUND, -1, CellAffinity.DOUBLE)
         {
         }
 
@@ -895,7 +895,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKToUTF16()
-            : base(BaseFunctionLibrary.FUNC_TO_UTF16, 1, CellAffinity.STRING)
+            : base(BaseLibrary.FUNC_TO_UTF16, 1, CellAffinity.STRING)
         {
         }
 
@@ -923,7 +923,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKToUTF8()
-            : base(BaseFunctionLibrary.FUNC_TO_UTF8, 1, CellAffinity.STRING)
+            : base(BaseLibrary.FUNC_TO_UTF8, 1, CellAffinity.STRING)
         {
         }
 
@@ -951,7 +951,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKToHEX()
-            : base(BaseFunctionLibrary.FUNC_TO_HEX, 1, CellAffinity.STRING)
+            : base(BaseLibrary.FUNC_TO_HEX, 1, CellAffinity.STRING)
         {
         }
 
@@ -979,7 +979,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKFromUTF16()
-            : base(BaseFunctionLibrary.FUNC_FROM_UTF16, 1, CellAffinity.BLOB)
+            : base(BaseLibrary.FUNC_FROM_UTF16, 1, CellAffinity.BLOB)
         {
         }
 
@@ -1007,7 +1007,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKFromUTF8()
-            : base(BaseFunctionLibrary.FUNC_FROM_UTF8, 1, CellAffinity.BLOB)
+            : base(BaseLibrary.FUNC_FROM_UTF8, 1, CellAffinity.BLOB)
         {
         }
 
@@ -1035,7 +1035,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKFromHEX()
-            : base(BaseFunctionLibrary.FUNC_FROM_HEX, 1, CellAffinity.BLOB)
+            : base(BaseLibrary.FUNC_FROM_HEX, 1, CellAffinity.BLOB)
         {
         }
 
@@ -1062,7 +1062,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKNormal()
-            : base(BaseFunctionLibrary.FUNC_NDIST, 1, CellAffinity.DOUBLE)
+            : base(BaseLibrary.FUNC_NDIST, 1, CellAffinity.DOUBLE)
         {
         }
 
@@ -1072,7 +1072,7 @@ namespace Rye.Expressions
             if (c.AFFINITY != CellAffinity.DOUBLE)
                 c.AFFINITY = CellAffinity.DOUBLE;
 
-            c.DOUBLE = FinanceFunctionLibrary.NormalCDF(c.DOUBLE);
+            c.DOUBLE = SpecialFunction.ProbabilityDistributions.NormalCDF(c.DOUBLE);
 
             return c;
 
@@ -1084,7 +1084,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKThreadID()
-            : base(BaseFunctionLibrary.FUNC_THREAD_ID, 0, CellAffinity.INT)
+            : base(BaseLibrary.FUNC_THREAD_ID, 0, CellAffinity.INT)
         {
         }
 
@@ -1099,7 +1099,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKIsPrime()
-            : base(BaseFunctionLibrary.FUNC_ISPRIME, 1, CellAffinity.BOOL)
+            : base(BaseLibrary.FUNC_ISPRIME, 1, CellAffinity.BOOL)
         {
         }
 
@@ -1132,7 +1132,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFKModPow()
-            : base(BaseFunctionLibrary.FUNC_MODPOW, 3, CellAffinity.INT)
+            : base(BaseLibrary.FUNC_MODPOW, 3, CellAffinity.INT)
         {
         }
 
@@ -1197,7 +1197,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVLog()
-            : base(BaseFunctionLibrary.FUNC_LOG, 1)
+            : base(BaseLibrary.FUNC_LOG, 1)
         {
         }
 
@@ -1212,7 +1212,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVExp()
-            : base(BaseFunctionLibrary.FUNC_EXP, 1)
+            : base(BaseLibrary.FUNC_EXP, 1)
         {
         }
 
@@ -1227,7 +1227,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVPower()
-            : base(BaseFunctionLibrary.FUNC_POWER, 2)
+            : base(BaseLibrary.FUNC_POWER, 2)
         {
         }
 
@@ -1242,7 +1242,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVSQRT()
-            : base(BaseFunctionLibrary.FUNC_POWER, 1)
+            : base(BaseLibrary.FUNC_POWER, 1)
         {
         }
 
@@ -1257,7 +1257,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVSin()
-            : base(BaseFunctionLibrary.FUNC_SIN, 1)
+            : base(BaseLibrary.FUNC_SIN, 1)
         {
         }
 
@@ -1272,7 +1272,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVCos()
-            : base(BaseFunctionLibrary.FUNC_COS, 1)
+            : base(BaseLibrary.FUNC_COS, 1)
         {
         }
 
@@ -1287,7 +1287,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVTan()
-            : base(BaseFunctionLibrary.FUNC_TAN, 1)
+            : base(BaseLibrary.FUNC_TAN, 1)
         {
         }
 
@@ -1302,7 +1302,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVSinh()
-            : base(BaseFunctionLibrary.FUNC_SINH, 1)
+            : base(BaseLibrary.FUNC_SINH, 1)
         {
         }
 
@@ -1317,7 +1317,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVCosh()
-            : base(BaseFunctionLibrary.FUNC_COSH, 1)
+            : base(BaseLibrary.FUNC_COSH, 1)
         {
         }
 
@@ -1332,7 +1332,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVTanh()
-            : base(BaseFunctionLibrary.FUNC_TANH, 1)
+            : base(BaseLibrary.FUNC_TANH, 1)
         {
         }
 
@@ -1347,7 +1347,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVLogit()
-            : base(BaseFunctionLibrary.FUNC_LOGIT, 1)
+            : base(BaseLibrary.FUNC_LOGIT, 1)
         {
         }
 
@@ -1357,7 +1357,7 @@ namespace Rye.Expressions
             switch (Data[0].AFFINITY)
             {
                 case CellAffinity.DOUBLE:
-                    Data[0].DOUBLE = 1 / (1 + Math.Exp(-Data[0].DOUBLE));
+                    Data[0].DOUBLE = 1D / (1D + Math.Exp(-Data[0].DOUBLE));
                     break;
                 case CellAffinity.INT:
                     Data[0].INT = (long)(1 / (1 + Math.Exp(-Data[0].valueDOUBLE)));
@@ -1376,7 +1376,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVIfNull()
-            : base(BaseFunctionLibrary.FUNC_IF_NULL, 2)
+            : base(BaseLibrary.FUNC_IF_NULL, 2)
         {
         }
 
@@ -1396,7 +1396,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVAND()
-            : base(BaseFunctionLibrary.FUNC_AND, 2)
+            : base(BaseLibrary.FUNC_AND, 2)
         {
         }
 
@@ -1411,7 +1411,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVOR()
-            : base(BaseFunctionLibrary.FUNC_OR, 2)
+            : base(BaseLibrary.FUNC_OR, 2)
         {
         }
 
@@ -1426,7 +1426,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVXOR()
-            : base(BaseFunctionLibrary.FUNC_XOR, 2)
+            : base(BaseLibrary.FUNC_XOR, 2)
         {
         }
 
@@ -1441,7 +1441,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVSMax()
-            : base(BaseFunctionLibrary.FUNC_SMAX, -1)
+            : base(BaseLibrary.FUNC_SMAX, -1)
         {
         }
 
@@ -1456,7 +1456,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVSMin()
-            : base(BaseFunctionLibrary.FUNC_SMIN, -1)
+            : base(BaseLibrary.FUNC_SMIN, -1)
         {
         }
 
@@ -1471,7 +1471,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVExtreme()
-            : base(BaseFunctionLibrary.FUNC_EXTREME, -1)
+            : base(BaseLibrary.FUNC_EXTREME, -1)
         {
         }
 
@@ -1487,7 +1487,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVAbs()
-            : base(BaseFunctionLibrary.FUNC_ABS, 1)
+            : base(BaseLibrary.FUNC_ABS, 1)
         {
         }
 
@@ -1502,7 +1502,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncFVSign()
-            : base(BaseFunctionLibrary.FUNC_SIGN, 1)
+            : base(BaseLibrary.FUNC_SIGN, 1)
         {
         }
 
@@ -1569,7 +1569,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncCHMD5()
-            : base(BaseFunctionLibrary.HASH_MD5, new MD5CryptoServiceProvider())
+            : base(BaseLibrary.HASH_MD5, new MD5CryptoServiceProvider())
         {
         }
 
@@ -1584,7 +1584,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncCHSHA1()
-            : base(BaseFunctionLibrary.HASH_SHA1, new SHA1CryptoServiceProvider())
+            : base(BaseLibrary.HASH_SHA1, new SHA1CryptoServiceProvider())
         {
         }
 
@@ -1599,7 +1599,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncCHSHA256()
-            : base(BaseFunctionLibrary.HASH_SHA256, new SHA256CryptoServiceProvider())
+            : base(BaseLibrary.HASH_SHA256, new SHA256CryptoServiceProvider())
         {
         }
 
@@ -1614,7 +1614,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncBASH()
-            : base(BaseFunctionLibrary.HASH_BASH, -1, CellAffinity.BLOB)
+            : base(BaseLibrary.HASH_BASH, -1, CellAffinity.BLOB)
         {
         }
 
@@ -1645,7 +1645,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncLASH()
-            : base(BaseFunctionLibrary.HASH_LASH, -1, CellAffinity.INT)
+            : base(BaseLibrary.HASH_LASH, -1, CellAffinity.INT)
         {
         }
 
@@ -1679,7 +1679,7 @@ namespace Rye.Expressions
     {
 
         public CellDateBuild()
-            : base(BaseFunctionLibrary.SPECIAL_DATE_BUILD, -1, CellAffinity.DATE_TIME)
+            : base(BaseLibrary.SPECIAL_DATE_BUILD, -1, CellAffinity.DATE_TIME)
         {
         }
 
@@ -1725,7 +1725,7 @@ namespace Rye.Expressions
     {
 
         public CellFuncIf()
-            : base(BaseFunctionLibrary.SPECIAL_IF, 3, false)
+            : base(BaseLibrary.SPECIAL_IF, 3, false)
         {
         }
 
@@ -1792,7 +1792,7 @@ namespace Rye.Expressions
         public const char WILD_CARD = '*';
 
         public CellLike()
-            : base(BaseFunctionLibrary.SPECIAL_LIKE, 2, CellAffinity.BOOL)
+            : base(BaseLibrary.SPECIAL_LIKE, 2, CellAffinity.BOOL)
         {
 
         }
@@ -1832,7 +1832,7 @@ namespace Rye.Expressions
             {
                 z = Text.StartsWith(Patern, StringComparison.OrdinalIgnoreCase);
             }
-            else // !x && !y // 'Hello World' //
+            else // !OriginalNode && !NewNode // 'Hello World' //
             {
                 z = string.Equals(Text, Patern, StringComparison.OrdinalIgnoreCase);
             }
@@ -1847,7 +1847,7 @@ namespace Rye.Expressions
     {
 
         public CellMatch()
-            : base(BaseFunctionLibrary.SPECIAL_MATCH, -1, CellAffinity.INT)
+            : base(BaseLibrary.SPECIAL_MATCH, -1, CellAffinity.INT)
         {
         }
 
@@ -1968,17 +1968,17 @@ namespace Rye.Expressions
                 throw new Exception(string.Format("WEIGHT and ShartTable have different lengths {0} : {1}", Weight.Count(), Data.Count()));
 
             // Define variables //
-            Cell w, x;
+            Cell w, OriginalNode;
             Record r = Record.Stitch(Cell.ZeroValue(Weight.First().Affinity), Cell.ZeroValue(Data.First().Affinity), Cell.ZeroValue(Data.First().Affinity));
             for (int i = 0; i < Data.Count(); i++)
             {
                 w = Weight.ElementAt(i);
-                x = Data.ElementAt(i);
-                if (!x.IsNull && !w.IsNull)
+                OriginalNode = Data.ElementAt(i);
+                if (!OriginalNode.IsNull && !w.IsNull)
                 {
                     r[0] += w;
-                    r[1] += x * w;
-                    r[2] += x * x * w;
+                    r[1] += OriginalNode * w;
+                    r[2] += OriginalNode * OriginalNode * w;
                 }
             }
             return r;
@@ -1986,7 +1986,7 @@ namespace Rye.Expressions
         }
 
         /// <summary>
-        /// Record: 0 = weight, 1 = sum data x, 2 = sum data x squared, 3 = sum data y, 4 = sum data y squared, 5 = sum data x * y
+        /// Record: 0 = weight, 1 = sum data OriginalNode, 2 = sum data OriginalNode squared, 3 = sum data NewNode, 4 = sum data NewNode squared, 5 = sum data OriginalNode * NewNode
         /// </summary>
         /// <param name="XData"></param>
         /// <param name="YData"></param>
@@ -2000,22 +2000,22 @@ namespace Rye.Expressions
                 throw new Exception(string.Format("WEIGHT and ShartTable have different lengths {0} : {1} : {2}", Weight.Count(), XData.Count(), YData.Count()));
 
             // Define variables //
-            Cell x, y, w;
+            Cell OriginalNode, NewNode, w;
             Record r = Record.Stitch(Cell.ZeroValue(Weight.First().Affinity), Cell.ZeroValue(XData.First().Affinity), Cell.ZeroValue(XData.First().Affinity),
                 Cell.ZeroValue(YData.First().Affinity), Cell.ZeroValue(YData.First().Affinity), Cell.ZeroValue(XData.First().Affinity));
             for (int i = 0; i < XData.Count(); i++)
             {
-                x = XData.ElementAt(i);
-                y = YData.ElementAt(i);
+                OriginalNode = XData.ElementAt(i);
+                NewNode = YData.ElementAt(i);
                 w = Weight.ElementAt(i);
-                if (!x.IsNull && !y.IsNull && !w.IsNull)
+                if (!OriginalNode.IsNull && !NewNode.IsNull && !w.IsNull)
                 {
                     r[0] += w;
-                    r[1] += x * w;
-                    r[2] += x * x * w;
-                    r[3] += y * w;
-                    r[4] += y * y * w;
-                    r[5] += x * y * w;
+                    r[1] += OriginalNode * w;
+                    r[2] += OriginalNode * OriginalNode * w;
+                    r[3] += NewNode * w;
+                    r[4] += NewNode * NewNode * w;
+                    r[5] += OriginalNode * NewNode * w;
                 }
             }
             return r;
@@ -2050,7 +2050,7 @@ namespace Rye.Expressions
 
         public static Cell Covariance(IEnumerable<Cell> XData, IEnumerable<Cell> YData, IEnumerable<Cell> Weight)
         {
-            // Record: 0 = weight, 1 = sum data x, 2 = sum data x squared, 3 = sum data y, 4 = sum data y squared, 5 = sum data x * y
+            // Record: 0 = weight, 1 = sum data OriginalNode, 2 = sum data OriginalNode squared, 3 = sum data NewNode, 4 = sum data NewNode squared, 5 = sum data OriginalNode * NewNode
             Record r = Bivariate(XData, YData, Weight);
             Cell avgx = r[1] / r[0], avgy = r[3] / r[0];
             return r[5] / r[0] - avgx * avgy;
@@ -2058,7 +2058,7 @@ namespace Rye.Expressions
 
         public static Cell Correlation(IEnumerable<Cell> XData, IEnumerable<Cell> YData, IEnumerable<Cell> Weight)
         {
-            // Record: 0 = weight, 1 = sum data x, 2 = sum data x squared, 3 = sum data y, 4 = sum data y squared, 5 = sum data x * y
+            // Record: 0 = weight, 1 = sum data OriginalNode, 2 = sum data OriginalNode squared, 3 = sum data NewNode, 4 = sum data NewNode squared, 5 = sum data OriginalNode * NewNode
             Record r = Bivariate(XData, YData, Weight);
             Cell avgx = r[1] / r[0], avgy = r[3] / r[0];
             Cell stdx = Cell.Sqrt(r[2] / r[0] - avgx * avgx), stdy = Cell.Sqrt(r[4] / r[0] - avgy * avgy);
@@ -2068,7 +2068,7 @@ namespace Rye.Expressions
 
         public static Cell Slope(IEnumerable<Cell> XData, IEnumerable<Cell> YData, IEnumerable<Cell> Weight)
         {
-            // Record: 0 = weight, 1 = sum data x, 2 = sum data x squared, 3 = sum data y, 4 = sum data y squared, 5 = sum data x * y
+            // Record: 0 = weight, 1 = sum data OriginalNode, 2 = sum data OriginalNode squared, 3 = sum data NewNode, 4 = sum data NewNode squared, 5 = sum data OriginalNode * NewNode
             Record r = Bivariate(XData, YData, Weight);
             Cell avgx = r[1] / r[0], avgy = r[3] / r[0];
             Cell stdx = Cell.Sqrt(r[2] / r[0] - avgx * avgx);
@@ -2078,7 +2078,7 @@ namespace Rye.Expressions
 
         public static Cell Intercept(IEnumerable<Cell> XData, IEnumerable<Cell> YData, IEnumerable<Cell> Weight)
         {
-            // Record: 0 = weight, 1 = sum data x, 2 = sum data x squared, 3 = sum data y, 4 = sum data y squared, 5 = sum data x * y
+            // Record: 0 = weight, 1 = sum data OriginalNode, 2 = sum data OriginalNode squared, 3 = sum data NewNode, 4 = sum data NewNode squared, 5 = sum data OriginalNode * NewNode
             Record r = Bivariate(XData, YData, Weight);
             Cell avgx = r[1] / r[0], avgy = r[3] / r[0];
             Cell stdx = Cell.Sqrt(r[2] / r[0] - avgx * avgx);
@@ -2124,19 +2124,19 @@ namespace Rye.Expressions
                 this._Wcache.Enqueue(Cell.OneValue(Data[OFFSET_DATA_X].Affinity));
 
             // Check for no accumulation //
-            Cell x;
+            Cell OriginalNode;
             if (this._Xcache.Count != this._LagCount)
             {
-                x = new Cell(Data[OFFSET_DATA_X].Affinity);
+                OriginalNode = new Cell(Data[OFFSET_DATA_X].Affinity);
             }
             else
             {
-                x = this.Motion(this._Xcache, this._Wcache);
+                OriginalNode = this.Motion(this._Xcache, this._Wcache);
                 this._Xcache.Dequeue();
                 this._Wcache.Dequeue();
             }
 
-            return x;
+            return OriginalNode;
 
         }
 
@@ -2183,20 +2183,20 @@ namespace Rye.Expressions
                 this._Wcache.Enqueue(Cell.OneValue(Data[OFFSET_DATA_X].Affinity));
 
             // Check for no accumulation //
-            Cell x;
+            Cell OriginalNode;
             if (this._Xcache.Count != this._LagCount)
             {
-                x = new Cell(Data[OFFSET_DATA_X].Affinity);
+                OriginalNode = new Cell(Data[OFFSET_DATA_X].Affinity);
             }
             else
             {
-                x = this.Motion(this._Xcache, this._Ycache, this._Wcache);
+                OriginalNode = this.Motion(this._Xcache, this._Ycache, this._Wcache);
                 this._Xcache.Dequeue();
                 this._Ycache.Dequeue();
                 this._Wcache.Dequeue();
             }
 
-            return x;
+            return OriginalNode;
 
         }
 
@@ -2208,7 +2208,7 @@ namespace Rye.Expressions
     {
 
         public CellMSum()
-            : base(BaseFunctionLibrary.MUTABLE_MSUM)
+            : base(BaseLibrary.MUTABLE_MSUM)
         {
         }
 
@@ -2223,7 +2223,7 @@ namespace Rye.Expressions
     {
 
         public CellMAvg()
-            : base(BaseFunctionLibrary.MUTABLE_MAVG)
+            : base(BaseLibrary.MUTABLE_MAVG)
         {
         }
 
@@ -2238,7 +2238,7 @@ namespace Rye.Expressions
     {
 
         public CellMVar()
-            : base(BaseFunctionLibrary.MUTABLE_MVAR)
+            : base(BaseLibrary.MUTABLE_MVAR)
         {
         }
 
@@ -2253,7 +2253,7 @@ namespace Rye.Expressions
     {
 
         public CellMStdev()
-            : base(BaseFunctionLibrary.MUTABLE_MSTDEV)
+            : base(BaseLibrary.MUTABLE_MSTDEV)
         {
         }
 
@@ -2268,7 +2268,7 @@ namespace Rye.Expressions
     {
 
         public CellMCovar()
-            : base(BaseFunctionLibrary.MUTABLE_MCOVAR)
+            : base(BaseLibrary.MUTABLE_MCOVAR)
         {
         }
 
@@ -2283,7 +2283,7 @@ namespace Rye.Expressions
     {
 
         public CellMCorr()
-            : base(BaseFunctionLibrary.MUTABLE_MCORR)
+            : base(BaseLibrary.MUTABLE_MCORR)
         {
         }
 
@@ -2298,7 +2298,7 @@ namespace Rye.Expressions
     {
 
         public CellMIntercept()
-            : base(BaseFunctionLibrary.MUTABLE_MINTERCEPT)
+            : base(BaseLibrary.MUTABLE_MINTERCEPT)
         {
         }
 
@@ -2313,7 +2313,7 @@ namespace Rye.Expressions
     {
 
         public CellMSlope()
-            : base(BaseFunctionLibrary.MUTABLE_MSLOPE)
+            : base(BaseLibrary.MUTABLE_MSLOPE)
         {
         }
 
@@ -2327,14 +2327,14 @@ namespace Rye.Expressions
 
     #endregion
 
-    // Single value functions //
+    // Single Value functions //
     #region VolatileFunctions
 
     public sealed class CellGUID : CellFunction
     {
 
         public CellGUID()
-            : base(BaseFunctionLibrary.VOLATILE_GUID, 0, true)
+            : base(BaseLibrary.VOLATILE_GUID, 0, true)
         {
         }
 
@@ -2364,7 +2364,7 @@ namespace Rye.Expressions
     {
 
         public CellTicks()
-            : base(BaseFunctionLibrary.VOLATILE_TICKS, 0, true)
+            : base(BaseLibrary.VOLATILE_TICKS, 0, true)
         {
         }
 
@@ -2389,7 +2389,7 @@ namespace Rye.Expressions
     {
 
         public CellNow()
-            : base(BaseFunctionLibrary.VOLATILE_NOW, 0, true)
+            : base(BaseLibrary.VOLATILE_NOW, 0, true)
         {
         }
 
@@ -2416,7 +2416,7 @@ namespace Rye.Expressions
         private RandomCell _rng;
 
         public CellRandomBool(RandomCell RNG)
-            : base(BaseFunctionLibrary.MUTABLE_RANDBOOL, -1, true)
+            : base(BaseLibrary.MUTABLE_RANDBOOL, -1, true)
         {
 
             this.IsVolatile = true;
@@ -2454,7 +2454,7 @@ namespace Rye.Expressions
         private RandomCell _rng;
 
         public CellRandomDate(RandomCell RNG)
-            : base(BaseFunctionLibrary.MUTABLE_RANDINT, -1, true)
+            : base(BaseLibrary.MUTABLE_RANDINT, -1, true)
         {
 
             this.IsVolatile = true;
@@ -2520,7 +2520,7 @@ namespace Rye.Expressions
         private RandomCell _rng;
 
         public CellRandomInt(RandomCell RNG)
-            : base(BaseFunctionLibrary.MUTABLE_RANDINT, -1, true)
+            : base(BaseLibrary.MUTABLE_RANDINT, -1, true)
         {
 
             this.IsVolatile = true;
@@ -2561,7 +2561,7 @@ namespace Rye.Expressions
         private RandomCell _rng;
 
         public CellRandomNum(RandomCell RNG)
-            : base(BaseFunctionLibrary.MUTABLE_RANDNUM, -1, true)
+            : base(BaseLibrary.MUTABLE_RANDNUM, -1, true)
         {
 
             this.IsVolatile = true;
@@ -2574,6 +2574,10 @@ namespace Rye.Expressions
 
             if (Data.Length == 1 || Data.Length == 2)
             {
+
+                if (Data[0].NULL == 1)
+                    return this._rng.NextDoubleGauss();
+
                 double a = Data[0].valueDOUBLE;
                 double b = (Data.Length == 2 ? Data[1].valueDOUBLE : 0d);
                 return this._rng.NextDouble(Math.Min(a, b), Math.Max(a, b));
@@ -2603,7 +2607,7 @@ namespace Rye.Expressions
         private RandomCell _rng;
 
         public CellRandomVar(RandomCell RNG)
-            : base(BaseFunctionLibrary.MUTABLE_RANDVAR, -1, true)
+            : base(BaseLibrary.MUTABLE_RANDVAR, -1, true)
         {
 
             this.IsVolatile = true;
@@ -2643,7 +2647,7 @@ namespace Rye.Expressions
         private RandomCell _rng;
 
         public CellRandomString(RandomCell RNG)
-            : base(BaseFunctionLibrary.MUTABLE_RANDSTRING, -1, true)
+            : base(BaseLibrary.MUTABLE_RANDSTRING, -1, true)
         {
 
             this.IsVolatile = true;
@@ -2661,7 +2665,7 @@ namespace Rye.Expressions
              * 
              * if null, then null
              * 
-             * if string, use as corpus, otherwise use the int value:
+             * if string, use as corpus, otherwise use the int Value:
              * 
              * 0 = utf8
              * 1 = utf8
@@ -2733,7 +2737,7 @@ namespace Rye.Expressions
         private RandomCell _rng;
 
         public CellRandomBLOB(RandomCell RNG)
-            : base(BaseFunctionLibrary.MUTABLE_RANDSTRING, -1, true)
+            : base(BaseLibrary.MUTABLE_RANDSTRING, -1, true)
         {
 
             this.IsVolatile = true;
@@ -2772,7 +2776,7 @@ namespace Rye.Expressions
     {
 
         public AndMany()
-            : base(BaseFunctionLibrary.FUNC_AND_MANY, -1, false)
+            : base(BaseLibrary.FUNC_AND_MANY, -1, false)
         {
         }
 
@@ -2818,7 +2822,7 @@ namespace Rye.Expressions
     {
 
         public OrMany()
-            : base(BaseFunctionLibrary.FUNC_OR_MANY, -1, false)
+            : base(BaseLibrary.FUNC_OR_MANY, -1, false)
         {
         }
 
@@ -2864,7 +2868,7 @@ namespace Rye.Expressions
     {
 
         public AddMany()
-            : base(BaseFunctionLibrary.FUNC_ADD_MANY, -1, false)
+            : base(BaseLibrary.FUNC_ADD_MANY, -1, false)
         {
         }
 
@@ -2907,7 +2911,7 @@ namespace Rye.Expressions
     {
 
         public ProductMany()
-            : base(BaseFunctionLibrary.FUNC_PRODUCT_MANY, -1, false)
+            : base(BaseLibrary.FUNC_PRODUCT_MANY, -1, false)
         {
         }
 

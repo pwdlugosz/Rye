@@ -11,61 +11,106 @@ using Rye.Expressions;
 
 namespace Rye.Libraries
 {
-    
-    public sealed class WebMathodLibrary : MethodLibrary
+
+
+    // Web Library //
+    public sealed class WebLibrary : Library
     {
 
-        public const string LIBRARY_NAME = "WEB";
-
-        public const string NAME_NAVIGATE_URL = "NAVIGATE_URL";
-        
         private Exchange.WebProvider _web;
 
-        private string[] _Names = new string[]
+        public const string M_NAVIGATE_URL = "NAVIGATE_URL";
+        public const string M_DOWNLOAD = "DOWNLOAD";
+        public const string M_FROM_HTML = "FROM_HTML";
+
+        private static string[] _MethodNames = new string[]
         {
-            NAME_NAVIGATE_URL
+            M_NAVIGATE_URL,
+            M_DOWNLOAD,
+            M_FROM_HTML
         };
 
-        public WebMathodLibrary(Session Session, Exchange.WebProvider Provider)
-            : base(Session)
+        public const string F_EXTRACT = "EXTRACT";
+        public const string F_HTML_GET = "HTML_GET";
+
+        private static string[] _FunctionNames = new string[]
         {
-            this.LibName = LIBRARY_NAME;
-            this._web = Provider;
+            F_EXTRACT,
+            F_HTML_GET
+        };
+
+        public WebLibrary(Session Session)
+            : base(Session, "WEB")
+        {
         }
 
-        public override string[] Names
-        {
-            get { return this._Names; }
-        }
-
-        public override Method RenderMethod(Method Parent, string Name, ParameterCollection Parameters)
-        {
-
-            switch (Name.ToUpper())
-            {
-                case NAME_NAVIGATE_URL:
-                    return this.NavigateURL(Parent, Parameters);
-            }
-
-            throw new ArgumentException(string.Format("Method {0} not found", Name));
-
-        }
-
-        public override ParameterCollectionSigniture RenderSigniture(string Name)
+        public override Method GetMethod(Method Parent, string Name, ParameterCollection Parameters)
         {
 
             switch (Name.ToUpper())
             {
-                case NAME_NAVIGATE_URL:
-                    return new ParameterCollectionSigniture(NAME_NAVIGATE_URL, "URL|URL to navigate to|Value|false");
+
+                case M_NAVIGATE_URL:
+                    return this.Method_NavigateURL(Parent, Parameters);
+                case M_DOWNLOAD:
+                    return this.Method_Download(Parent, Parameters);
+                case M_FROM_HTML:
+                    return this.Method_FromHTML(Parent, Parameters);
+
             }
-            
-            throw new ArgumentException(string.Format("Method {0} not found", Name));
-            
+            throw new ArgumentException(string.Format("Method '{0}' does not exist", Name));
+
         }
 
-        // URL //
-        public Method NavigateURL(Method Parent, ParameterCollection Parameters)
+        public override ParameterCollectionSigniture GetMethodSigniture(string Name)
+        {
+
+            switch (Name.ToUpper())
+            {
+
+                case M_NAVIGATE_URL:
+                    return ParameterCollectionSigniture.Parse(M_NAVIGATE_URL, "Downloads a url to a file", "URL|URL to navigate to|Value|false");
+                case M_DOWNLOAD:
+                    return ParameterCollectionSigniture.Parse(M_DOWNLOAD, "Downloads a url to a file", "URL|The URL to download|Value|false;PATH|The path to the exported file|Value|false;POST|The post string|Value|true");
+                case M_FROM_HTML:
+                    return ParameterCollectionSigniture.Parse(M_FROM_HTML, "Extracts a table from an HTML document", "PATH|The path to the HTML document|Value|false;HTML_TAGS|The format string for the HTML table|Value|false;DATA|The output table|T|false");
+
+            }
+            throw new ArgumentException(string.Format("Method '{0}' does not exist", Name));
+
+        }
+
+        public override string[] MethodNames
+        {
+            get { return _MethodNames; }
+        }
+
+        public override CellFunction GetFunction(string Name)
+        {
+
+            switch (Name.ToUpper())
+            {
+
+                case F_EXTRACT:
+                    return this.Function_Extract();
+                case F_HTML_GET:
+                    return this.Function_HTMLGet();
+
+            }
+            throw new ArgumentException(string.Format("Method '{0}' does not exist", Name));
+
+        }
+
+        public override string[] FunctionNames
+        {
+            get
+            {
+                return _FunctionNames;
+            }
+        }
+
+        // Methods //
+        private Method Method_NavigateURL(Method Parent, ParameterCollection Parameters)
         {
 
             Action<ParameterCollection> kappa = (x) =>
@@ -73,59 +118,66 @@ namespace Rye.Libraries
 
                 // Get the data parameters //
                 string URL = Parameters.Expressions["URL"].Evaluate().valueSTRING;
-                
+
                 // Navigate //
                 this._web.NavigateURL(URL);
 
             };
-            return new LibraryMethod(Parent, NAME_NAVIGATE_URL, Parameters, false, kappa);
+            return new LibraryMethod(Parent, M_NAVIGATE_URL, Parameters, false, kappa);
 
         }
 
-    }
-
-    public sealed class WebFunctionLibrary : FunctionLibrary
-    {
-
-        public const string LIBRARY_NAME = "WEB";
-        
-        private Exchange.WebProvider _web;
-
-        public WebFunctionLibrary(Session Session, Exchange.WebProvider Provider)
-            : base(Session)
+        private Method Method_Download(Method Parent, ParameterCollection Parameters)
         {
-            this.LibName = LIBRARY_NAME;
-            this._web = Provider;
+
+            Action<ParameterCollection> kappa = (x) =>
+            {
+
+                string url = Parameters.Expressions["URL"].Evaluate().valueSTRING;
+                string path = Parameters.Expressions["PATH"].Evaluate().valueSTRING;
+                string post = Parameters.Exists("POST") ? Parameters.Expressions["POST"].Evaluate().valueSTRING : null;
+
+                if (post == null)
+                {
+                    WebSupport.HTTP_Request_Get(url, path);
+                }
+                else
+                {
+                    WebSupport.HTTP_Request_Post(url, path, post);
+                }
+
+            };
+            return new LibraryMethod(Parent, M_DOWNLOAD, Parameters, false, kappa);
+
+        }
+
+        private Method Method_FromHTML(Method Parent, ParameterCollection Parameters)
+        {
+
+            Action<ParameterCollection> kappa = (x) =>
+            {
+
+                TabularData Data = x.Tables["DATA"];
+                string Path = x.Expressions["PATH"].Evaluate().valueSTRING;
+                string HTML_Tags = x.Expressions["HTML_TAGS"].Evaluate().valueSTRING;
+
+                RecordWriter writer = Data.OpenWriter();
+                try
+                {
+                    Exchange.HTMLProvider.WriteToStream(Path, HTML_Tags, writer);
+                }
+                catch
+                {
+                    this._Session.IO.WriteLine("Error parsing HTML file: {0}", Path);
+                }
+                writer.Close();
+
+            };
+            return new LibraryMethod(Parent, M_FROM_HTML, Parameters, false, kappa);
+
         }
 
         // Functions //
-        public const string NAME_EXTRACT = "EXTRACT";
-
-        private static string[] _FunctionNames = new string[]
-        {
-            NAME_EXTRACT
-        };
-
-        public override CellFunction RenderFunction(string Name)
-        {
-
-            switch (Name)
-            {
-
-                case WebFunctionLibrary.NAME_EXTRACT:
-                    return this.Function_Extract();
-
-            }
-
-            throw new ArgumentException(string.Format("Function '{0}' does not exist", Name));
-
-        }
-
-        public override string[] Names
-        {
-            get { return WebFunctionLibrary._FunctionNames; }
-        }
-
         private CellFunction Function_Extract()
         {
 
@@ -139,7 +191,18 @@ namespace Rye.Libraries
                 return c;
 
             };
-            return new CellFunctionFixedShell(NAME_EXTRACT, 2, CellAffinity.STRING, lambda);
+            return new CellFunctionFixedShell(F_EXTRACT, 2, CellAffinity.STRING, lambda);
+
+        }
+
+        private CellFunction Function_HTMLGet()
+        {
+
+            return new CellFunctionFixedShell(F_HTML_GET, 2, CellAffinity.STRING, (x) =>
+            {
+                return new Cell(Exchange.HTMLProvider.ToString(x[0].valueSTRING, x[1].valueSTRING));
+            }
+            );
 
         }
 

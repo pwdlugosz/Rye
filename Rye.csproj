@@ -148,17 +148,25 @@
     <Compile Include="Data\CellAffinityHelper.cs" />
     <Compile Include="Data\CellFormat.cs" />
     <Compile Include="Data\CellParser.cs" />
+    <Compile Include="Data\Communicator.cs" />
     <Compile Include="Data\CompoundRecord.cs" />
+    <Compile Include="Data\ConcurrentWriters.cs" />
     <Compile Include="Data\DataSet.cs" />
     <Compile Include="Data\Header.cs" />
     <Compile Include="Data\Kernel.cs" />
     <Compile Include="Data\Key.cs" />
     <Compile Include="Data\KeyAffinity.cs" />
+    <Compile Include="Data\Spectre\Comparer.cs" />
+    <Compile Include="Data\Spectre\Host.cs" />
+    <Compile Include="Data\Spectre\Index.cs" />
+    <Compile Include="Data\Spectre\Page.cs" />
     <Compile Include="Data\RandomCell.cs" />
     <Compile Include="Data\Record.cs" />
     <Compile Include="Data\RecordComparer.cs" />
     <Compile Include="Data\RecordWriter.cs" />
     <Compile Include="Data\Schema.cs" />
+    <Compile Include="Data\Spectre\RecordAccepter.cs" />
+    <Compile Include="Data\Spectre\Table.cs" />
     <Compile Include="Exchange\ExchangeProvider.cs" />
     <Compile Include="Exchange\HTMLProvider.cs" />
     <Compile Include="Exchange\MSExcelProvider.cs" />
@@ -166,6 +174,9 @@
     <Compile Include="Exchange\OLEDB.cs" />
     <Compile Include="Exchange\WebProvider.cs" />
     <Compile Include="Expressions\ExpressionCaseWhenElse.cs" />
+    <Compile Include="Index\Nodes.cs" />
+    <Compile Include="Libraries\Library.cs" />
+    <Compile Include="Libraries\MiningLibrary.cs" />
     <Compile Include="Query\CloneFactory.cs" />
     <Compile Include="Expressions\Register.cs" />
     <Compile Include="Expressions\SystemFunctions.cs" />
@@ -202,7 +213,6 @@
     </Compile>
     <Compile Include="Interpreter\RyeScriptProcessorcs.cs" />
     <Compile Include="Data\Session.cs" />
-    <Compile Include="Libraries\ExchangeLibrary.cs" />
     <Compile Include="Libraries\FinanceLibrary.cs" />
     <Compile Include="Libraries\MSOfficeLibrary.cs" />
     <Compile Include="Libraries\SystemLibrary.cs" />
@@ -250,9 +260,10 @@
     <Compile Include="Mining\Regression\RegressionParameterStruct.cs" />
     <Compile Include="Query\PreProcessor.cs" />
     <Compile Include="Libraries\FileLibrary.cs" />
-    <Compile Include="Libraries\FunctionLibrary.cs" />
+    <Compile Include="Query\QueryModel.cs" />
+    <Compile Include="SpecialFunction\ProbabilityDistributions.cs" />
+    <Compile Include="SpecialFunction\SpecialFunctions.cs" />
     <Compile Include="Structures\Heap.cs" />
-    <Compile Include="Libraries\ProcedureLibrary.cs" />
     <Compile Include="Methods\StructureMethod.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

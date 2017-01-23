@@ -233,14 +233,14 @@ namespace Rye.Aggregates
         public override void Accumulate(Record WorkData)
         {
 
-            if (!this._F.Render()) return;
+            if (!this._F.Render()) 
+                return;
 
             Cell c = this._Map.Evaluate();
             if (!c.IsNull)
             {
                 WorkData[0] = c;
             }
-
         }
 
         public override void Merge(Record WorkData, Record MergeIntoWorkData)
@@ -257,7 +257,7 @@ namespace Rye.Aggregates
 
         public override Aggregate CloneOfMe()
         {
-            return new AggregateFirst(this._Map.CloneOfMe(), this._F.CloneOfMe());
+            return new AggregateLast(this._Map.CloneOfMe(), this._F.CloneOfMe());
         }
 
         public override List<Expression> InnerExpressions()

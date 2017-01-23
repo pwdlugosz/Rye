@@ -3,57 +3,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 using Rye.Data;
 using Rye.Expressions;
 using Rye.Methods;
+using Rye.Structures;
 
 namespace Rye.Libraries
 {
 
-    public sealed class BaseMethodLibrary : MethodLibrary
+    // Base Library //
+    public sealed class BaseLibrary : Library
     {
 
-        public const string LIBRARY_NAME = "SYSTEM";
-
-        // Main //
-        public BaseMethodLibrary(Session Session)
-            : base(Session)
+        public BaseLibrary(Session Session)
+            : base(Session, "BASE")
         {
-            this.LibName = LIBRARY_NAME;
-        }
-
-        // Methods //
-        private string[] _MethodNames = new string[]
-        {
-        };
-
-        public override Method RenderMethod(Method Parent, string Name, ParameterCollection Parameters)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override ParameterCollectionSigniture RenderSigniture(string Name)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override string[] Names
-        {
-            get { return this._MethodNames; }
-        }
-
-    }
-
-    public sealed class BaseFunctionLibrary : FunctionLibrary
-    {
-
-        public const string LIBRARY_NAME = "BASE";
-
-        // Main //
-        public BaseFunctionLibrary(Session Session)
-            : base(Session)
-        {
-            this.LibName = LIBRARY_NAME;
         }
 
         // Functions //
@@ -316,7 +281,22 @@ namespace Rye.Libraries
 
         #endregion
 
-        public override CellFunction RenderFunction(string Name)
+        public override Method GetMethod(Method Parent, string Name, ParameterCollection Parameters)
+        {
+            throw new MissingMethodException(string.Format("Method '{0}' does not exist", Name));
+        }
+
+        public override ParameterCollectionSigniture GetMethodSigniture(string Name)
+        {
+            throw new MissingMethodException(string.Format("Method '{0}' does not exist", Name));
+        }
+
+        public override string[] MethodNames
+        {
+            get { return new string[] {""}; }
+        }
+        
+        public override CellFunction GetFunction(string Name)
         {
 
             switch (Name.ToLower())
@@ -447,13 +427,13 @@ namespace Rye.Libraries
 
         }
 
-        public override string[] Names
+        public override string[] FunctionNames
         {
-            get { return BaseFunctionLibrary._BaseNames; }
+            get { return _BaseNames; }
         }
 
 
-    }
 
+    }
 
 }

@@ -22,7 +22,7 @@ namespace Rye.Data
 
         // Constructors //
         /// <summary>
-        /// Create a matrix with a default value
+        /// Create a matrix with a default Value
         /// </summary>
         /// <param name="Rows"></param>
         /// <param name="Columns"></param>
@@ -169,7 +169,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// True if any cell value is null
+        /// True if any cell Value is null
         /// </summary>
         public bool AnyNull
         {
@@ -240,7 +240,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Gets a string value of the matrix
+        /// Gets a string Value of the matrix
         /// </summary>
         /// <returns></returns>
         public override string ToString()
@@ -331,7 +331,7 @@ namespace Rye.Data
             // Check bounds are the same //
             if (CellMatrix.CheckDimensions(A, B) == false)
             {
-                throw new Exception(string.Format("Dimension mismatch A {0}x{1} B {2}x{3}", A.RowCount, A.ColumnCount, B.RowCount, B.ColumnCount));
+                throw new Exception(string.Format("Dimension mismatch A {0}OriginalNode{1} B {2}OriginalNode{3}", A.RowCount, A.ColumnCount, B.RowCount, B.ColumnCount));
             }
 
             // Build a matrix //
@@ -414,7 +414,7 @@ namespace Rye.Data
             // Check bounds are the same //
             if (CellMatrix.CheckDimensions(A, B) == false)
             {
-                throw new Exception(string.Format("Dimension mismatch A {0}x{1} B {2}x{3}", A.RowCount, A.ColumnCount, B.RowCount, B.ColumnCount));
+                throw new Exception(string.Format("Dimension mismatch A {0}OriginalNode{1} B {2}OriginalNode{3}", A.RowCount, A.ColumnCount, B.RowCount, B.ColumnCount));
             }
 
             // Build a matrix //
@@ -472,7 +472,7 @@ namespace Rye.Data
             // Check bounds are the same //
             if (CellMatrix.CheckDimensions(A, B) == false)
             {
-                throw new Exception(string.Format("Dimension mismatch A {0}x{1} B {2}x{3}", A.RowCount, A.ColumnCount, B.RowCount, B.ColumnCount));
+                throw new Exception(string.Format("Dimension mismatch A {0}OriginalNode{1} B {2}OriginalNode{3}", A.RowCount, A.ColumnCount, B.RowCount, B.ColumnCount));
             }
 
             // Build a matrix //
@@ -530,7 +530,7 @@ namespace Rye.Data
             // Check bounds are the same //
             if (CellMatrix.CheckDimensions(A, B) == false)
             {
-                throw new Exception(string.Format("Dimension mismatch A {0}x{1} B {2}x{3}", A.RowCount, A.ColumnCount, B.RowCount, B.ColumnCount));
+                throw new Exception(string.Format("Dimension mismatch A {0}OriginalNode{1} B {2}OriginalNode{3}", A.RowCount, A.ColumnCount, B.RowCount, B.ColumnCount));
             }
 
             // Build a matrix //
@@ -588,7 +588,7 @@ namespace Rye.Data
             // Check bounds are the same //
             if (CellMatrix.CheckDimensions(A, B) == false)
             {
-                throw new Exception(string.Format("Dimension mismatch A {0}x{1} B {2}x{3}", A.RowCount, A.ColumnCount, B.RowCount, B.ColumnCount));
+                throw new Exception(string.Format("Dimension mismatch A {0}OriginalNode{1} B {2}OriginalNode{3}", A.RowCount, A.ColumnCount, B.RowCount, B.ColumnCount));
             }
 
             // Build a matrix //
@@ -645,7 +645,7 @@ namespace Rye.Data
 
             if (CellMatrix.CheckDimensions2(A, B) == false)
             {
-                throw new Exception(string.Format("Dimension mismatch A {0}x{1} B {2}x{3}", A.RowCount, A.ColumnCount, B.RowCount, B.ColumnCount));
+                throw new Exception(string.Format("Dimension mismatch A {0}OriginalNode{1} B {2}OriginalNode{3}", A.RowCount, A.ColumnCount, B.RowCount, B.ColumnCount));
             }
 
             CellMatrix C = new CellMatrix(A.RowCount, B.ColumnCount, Cell.ZeroValue(A.Affinity));
@@ -775,7 +775,7 @@ namespace Rye.Data
         {
 
             if (!A.IsSquare)
-                throw new Exception(string.Format("Cannot trace a non-square matrix : {0} x {1}", A.RowCount, A.ColumnCount));
+                throw new Exception(string.Format("Cannot trace a non-square matrix : {0} OriginalNode {1}", A.RowCount, A.ColumnCount));
 
             CellMatrix B = new CellMatrix(A.RowCount, A.RowCount, Cell.ZeroValue(A.Affinity));
 

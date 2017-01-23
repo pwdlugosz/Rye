@@ -113,7 +113,7 @@ namespace Rye.Structures
             foreach (KeyValuePair<string, int> kv in this._RefSet)
             {
 
-                // Accumulate a value to the new heap //
+                // Accumulate a Value to the new heap //
                 NewHeap.Add(this._Heap[kv.Value]);
 
                 // Reset the pointer //

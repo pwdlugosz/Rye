@@ -578,13 +578,13 @@ namespace Rye.Interpreter
             string method_name = context.IDENTIFIER()[1].GetText();
 
             // Check to see if the library exists //
-            if (!this._Session.MethodLibraryExists(lib_name))
+            if (!this._Session.LibraryExists(lib_name))
             {
                 throw new ArgumentException(string.Format("Library '{0}' does not exist", lib_name));
             }
             // Now check that the method exists in the structure //
-            MethodLibrary lib = this._Session.GetMethodLibrary(lib_name);
-            if (!lib.Exists(method_name))
+            Library lib = this._Session.GetLibrary(lib_name);
+            if (!lib.MethodExists(method_name))
             {
                 throw new ArgumentException(string.Format("Method '{0}' does not exist for '{1}'", method_name, lib_name));
             }
@@ -664,11 +664,11 @@ namespace Rye.Interpreter
             }
 
             // Now that the parameter collection is ready, check against the signiture //
-            ParameterCollectionSigniture sig = lib.RenderSigniture(method_name);
+            ParameterCollectionSigniture sig = lib.GetMethodSigniture(method_name);
             sig.Check(parameters);
 
             // If we made it this far... we must have passed the checking steps and can render the method node //
-            Method node = lib.RenderMethod(this._master, method_name, parameters);
+            Method node = lib.GetMethod(this._master, method_name, parameters);
             this._master = node;
 
             return node;
@@ -683,19 +683,19 @@ namespace Rye.Interpreter
             string method_name = context.IDENTIFIER()[1].GetText();
 
             // Check to see if the structure exists //
-            if (!this._Session.MethodLibraryExists(lib_name))
+            if (!this._Session.LibraryExists(lib_name))
             {
                 throw new ArgumentException(string.Format("Library '{0}' does not exist", lib_name));
             }
             // Now check that the method exists in the structure //
-            MethodLibrary lib = this._Session.GetMethodLibrary(lib_name);
-            if (!lib.Exists(method_name))
+            Library lib = this._Session.GetLibrary(lib_name);
+            if (!lib.MethodExists(method_name))
             {
                 throw new ArgumentException(string.Format("Method '{0}' does not exist for '{1}'", method_name, lib_name));
             }
 
             // Lookup up the method //
-            ParameterCollectionSigniture sig = lib.RenderSigniture(method_name);
+            ParameterCollectionSigniture sig = lib.GetMethodSigniture(method_name);
 
             // First, check that the parameter counts match, otherwise throw an exception and dont bother trying to parse any further //
             if (sig.Count != context.method_param().Length)
@@ -781,7 +781,7 @@ namespace Rye.Interpreter
             // Note that we shouldn't have to check the signiture since we were checking along the way
 
             // If we made it this far... we must have passed the checking steps and can render the method node //
-            Method node = lib.RenderMethod(this._master, method_name, parameters);
+            Method node = lib.GetMethod(this._master, method_name, parameters);
             this._master = node;
 
             return node;

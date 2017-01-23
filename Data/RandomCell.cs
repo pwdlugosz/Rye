@@ -69,7 +69,7 @@ namespace Rye.Data
 
         public Cell NextLong(long Lower, long Upper)
         {
-            long t = this.BaseLong() % (Upper - Lower) + Lower;
+            int t = this._base.Next((int)Lower, (int)Upper);
             return new Cell(t);
         }
 
@@ -272,11 +272,15 @@ namespace Rye.Data
 
             lock (this._lock)
             {
-                byte[] x = new byte[8];
-                this._base.NextBytes(x);
-                return BitConverter.ToInt64(x, 0);
+                return (long)(this._base.Next());
             }
             
+        }
+
+        // ### THREAD SAFE ###
+        private long BaseLong(long Lower, long Upper)
+        {
+            return (long)(this._base.Next((int)(Lower & int.MaxValue), (int)(Upper & int.MaxValue)));
         }
 
         // ### THREAD SAFE ###

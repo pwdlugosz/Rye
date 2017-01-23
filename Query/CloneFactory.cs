@@ -328,8 +328,8 @@ namespace Rye.Query
                     ExpressionHeapRef x = (Value as ExpressionHeapRef);
                     if (x.InnerHeap.Identifier == h.Identifier)
                     {
-                        //Console.WriteLine("Orig {0} : New {1}", x.InnerHeap._UID.ToString().Replace("-", ""), h._UID.ToString().Replace("-", ""));
-                        //Console.WriteLine(x.NodeID + "\n");
+                        //Console.WriteLine("Orig {0} : New {1}", OriginalNode.InnerHeap._UID.ToString().Replace("-", ""), h._UID.ToString().Replace("-", ""));
+                        //Console.WriteLine(OriginalNode.NodeID + "\n");
                         x.ForceHeap(h);
                     }
 
@@ -619,7 +619,7 @@ namespace Rye.Query
 
         // Clone of this instance //
         /// <summary>
-        /// Creates a by-value clone of each element in the register
+        /// Creates a by-Value clone of each element in the register
         /// </summary>
         /// <returns></returns>
         public CloneFactory CloneOfMe()
@@ -678,7 +678,7 @@ namespace Rye.Query
             Heap<Cell> val = new Heap<Cell>();
             for (int i = 0; i < Value.Count; i++)
             {
-                val.Allocate(Value.Name(i), Value[i]); // Note: cells are value types, so we don't need to close
+                val.Allocate(Value.Name(i), Value[i]); // Note: cells are Value types, so we don't need to close
             }
 
             val.Identifier = Value.Identifier;
@@ -698,7 +698,7 @@ namespace Rye.Query
             Heap<CellMatrix> val = new Heap<CellMatrix>();
             for (int i = 0; i < Value.Count; i++)
             {
-                val.Allocate(Value.Name(i), Value[i].CloneOfMe()); // Note: cells are value types, so we don't need to close
+                val.Allocate(Value.Name(i), Value[i].CloneOfMe()); // Note: cells are Value types, so we don't need to close
             }
 
             val.Identifier = Value.Identifier;

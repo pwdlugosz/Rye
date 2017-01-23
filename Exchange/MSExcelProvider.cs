@@ -406,7 +406,7 @@ namespace Rye.Exchange
 
             public override string ToString()
             {
-                return string.Format("{0}.{1} x {2}.{3}", this._X1, this._Y1, this._X2, this._Y2);
+                return string.Format("{0}.{1} OriginalNode {2}.{3}", this._X1, this._Y1, this._X2, this._Y2);
             }
 
         }

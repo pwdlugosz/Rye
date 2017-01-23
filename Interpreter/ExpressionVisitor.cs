@@ -33,7 +33,7 @@ namespace Rye.Interpreter
         private Heap<Schema> _columns;
         private Heap2<CellAffinity, int> _pointers;
         private Session _Session;
-        private FunctionLibrary _SystemFunctions;
+        private Library _SystemFunctions;
 
         // Locality //
         private string _SecondaryName;
@@ -488,10 +488,10 @@ namespace Rye.Interpreter
                 e.AddChildNode(new ExpressionValue(e, new Cell(r)));
             }
 
-            // Set the return value //
+            // Set the return Value //
             e.SetCellAffinity(r);
 
-            // Set the master value //
+            // Set the master Value //
             this.MasterNode = e;
 
             return e;
@@ -514,9 +514,9 @@ namespace Rye.Interpreter
                 return this.VisitSF_Lambda(context);
 
             // Lookup the function //
-            if (!this._SystemFunctions.Exists(func_name))
+            if (!this._SystemFunctions.FunctionExists(func_name))
                 throw new RyeCompileException("Function '{0}' does not exist", func_name);
-            CellFunction func_ref = this._SystemFunctions.RenderFunction(func_name);
+            CellFunction func_ref = this._SystemFunctions.GetFunction(func_name);
 
             // Check the variable count //
             if (func_ref.ParamCount != -1 && func_ref.ParamCount != context.expression().Length)

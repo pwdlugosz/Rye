@@ -17,7 +17,7 @@ namespace Rye.Data
     {
 
         // Cell constants //
-        public const String NULL_STRING_TEXT = "@@NULL"; // the null value text
+        public const String NULL_STRING_TEXT = "@@NULL"; // the null Value text
         public const string HEX_LITERARL = "0x"; // the expected qualifier for a hex string 
         public const int MAX_STRING_LENGTH = 64 * 1024; // maximum length of a string, 64k
 
@@ -41,17 +41,17 @@ namespace Rye.Data
 
         /* Offset:      0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15
          * 
-         * NullFlag     x
-         * Affinity         x
-         * INT64                x   x   x   x   x   x   x   x
-         * DATE                 x   x   x   x   x   x   x   x
-         * DOUBLE               x   x   x   x   x   x   x   x
-         * BOOL                 x
-         * STRING                                                       x   x   x   x
-         * BLOB                                                         x   x   x   x
-         * INT32A               x   x   x   x   
-         * INT32B                               x   x   x   x
-         * ULONG                x   x   x   x   x   x   x   x
+         * NullFlag     OriginalNode
+         * Affinity         OriginalNode
+         * INT64                OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode
+         * DATE                 OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode
+         * DOUBLE               OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode
+         * BOOL                 OriginalNode
+         * STRING                                                       OriginalNode   OriginalNode   OriginalNode   OriginalNode
+         * BLOB                                                         OriginalNode   OriginalNode   OriginalNode   OriginalNode
+         * INT32A               OriginalNode   OriginalNode   OriginalNode   OriginalNode   
+         * INT32B                               OriginalNode   OriginalNode   OriginalNode   OriginalNode
+         * ULONG                OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode   OriginalNode
          * 
          */
 
@@ -70,19 +70,19 @@ namespace Rye.Data
 
         // Data variables //
         /// <summary>
-        /// The .Net bool value, offset 0
+        /// The .Net bool Value, offset 0
         /// </summary>
         [System.Runtime.InteropServices.FieldOffset(0)]
         internal bool BOOL;
 
         /// <summary>
-        /// The .Net long value, offset 0
+        /// The .Net long Value, offset 0
         /// </summary>
         [System.Runtime.InteropServices.FieldOffset(0)]
         internal long INT;
 
         /// <summary>
-        /// The .Net double value, offset 0
+        /// The .Net double Value, offset 0
         /// </summary>
         [System.Runtime.InteropServices.FieldOffset(0)]
         internal double DOUBLE;
@@ -107,31 +107,31 @@ namespace Rye.Data
 
         // Extended elements //
         /// <summary>
-        /// The .Net integer value at offset 0
+        /// The .Net integer Value at offset 0
         /// </summary>
         [System.Runtime.InteropServices.FieldOffset(0)]
         internal int INT_A;
 
         /// <summary>
-        /// The .Net integer value at offset 4
+        /// The .Net integer Value at offset 4
         /// </summary>
         [System.Runtime.InteropServices.FieldOffset(4)]
         internal int INT_B;
 
         /// <summary>
-        /// The .Net float value at offset 0
+        /// The .Net float Value at offset 0
         /// </summary>
         [System.Runtime.InteropServices.FieldOffset(0)]
         internal float FLOAT_A;
 
         /// <summary>
-        /// The .Net float value at offset 4
+        /// The .Net float Value at offset 4
         /// </summary>
         [System.Runtime.InteropServices.FieldOffset(4)]
         internal float FLOAT_B;
 
         /// <summary>
-        /// The .Net ulong value at offset 0
+        /// The .Net ulong Value at offset 0
         /// </summary>
         [System.Runtime.InteropServices.FieldOffset(0)]
         internal ulong ULONG;
@@ -216,7 +216,7 @@ namespace Rye.Data
         /// <summary>
         /// Creates a string cell; strings greater than 1024 chars will be truncated
         /// </summary>
-        /// <param name="Value">A .Net string value to be converted to a cell</param>
+        /// <param name="Value">A .Net string Value to be converted to a cell</param>
         /// <param name="TrimQuotes">True will conver 'ABCD' to ABCD</param>
         public Cell(string Value, bool TrimQuotes)
             : this()
@@ -255,7 +255,7 @@ namespace Rye.Data
         /// <summary>
         /// Creates a string cell; strings greater than 1024 chars will be truncated
         /// </summary>
-        /// <param name="Value">A .Net string value to be converted to a cell</param>
+        /// <param name="Value">A .Net string Value to be converted to a cell</param>
         public Cell(string Value)
             : this(Value, false)
         {
@@ -351,7 +351,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// True if the numeric value is 0 or if the variable length value has a zero length
+        /// True if the numeric Value is 0 or if the variable length Value has a zero length
         /// </summary>
         public bool IsZero
         {
@@ -372,7 +372,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Returns true if the integer value or double value is 1, or if the boolean is true, false otherwise
+        /// Returns true if the integer Value or double Value is 1, or if the boolean is true, false otherwise
         /// </summary>
         public bool IsOne
         {
@@ -392,7 +392,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Returns a hash value as a long integer
+        /// Returns a hash Value as a long integer
         /// </summary>
         public long LASH
         {
@@ -442,7 +442,7 @@ namespace Rye.Data
         #region SafeValues
 
         /// <summary>
-        /// Returns the bool value if the affinity is 'BOOL', true if the INT property is 0, false otherwise
+        /// Returns the bool Value if the affinity is 'BOOL', true if the INT property is 0, false otherwise
         /// </summary>
         public bool valueBOOL
         {
@@ -454,7 +454,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Return the INT value if the affinity is INT, casts the DOUBLE as an INT if the affinity is a DOUBLE, 0 otherwise
+        /// Return the INT Value if the affinity is INT, casts the DOUBLE as an INT if the affinity is a DOUBLE, 0 otherwise
         /// </summary>
         public long valueINT
         {
@@ -472,7 +472,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Return the DOUBLE value if the affinity is DOUBLE, casts the INT as an DOUBLE if the affinity is a INT, 0 otherwise
+        /// Return the DOUBLE Value if the affinity is DOUBLE, casts the INT as an DOUBLE if the affinity is a INT, 0 otherwise
         /// </summary>
         public double valueDOUBLE
         {
@@ -489,7 +489,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Returns the current DATE_TIME if the affinity is DATE_TIME, otherwise return the minimum date time .Net value
+        /// Returns the current DATE_TIME if the affinity is DATE_TIME, otherwise return the minimum date time .Net Value
         /// </summary>
         public DateTime valueDATE_TIME
         {
@@ -501,7 +501,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// If the cell is null, returns '@@NULL'; otherwise, casts the value as a string
+        /// If the cell is null, returns '@@NULL'; otherwise, casts the Value as a string
         /// </summary>
         public string valueSTRING
         {
@@ -542,7 +542,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// If the affinity is null, returns an empty byte array; if the value is a BLOB, returns the BLOB; if the value is a stirng, returns the string as a byte array, unless the string has a hex prefix, then it converts the hex string to a byte array; otherwise it converts an INT, DOUBLE, BOOL to a byte array.
+        /// If the affinity is null, returns an empty byte array; if the Value is a BLOB, returns the BLOB; if the Value is a stirng, returns the string as a byte array, unless the string has a hex prefix, then it converts the hex string to a byte array; otherwise it converts an INT, DOUBLE, BOOL to a byte array.
         /// </summary>
         public byte[] valueBLOB
         {
@@ -563,7 +563,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Gets the value of the cell as an object
+        /// Gets the Value of the cell as an object
         /// </summary>
         public object valueObject
         {
@@ -615,7 +615,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// If null, return int.MinValue, for INT, DOUBLE, BOOL, and DATE_TIME, return INT_A; for blobs, returns the sum of all bytes; for strings, returns the sum of the (i + 1) x char[i]
+        /// If null, return int.MinValue, for INT, DOUBLE, BOOL, and DATE_TIME, return INT_A; for blobs, returns the sum of all bytes; for strings, returns the sum of the (i + 1) OriginalNode char[i]
         /// </summary>
         /// <returns>An integer hash code</returns>
         public override int GetHashCode()
@@ -692,11 +692,11 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Converts a string value to a cell with a given affinity
+        /// Converts a string Value to a cell with a given affinity
         /// </summary>
         /// <param name="Value">The string representation of the cell</param>
         /// <param name="NewAffinity">The affinity the string will be cast to</param>
-        /// <returns>The cell form the converted value</returns>
+        /// <returns>The cell form the converted Value</returns>
         public static Cell Parse(string Value, CellAffinity NewAffinity)
         {
 
@@ -722,7 +722,7 @@ namespace Rye.Data
             if (NewAffinity == CellAffinity.DOUBLE || NewAffinity == CellAffinity.INT)
                 Value = Value.Replace("%", "").Replace(",", "");
 
-            // Set value //
+            // Set Value //
             switch (NewAffinity)
             {
 
@@ -771,7 +771,7 @@ namespace Rye.Data
         /// </summary>
         /// <param name="Value">The string representation of the cell</param>
         /// <param name="NewAffinity">The affinity the string will be cast to</param>
-        /// <returns>The cell form the converted value</returns>
+        /// <returns>The cell form the converted Value</returns>
         public static Cell TryParse(string Value, CellAffinity NewAffinity)
         {
             try { return Cell.Parse(Value, NewAffinity); }
@@ -782,7 +782,7 @@ namespace Rye.Data
         /// Unboxes an object to a cell
         /// </summary>
         /// <param name="Value">The object that will be cast to a cell</param>
-        /// <returns>The cell form the converted value</returns>
+        /// <returns>The cell form the converted Value</returns>
         public static Cell UnBox(object Value)
         {
 
@@ -792,7 +792,7 @@ namespace Rye.Data
             // Type //
             TypeCode tc = Type.GetTypeCode(Value.GetType());
 
-            // Set value //
+            // Set Value //
             switch (tc)
             {
 
@@ -830,7 +830,7 @@ namespace Rye.Data
         /// Tries to unbox an object, if it fails it returns a new cell that is null
         /// </summary>
         /// <param name="Value">Object that will be cast to a cell</param>
-        /// <returns>The cell form the converted value</returns>
+        /// <returns>The cell form the converted Value</returns>
         public static Cell TryUnBox(object Value)
         {
             try { return UnBox(Value); }
@@ -842,7 +842,7 @@ namespace Rye.Data
         /// </summary>
         /// <param name="Value">The object to be cast</param>
         /// <param name="NewAffinity">The affinity to be cast into</param>
-        /// <returns>The cell form the converted value</returns>
+        /// <returns>The cell form the converted Value</returns>
         public static Cell UnBoxInto(object Value, CellAffinity NewAffinity)
         {
 
@@ -850,7 +850,7 @@ namespace Rye.Data
             if (Value == null)
                 return new Cell(NewAffinity);
 
-            // Set value //
+            // Set Value //
             switch (NewAffinity)
             {
 
@@ -878,7 +878,7 @@ namespace Rye.Data
         /// </summary>
         /// <param name="Value">The object to be cast</param>
         /// <param name="NewAffinity">The affinity to be cast into</param>
-        /// <returns>The cell form the converted value</returns>
+        /// <returns>The cell form the converted Value</returns>
         public static Cell TryUnBoxInto(object Value, CellAffinity NewAffinity)
         {
             try { return UnBoxInto(Value, NewAffinity); }
@@ -988,7 +988,7 @@ namespace Rye.Data
         /// </summary>
         /// <param name="Value">A .Net date time</param>
         /// <param name="DataTimeStringType">0 == YearMonthDayHourMinuteSecondMillisecond, 1 == YearMonthDay, 2 == include HourMinuteSecondMillisecond</param>
-        /// <returns>A string value of the date</returns>
+        /// <returns>A string Value of the date</returns>
         internal static string DateString(DateTime Value, int DataTimeStringType)
         {
 
@@ -1065,7 +1065,7 @@ namespace Rye.Data
         #region Operators
 
         /*
-         * if any of the below say they 'dont work', that just means they return a null value
+         * if any of the below say they 'dont work', that just means they return a null Value
          * 
          * All opperations returning a Cell will return a null Cell if either A or B are null (the affinity based on A)
          * +: add, returns null for date, blob and boolean; returns concatenate for strings
@@ -1202,7 +1202,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Converts either an INT or DOUBLE to a positve value, returns the cell passed otherwise
+        /// Converts either an INT or DOUBLE to a positve Value, returns the cell passed otherwise
         /// </summary>
         /// <param name="C">A cell</param>
         /// <returns>Cell result</returns>
@@ -1327,7 +1327,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Converts either an INT or DOUBLE to a negative value, returns the cell passed otherwise
+        /// Converts either an INT or DOUBLE to a negative Value, returns the cell passed otherwise
         /// </summary>
         /// <param name="C">A cell</param>
         /// <returns>Cell result</returns>
@@ -2024,9 +2024,9 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Determines whether or not a cell is 'TRUE'; if the cell is not null it returns the boolean value
+        /// Determines whether or not a cell is 'TRUE'; if the cell is not null it returns the boolean Value
         /// </summary>
-        /// <param name="C">The cell value</param>
+        /// <param name="C">The cell Value</param>
         /// <returns></returns>
         public static bool operator true(Cell C)
         {
@@ -2034,9 +2034,9 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Determines whether or not a cell is 'FALSE'; if the cell is null or the BOOL value is false, returns false
+        /// Determines whether or not a cell is 'FALSE'; if the cell is null or the BOOL Value is false, returns false
         /// </summary>
-        /// <param name="C">The cell value</param>
+        /// <param name="C">The cell Value</param>
         /// <returns></returns>
         public static bool operator false(Cell C)
         {
@@ -2059,10 +2059,10 @@ namespace Rye.Data
          */
 
         /// <summary>
-        /// Performs the log base Value; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the log base Value; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
-        /// <param name="C">Cell value</param>
-        /// <returns>Cell value</returns>
+        /// <param name="C">Cell Value</param>
+        /// <returns>Cell Value</returns>
         public static Cell Log(Cell C)
         {
 
@@ -2085,10 +2085,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Performs the log base 2; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the log base 2; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
-        /// <param name="C">Cell value</param>
-        /// <returns>Cell value</returns>
+        /// <param name="C">Cell Value</param>
+        /// <returns>Cell Value</returns>
         public static Cell Log2(Cell C)
         {
 
@@ -2111,10 +2111,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Performs the log base 10; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the log base 10; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
-        /// <param name="C">Cell value</param>
-        /// <returns>Cell value</returns>
+        /// <param name="C">Cell Value</param>
+        /// <returns>Cell Value</returns>
         public static Cell Log10(Cell C)
         {
 
@@ -2137,10 +2137,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Performs the exponential base Value; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the exponential base Value; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
-        /// <param name="C">Cell value</param>
-        /// <returns>Cell value</returns>
+        /// <param name="C">Cell Value</param>
+        /// <returns>Cell Value</returns>
         public static Cell Exp(Cell C)
         {
 
@@ -2163,10 +2163,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Performs the exponential base 2; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the exponential base 2; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
-        /// <param name="C">Cell value</param>
-        /// <returns>Cell value</returns>
+        /// <param name="C">Cell Value</param>
+        /// <returns>Cell Value</returns>
         public static Cell Exp2(Cell C)
         {
 
@@ -2189,10 +2189,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Performs the exponential base 10; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the exponential base 10; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
-        /// <param name="C">Cell value</param>
-        /// <returns>Cell value</returns>
+        /// <param name="C">Cell Value</param>
+        /// <returns>Cell Value</returns>
         public static Cell Exp10(Cell C)
         {
 
@@ -2215,10 +2215,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Performs the trigonomic sine; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the trigonomic sine; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
-        /// <param name="C">Cell value</param>
-        /// <returns>Cell value</returns>
+        /// <param name="C">Cell Value</param>
+        /// <returns>Cell Value</returns>
         public static Cell Sin(Cell C)
         {
 
@@ -2241,10 +2241,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Performs the trigonomic cosine; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the trigonomic cosine; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
-        /// <param name="C">Cell value</param>
-        /// <returns>Cell value</returns>
+        /// <param name="C">Cell Value</param>
+        /// <returns>Cell Value</returns>
         public static Cell Cos(Cell C)
         {
 
@@ -2267,10 +2267,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Performs the trigonomic tangent; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the trigonomic tangent; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
-        /// <param name="C">Cell value</param>
-        /// <returns>Cell value</returns>
+        /// <param name="C">Cell Value</param>
+        /// <returns>Cell Value</returns>
         public static Cell Tan(Cell C)
         {
 
@@ -2293,10 +2293,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Performs the hyperbolic sine; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the hyperbolic sine; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
-        /// <param name="C">Cell value</param>
-        /// <returns>Cell value</returns>
+        /// <param name="C">Cell Value</param>
+        /// <returns>Cell Value</returns>
         public static Cell Sinh(Cell C)
         {
 
@@ -2319,10 +2319,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Performs the hyperbolic cosine; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the hyperbolic cosine; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
-        /// <param name="C">Cell value</param>
-        /// <returns>Cell value</returns>
+        /// <param name="C">Cell Value</param>
+        /// <returns>Cell Value</returns>
         public static Cell Cosh(Cell C)
         {
 
@@ -2345,10 +2345,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Performs the hyperbolic tangent; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the hyperbolic tangent; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
-        /// <param name="C">Cell value</param>
-        /// <returns>Cell value</returns>
+        /// <param name="C">Cell Value</param>
+        /// <returns>Cell Value</returns>
         public static Cell Tanh(Cell C)
         {
 
@@ -2371,10 +2371,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Performs the square root; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the square root; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
-        /// <param name="C">Cell value</param>
-        /// <returns>Cell value</returns>
+        /// <param name="C">Cell Value</param>
+        /// <returns>Cell Value</returns>
         public static Cell Sqrt(Cell C)
         {
 
@@ -2411,11 +2411,11 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Performs the power; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Performs the power; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
         /// <param name="C1">The base</param>
         /// <param name="C2">The exponent</param>
-        /// <returns>Cell value</returns>
+        /// <returns>Cell Value</returns>
         public static Cell Power(Cell C1, Cell C2)
         {
 
@@ -2449,10 +2449,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Returns the absolute value of a cell's numeric value; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Returns the absolute Value of a cell's numeric Value; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
-        /// <param name="C">Cell value</param>
-        /// <returns>Cell value</returns>
+        /// <param name="C">Cell Value</param>
+        /// <returns>Cell Value</returns>
         public static Cell Abs(Cell C)
         {
 
@@ -2471,10 +2471,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Returns the sign of a cell's numeric value; the resulting value will be null if the result is either nan or infinity; casts the result back to original affinity passed
+        /// Returns the sign of a cell's numeric Value; the resulting Value will be null if the result is either nan or infinity; casts the result back to original affinity passed
         /// </summary>
-        /// <param name="C">Cell value</param>
-        /// <returns>Cell value, NULL, +1, -1, or 0</returns>
+        /// <param name="C">Cell Value</param>
+        /// <returns>Cell Value, NULL, +1, -1, or 0</returns>
         public static Cell Sign(Cell C)
         {
 
@@ -2496,8 +2496,8 @@ namespace Rye.Data
         /// Performs the logic 'IF'
         /// </summary>
         /// <param name="A">Predicate: uses A.BOOL to perform the logical if</param>
-        /// <param name="B">The value returned if A is true</param>
-        /// <param name="C">The value returned if A is false</param>
+        /// <param name="B">The Value returned if A is true</param>
+        /// <param name="C">The Value returned if A is false</param>
         /// <returns>Aither B or C</returns>
         public static Cell If(Cell A, Cell B, Cell C)
         {
@@ -2509,7 +2509,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Returns the smallest value of an array of cells
+        /// Returns the smallest Value of an array of cells
         /// </summary>
         /// <param name="Data">A collection of cells</param>
         /// <returns>A cell</returns>
@@ -2520,7 +2520,7 @@ namespace Rye.Data
             if (Data == null) new Cell(CellAffinity.INT);
             if (Data.Length == 0) new Cell(CellAffinity.INT);
 
-            // One value //
+            // One Value //
             if (Data.Length == 1) return Data[0];
 
             // Two values //
@@ -2541,7 +2541,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Returns the largest value of an array of cells
+        /// Returns the largest Value of an array of cells
         /// </summary>
         /// <param name="Data">A collection of cells</param>
         /// <returns>A cell</returns>
@@ -2552,7 +2552,7 @@ namespace Rye.Data
             if (Data == null) new Cell(CellAffinity.INT);
             if (Data.Length == 0) new Cell(CellAffinity.INT);
 
-            // One value //
+            // One Value //
             if (Data.Length == 1) return Data[0];
 
             // Two values //
@@ -2572,10 +2572,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Returns the most extreme value in a sequence
+        /// Returns the most extreme Value in a sequence
         /// </summary>
-        /// <param name="Data">The sequence to evaluate; the first value is the radix, the next N values are compared to the radix</param>
-        /// <returns>The value with the greatest distance from the radix</returns>
+        /// <param name="Data">The sequence to evaluate; the first Value is the radix, the next N values are compared to the radix</param>
+        /// <returns>The Value with the greatest distance from the radix</returns>
         public static Cell Extreme(params Cell[] Data)
         {
 
@@ -2598,7 +2598,7 @@ namespace Rye.Data
             Cell MostExtreme = Cell.ZeroValue(t);
             Cell GreatestDistance = Cell.ZeroValue(t);
 
-            // Cycle through looking for the most extreme value //
+            // Cycle through looking for the most extreme Value //
             for (int i = 1; i < Data.Length; i++)
             {
                 
@@ -2619,7 +2619,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Returns the cumulative AND value of an array of cells
+        /// Returns the cumulative AND Value of an array of cells
         /// </summary>
         /// <param name="Data">A collection of cells</param>
         /// <returns>A cell</returns>
@@ -2642,7 +2642,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Returns the cumulative OR value of an array of cells
+        /// Returns the cumulative OR Value of an array of cells
         /// </summary>
         /// <param name="Data">A collection of cells</param>
         /// <returns>A cell</returns>
@@ -2676,7 +2676,7 @@ namespace Rye.Data
             if (Data == null) new Cell(CellAffinity.INT);
             if (Data.Length == 0) new Cell(CellAffinity.INT);
 
-            // One value //
+            // One Value //
             if (Data.Length == 1) return Data[0];
 
             // Two values //
@@ -2722,7 +2722,7 @@ namespace Rye.Data
         /// </summary>
         /// <param name="C">The cell to cast</param>
         /// <param name="Type">The new affinity</param>
-        /// <returns>Cell value</returns>
+        /// <returns>Cell Value</returns>
         public static Cell Cast(Cell C, CellAffinity Type)
         {
 
@@ -3023,9 +3023,9 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Extracts the year value of a date time cell, returns null for non-date cells
+        /// Extracts the year Value of a date time cell, returns null for non-date cells
         /// </summary>
-        /// <param name="C">A cell value</param>
+        /// <param name="C">A cell Value</param>
         /// <returns>An integer cell</returns>
         public static Cell Year(Cell C)
         {
@@ -3035,9 +3035,9 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Extracts the month value of a date time cell, returns null for non-date cells
+        /// Extracts the month Value of a date time cell, returns null for non-date cells
         /// </summary>
-        /// <param name="C">A cell value</param>
+        /// <param name="C">A cell Value</param>
         /// <returns>An integer cell</returns>
         public static Cell Month(Cell C)
         {
@@ -3046,9 +3046,9 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Extracts the day value of a date time cell, returns null for non-date cells
+        /// Extracts the day Value of a date time cell, returns null for non-date cells
         /// </summary>
-        /// <param name="C">A cell value</param>
+        /// <param name="C">A cell Value</param>
         /// <returns>An integer cell</returns>
         public static Cell Day(Cell C)
         {
@@ -3057,9 +3057,9 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Extracts the hour value of a date time cell, returns null for non-date cells
+        /// Extracts the hour Value of a date time cell, returns null for non-date cells
         /// </summary>
-        /// <param name="C">A cell value</param>
+        /// <param name="C">A cell Value</param>
         /// <returns>An integer cell</returns>
         public static Cell Hour(Cell C)
         {
@@ -3068,9 +3068,9 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Extracts the minute value of a date time cell, returns null for non-date cells
+        /// Extracts the minute Value of a date time cell, returns null for non-date cells
         /// </summary>
-        /// <param name="C">A cell value</param>
+        /// <param name="C">A cell Value</param>
         /// <returns>An integer cell</returns>
         public static Cell Minute(Cell C)
         {
@@ -3079,9 +3079,9 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Extracts the second value of a date time cell, returns null for non-date cells
+        /// Extracts the second Value of a date time cell, returns null for non-date cells
         /// </summary>
-        /// <param name="C">A cell value</param>
+        /// <param name="C">A cell Value</param>
         /// <returns>An integer cell</returns>
         public static Cell Second(Cell C)
         {
@@ -3090,9 +3090,9 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Extracts the millisecond value of a date time cell, returns null for non-date cells
+        /// Extracts the millisecond Value of a date time cell, returns null for non-date cells
         /// </summary>
-        /// <param name="C">A cell value</param>
+        /// <param name="C">A cell Value</param>
         /// <returns>An integer cell</returns>
         public static Cell Millisecond(Cell C)
         {
@@ -3101,7 +3101,7 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Manipulates the ticks value
+        /// Manipulates the ticks Value
         /// </summary>
         /// <param name="C"></param>
         /// <param name="Ticks"></param>
@@ -3140,7 +3140,7 @@ namespace Rye.Data
         /// <summary>
         /// Performs an optimized integer power
         /// </summary>
-        /// <param name="Base">The base value</param>
+        /// <param name="Base">The base Value</param>
         /// <param name="Exp">The exponent</param>
         /// <returns>Another integer: Base ^ Exp</returns>
         internal static long IntPower(long Base, long Exp)
@@ -3210,11 +3210,11 @@ namespace Rye.Data
         #region StaticValues
 
         /// <summary>
-        /// Returns the lowest possible value for the given affinity
+        /// Returns the lowest possible Value for the given affinity
         /// </summary>
         /// <param name="NewAffinity">Data type</param>
-        /// <returns>Cell value</returns>
-        public static Cell MinValue(CellAffinity NewAffinity)
+        /// <returns>Cell Value</returns>
+        public static Cell MinValue(CellAffinity NewAffinity, int Size)
         {
 
             Cell C = new Cell(NewAffinity);
@@ -3225,18 +3225,18 @@ namespace Rye.Data
                 case CellAffinity.DOUBLE: C.DOUBLE = double.MinValue; break;
                 case CellAffinity.BOOL: C.BOOL = false; break;
                 case CellAffinity.DATE_TIME: C.ULONG = 0; break;
-                case CellAffinity.BLOB: C.BLOB = new byte[0]; break;
-                default: C.STRING = ""; break;
+                case CellAffinity.BLOB: C.BLOB = new byte[Size]; break;
+                default: C.STRING = new string('\0', Size); break;
             }
             return C;
         }
 
         /// <summary>
-        /// Returns the highest possible value for the given affinity
+        /// Returns the highest possible Value for the given affinity
         /// </summary>
         /// <param name="NewAffinity">Data type</param>
-        /// <returns>Cell value</returns>
-        public static Cell MaxValue(CellAffinity NewAffinity)
+        /// <returns>Cell Value</returns>
+        public static Cell MaxValue(CellAffinity NewAffinity, int Size)
         {
             Cell C = new Cell(NewAffinity);
             C.NULL = 0;
@@ -3246,16 +3246,17 @@ namespace Rye.Data
                 case CellAffinity.DOUBLE: C.DOUBLE = double.MaxValue; break;
                 case CellAffinity.BOOL: C.BOOL = true; break;
                 case CellAffinity.DATE_TIME: C.DATE_TIME = DateTime.MaxValue; break;
-                default: C.STRING = new string('\xFFFF', 1024); break; // will take care of max byte too
+                case CellAffinity.BLOB: C.BLOB = Enumerable.Repeat((byte)255, Size).ToArray(); break;
+                default: C.STRING = new string('\xFFFF', Size); break; // will take care of max byte too
             }
             return C;
         }
 
         /// <summary>
-        /// Returns a value representing zero
+        /// Returns a Value representing zero
         /// </summary>
         /// <param name="NewAffinity">Data type</param>
-        /// <returns>Cell value</returns>
+        /// <returns>Cell Value</returns>
         public static Cell ZeroValue(CellAffinity NewAffinity)
         {
             Cell C = new Cell(NewAffinity);
@@ -3273,10 +3274,10 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Returns a value representing one
+        /// Returns a Value representing one
         /// </summary>
         /// <param name="NewAffinity">Data type</param>
-        /// <returns>Cell value</returns>
+        /// <returns>Cell Value</returns>
         public static Cell OneValue(CellAffinity NewAffinity)
         {
             Cell C = new Cell(NewAffinity);
@@ -3301,7 +3302,7 @@ namespace Rye.Data
         /// IComparable implementation
         /// </summary>
         /// <param name="C">A cell to compare to the current instance</param>
-        /// <returns>An integer value</returns>
+        /// <returns>An integer Value</returns>
         int IComparable<Cell>.CompareTo(Cell C)
         {
             return Cell.Compare(this, C);
@@ -3323,9 +3324,9 @@ namespace Rye.Data
         #region StringFunctions
 
         /// <summary>
-        /// Trims a given string value
+        /// Trims a given string Value
         /// </summary>
-        /// <param name="C">Cell value</param>
+        /// <param name="C">Cell Value</param>
         /// <returns>Cell with a stirng affinity</returns>
         public static Cell Trim(Cell C)
         {
@@ -3335,7 +3336,7 @@ namespace Rye.Data
         /// <summary>
         /// Converts a given string to uppercase
         /// </summary>
-        /// <param name="C">Cell value</param>
+        /// <param name="C">Cell Value</param>
         /// <returns>Cell with a stirng affinity</returns>
         public static Cell ToUpper(Cell C)
         {
@@ -3345,7 +3346,7 @@ namespace Rye.Data
         /// <summary>
         /// Converts a given string to lowercase
         /// </summary>
-        /// <param name="C">Cell value</param>
+        /// <param name="C">Cell Value</param>
         /// <returns>Cell with a stirng affinity</returns>
         public static Cell ToLower(Cell C)
         {
@@ -3355,7 +3356,7 @@ namespace Rye.Data
         /// <summary>
         /// Returns all characters/bytes left of given point
         /// </summary>
-        /// <param name="C">The string or BLOB value</param>
+        /// <param name="C">The string or BLOB Value</param>
         /// <param name="Length">The maximum number of chars/bytes</param>
         /// <returns>A string or blob cell</returns>
         public static Cell Left(Cell C, long Length)
@@ -3367,7 +3368,7 @@ namespace Rye.Data
         /// <summary>
         /// Returns all characters/bytes right of given point
         /// </summary>
-        /// <param name="C">The string or BLOB value</param>
+        /// <param name="C">The string or BLOB Value</param>
         /// <param name="Length">The maximum number of chars/bytes</param>
         /// <returns>A string or blob cell</returns>
         public static Cell Right(Cell C, long Length)
@@ -3397,10 +3398,10 @@ namespace Rye.Data
         /// <summary>
         /// Returns either the sub stirng or sub blob
         /// </summary>
-        /// <param name="C">Cell value</param>
+        /// <param name="C">Cell Value</param>
         /// <param name="Position">The starting point</param>
         /// <param name="Length">The maximum length of the new string</param>
-        /// <returns>Either a string or blob value</returns>
+        /// <returns>Either a string or blob Value</returns>
         public static Cell Substring(Cell C, long Position, long Length)
         {
 
@@ -3424,12 +3425,12 @@ namespace Rye.Data
         }
 
         /// <summary>
-        /// Replaces all occurances of a string value with another string value
+        /// Replaces all occurances of a string Value with another string Value
         /// </summary>
         /// <param name="Source">The string to be searched</param>
         /// <param name="LookFor">The string being searched for</param>
         /// <param name="ReplaceWith">The string that serves as the replacement</param>
-        /// <returns>Cell string value</returns>
+        /// <returns>Cell string Value</returns>
         public static Cell Replace(Cell Source, Cell LookFor, Cell ReplaceWith)
         {
 

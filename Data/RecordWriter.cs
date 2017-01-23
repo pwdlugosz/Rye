@@ -97,12 +97,14 @@ namespace Rye.Data
     {
 
         protected Table _t;
+        protected IConcurrentWriteManager _m;
         protected Extent _e;
 
         public TableWriter(Table Data)
         {
             this._t = Data;
-            this._e = Data.NewShell();
+            this._m = Data.ConcurrentWriteManager;
+            this._e = this._m.GetExtent();
         }
 
         public override void Insert(Record Data)
@@ -110,8 +112,8 @@ namespace Rye.Data
 
             if (this._e.IsFull)
             {
-                this._t.AddExtent(this._e);
-                this._e = this._t.NewShell();
+                this._m.AddExtent(this._e);
+                this._e = this._m.GetExtent();
             }
             this._e.Add(Data);
 
@@ -121,7 +123,7 @@ namespace Rye.Data
         {
 
             if (Data.Columns.GetHashCode() == this._t.Columns.GetHashCode())
-                this._t.AddExtent(Data);
+                this._m.AddExtent(Data);
             else
                 base.BulkInsert(Data);
 
@@ -131,9 +133,9 @@ namespace Rye.Data
         {
             if (this._e.Count != 0)
             {
-                this._t.AddExtent(this._e);
+                this._m.AddExtent(this._e);
             }
-            this._t.RequestFlushMe();
+            this._t.CursorClose();
         }
 
         public override Schema Columns
@@ -155,8 +157,8 @@ namespace Rye.Data
         {
             if (this._e.IsFull)
             {
-                this._t.AddExtent(this._e);
-                this._e = this._t.NewShell();
+                this._m.AddExtent(this._e);
+                this._e = this._m.GetExtent();
             }
             this._e.UncheckedAdd(Data);
         }
@@ -164,7 +166,7 @@ namespace Rye.Data
         public override void BulkInsert(Extent Data)
         {
             if (Data.Columns.GetHashCode() == this._t.Columns.GetHashCode())
-                this._t.AddExtent(Data);
+                this._m.AddExtent(Data);
             else
                 base.BulkInsert(Data);
         }
@@ -173,7 +175,7 @@ namespace Rye.Data
         {
             if (this._e.Count != 0)
             {
-                this._t.AddExtent(this._e);
+                this._m.AddExtent(this._e);
             }
             this._t.RequestFlushMe();
         }

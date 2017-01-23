@@ -20,6 +20,11 @@ namespace Rye.Expressions
         public ExpressionFieldRef(Expression Parent, int Index, CellAffinity Affinity, int Size, Register MemoryRef)
             : base(Parent, ExpressionAffinity.Field)
         {
+
+            // Handle null exceptions //
+            if (MemoryRef == null)
+                throw new ArgumentNullException("The 'MemoryRef' argument cannot be null");
+
             this._idx = Index;
             this._affinity = Affinity;
             this._memory = MemoryRef;
@@ -62,8 +67,13 @@ namespace Rye.Expressions
         public void ForceMemoryRegister(Register NewMemoryRegister)
         {
 
+            if (NewMemoryRegister == null)
+                throw new ArgumentNullException("The 'NewMemoryRegister' cannot be null");
+
             if (this._memory.Name.ToUpper() != NewMemoryRegister.Name.ToUpper())
+            {
                 return;
+            }
 
             this._memory = NewMemoryRegister;
 

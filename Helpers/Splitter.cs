@@ -72,11 +72,11 @@ namespace Rye.Helpers
             // Now do clean up //
             string t = sb.ToString();
 
-            // The string has some value //
+            // The string has some Value //
             if (t.Length != 0)
             {
 
-                // Check that we didn't end on a delim value, but if we did and we want delims, then keep it //
+                // Check that we didn't end on a delim Value, but if we did and we want delims, then keep it //
                 if (!(t.Length == 1 && Delim.Contains(t[0])) || KeepDelims) 
                     TempArray.Add(sb.ToString());
 
