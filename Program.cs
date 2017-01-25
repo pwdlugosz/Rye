@@ -33,19 +33,6 @@ namespace Rye
 
             System.Diagnostics.Stopwatch sw = Stopwatch.StartNew();
 
-            //List<int> u = new List<int>() { 0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15 };
-
-            //Console.WriteLine("Find {0} : {1}", 0, u.BinarySearch(0));
-            //Console.WriteLine("Find {0} : {1}", 7, u.BinarySearch(7));
-            //Console.WriteLine("Find {0} : {1}", 9, ~u.BinarySearch(9));
-            //Console.WriteLine("Find {0} : {1}", 16, ~u.BinarySearch(16));
-
-
-            //Console.WriteLine("::::::::::::::::::::::::::::::::: Complete :::::::::::::::::::::::::::::::::");
-            //Console.WriteLine("Run Time: {0}", sw.Elapsed);
-            //string z = Console.ReadLine();
-
-            //return;
 
             Rye.Data.Spectre.Host h = new Data.Spectre.Host();
             Schema s = new Schema("Key int, Value double, xyz int");
@@ -53,7 +40,7 @@ namespace Rye
             ScribeTable x = new HeapScribeTable(h, "Temp", @"C:\Users\pwdlu_000\Documents\Rye Projects\Temp", s, Page.DEFAULT_SIZE);
             //ScribeTable OriginalNode = new SortedScribeTable(h, "Temp", @"C:\Users\pwdlu_000\Documents\Rye Projects\Temp", s, Page.DEFAULT_SIZE, new Key(0));
             RandomCell rng = new RandomCell(127);
-            BPlusTree tree = new BPlusTree(x, new Key(1,2));
+            //BPlusTree tree = new BPlusTree(x, new Key(1, 2));
 
             Rye.Data.Spectre.WriteStream writer = x.OpenWriter();
             for (int i = 0; i < 2000000; i++)
@@ -61,19 +48,19 @@ namespace Rye
 
                 Record r = Record.Stitch(rng.NextLong(0, 100), rng.NextDoubleGauss(), new Cell(i));
                 x.Insert(r);
-                tree.Insert(r);
+                //tree.Insert(r);
 
             }
             writer.Close();
 
             Console.WriteLine(x.MetaData());
 
-            tree.Print(@"C:\Users\pwdlu_000\Documents\Rye Projects\BPlusTree.txt");
+            //tree.Print(@"C:\Users\pwdlu_000\Documents\Rye Projects\BPlusTree.txt");
 
             h.ShutDown();
 
-            //ScribeTable table = h.PageCache.Buffer(h, @"C:\Users\pwdlu_000\Documents\Rye Projects\Temp\Temp.ryev1", true);
-            //table.Dump(@"C:\Users\pwdlu_000\Documents\Rye Projects\Test2.txt");
+            ScribeTable table = h.PageCache.RequestScribeTable(@"C:\Users\pwdlu_000\Documents\Rye Projects\Temp\Temp.ryev1");
+            table.Dump(@"C:\Users\pwdlu_000\Documents\Rye Projects\Test2.txt");
 
             Console.WriteLine("::::::::::::::::::::::::::::::::: Complete :::::::::::::::::::::::::::::::::");
             Console.WriteLine("Run Time: {0}", sw.Elapsed);

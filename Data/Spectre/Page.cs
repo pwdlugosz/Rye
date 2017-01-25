@@ -9,7 +9,7 @@ using System.IO;
 namespace Rye.Data.Spectre
 {
 
-    // PageCache //
+    // PageManager //
     /// <summary>
     /// Base class for record storage
     /// </summary>
@@ -616,24 +616,45 @@ namespace Rye.Data.Spectre
             return !(RowID < 0 || RowID >= this.Count);
         }
 
+        /// <summary>
+        /// Gets the X0 integer
+        /// </summary>
         internal int X0
         {
             get { return this._X0; }
         }
 
+        /// <summary>
+        /// Gets the X1 integer
+        /// </summary>
         internal int X1
         {
             get { return this._X1; }
         }
 
+        /// <summary>
+        /// Gets the X2 integer
+        /// </summary>
         internal int X2
         {
             get { return this._X2; }
         }
 
+        /// <summary>
+        /// Gets the X3 integer
+        /// </summary>
         internal int X3
         {
             get { return this._X3; }
+        }
+
+        /// <summary>
+        /// If true, this page is stored in the page cache, false otherwise; this is used by internal processes to make sure any changes made to the page get saved back to disk
+        /// </summary>
+        internal bool Cached
+        {
+            get;
+            set;
         }
 
         /// <summary>
@@ -1357,6 +1378,27 @@ namespace Rye.Data.Spectre
 
         }
 
+        public int SearchKey(Record Key)
+        {
+
+            if (this.IsLeaf)
+                throw new Exception("Cannot page search a leaf");
+
+            int idx = this._Elements.BinarySearch(Key, this._WeakMatcher);
+            if (idx < 0)
+                idx = ~idx;
+
+            if (idx != this._Elements.Count)
+            {
+                return this._Elements[idx][this._RefColumn].INT_A;
+            }
+            else
+            {
+                throw new Exception();
+            }
+
+        }
+
         public int SearchLowerKey(Record Key)
         {
 
@@ -1409,6 +1451,11 @@ namespace Rye.Data.Spectre
         public bool KeyExists(Record Key, int PageID)
         {
             return this._Elements.BinarySearch(Composite(Key, PageID), this._StrongMatcher) >= 0;
+        }
+
+        public bool KeyExists(Record Key)
+        {
+            return this._Elements.BinarySearch(Key, this._WeakMatcher) >= 0;
         }
 
         public void Delete(Record Element)

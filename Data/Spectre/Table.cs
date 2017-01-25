@@ -451,7 +451,7 @@ namespace Rye.Data.Spectre
             h.PageSize = BitConverter.ToInt32(Buffer, Location + OFFSET_PAGE_SIZE);
 
             // Radix Page //
-            h.PageSize = BitConverter.ToInt32(Buffer, Location + OFFSET_RADIX_PAGE_ID);
+            h.RadixPageID = BitConverter.ToInt32(Buffer, Location + OFFSET_RADIX_PAGE_ID);
 
             // Key //
             h.SortKey = new Key();
@@ -661,7 +661,7 @@ namespace Rye.Data.Spectre
 
         public virtual Record Select(RecordKey Position)
         {
-            return this._Host.PageCache.RequestPage(this._Header.Key, Position.PAGE_ID).Select(Position.ROW_ID);
+            return this.GetPage(Position.PAGE_ID).Select(Position.ROW_ID);
         }
 
         public virtual ReadStream OpenReader()
@@ -683,25 +683,14 @@ namespace Rye.Data.Spectre
         public virtual int PageCount 
         {
             get { return this._Header.PageCount; }
+            set { this._Header.PageCount = value; }
         }
 
-        public virtual Page GetPage(int PageID)
-        {
-            return this._Host.PageCache.RequestPage(this.Key, PageID);
-        }
+        public abstract Page GetPage(int PageID);
 
-        public virtual void SetPage(Page Element)
-        {
+        public abstract void SetPage(Page Element);
 
-            this._Host.PageCache.PushPage(this.Key, Element);
-            this._Header.PageCount = this._Host.PageCache.InMemoryPageCount(this.Key);
-
-        }
-
-        public virtual bool PageExists(int PageID)
-        {
-            return this._Host.PageCache.PageExists(this.Key, PageID);
-        }
+        public abstract bool PageExists(int PageID);
 
         public virtual int OriginPageID
         {
@@ -791,7 +780,7 @@ namespace Rye.Data.Spectre
 
             // Create the forked page //
             Page q = p.Split(NewPageID, -1, -1);
-            if (this._Host.PageCache.PageExists(this.Key, NewPageID))
+            if (this.PageExists(NewPageID))
                 throw new Exception(string.Format("Page exists! {0}", NewPageID));
 
             // Add q after p //
@@ -1134,7 +1123,6 @@ namespace Rye.Data.Spectre
 
         }
 
-
     }
 
     // Dream tables: exist only in memory and are never saved to disk
@@ -1165,7 +1153,7 @@ namespace Rye.Data.Spectre
             this._PageCapacity = MAX_MEMORY / PageSize;
             this._State = State;
 
-            this._Host.PageCache.AddTable(this);
+            this._Host.PageCache.AddDreamTable(this);
 
         }
 
@@ -1209,6 +1197,21 @@ namespace Rye.Data.Spectre
 
             return p;
 
+        }
+
+        public override Page GetPage(int PageID)
+        {
+            return this._Host.PageCache.RequestDreamPage(this.Key, PageID);
+        }
+
+        public override void SetPage(Page Element)
+        {
+            this._Host.PageCache.PushDreamPage(this.Key, Element);
+        }
+
+        public override bool PageExists(int PageID)
+        {
+            return this._Host.PageCache.DreamPageExists(new PageUID(this.Key, PageID));
         }
 
     }
@@ -1418,7 +1421,7 @@ namespace Rye.Data.Spectre
                 }
 
                 // Because we're forking, we should increment the page count //
-                //this.PageCount = this._Host.PageCache.InMemoryPageCount(this.Key);
+                //this.PageCount = this._Host.PageManager.InMemoryPageCount(this.Key);
 
             }
 
@@ -1588,6 +1591,7 @@ namespace Rye.Data.Spectre
         public ScribeTable(Host Host, TableHeader Header)
             : base(Host, Header)
         {
+            this._Host.PageCache.AddScribeTable(this);
         }
 
         /// <summary>
@@ -1603,13 +1607,7 @@ namespace Rye.Data.Spectre
             : this(Host, new TableHeader(Name, Dir, TableHeader.V1_EXTENSION, 0, 0, -1, -1, PageSize, Columns))
         {
             this._Host.PageCache.DropTable(this.Key);
-            this._Host.PageCache.AddTable(this);
-        }
-
-        public override void SetPage(Page Element)
-        {
-            this._Host.PageCache.PushPage(this.Key, Element, true); // want to ensure our pages end up getting saved to disk
-            this._Header.PageCount = this._Host.PageCache.InMemoryPageCount(this.Key);
+            this._Host.PageCache.AddScribeTable(this);
         }
 
         public override Page GenerateNewPage()
@@ -1627,6 +1625,29 @@ namespace Rye.Data.Spectre
 
             return p;
 
+        }
+
+        public override Page GetPage(int PageID)
+        {
+            return this._Host.PageCache.RequestScribePage(this.Key, PageID);
+        }
+
+        public override void SetPage(Page Element)
+        {
+            
+            this._Host.PageCache.PushScribePage(this.Key, Element, true); // want to ensure our pages end up getting saved to disk
+            
+            // Need to check to see if the page count was correctly incremented
+            // If the page count < PageID, then set the page count to the pageID + 1
+            int PageCount = Math.Max(Element.PageID, Math.Max(Element.LastPageID, Element.NextPageID)) + 1;
+            if (PageCount > this._Header.PageCount)
+                this._Header.PageCount = PageCount;
+
+        }
+        
+        public override bool PageExists(int PageID)
+        {
+            return this._Host.PageCache.ScribePageExists(new PageUID(this.Key, PageID));
         }
 
     }
@@ -1665,11 +1686,10 @@ namespace Rye.Data.Spectre
         public HeapScribeTable(Host Host, string Name, string Dir, Schema Columns, int PageSize)
             : base(Host, Name, Dir, Columns, PageSize)
         {
-            this._Terminis = new Page(PageSize, 0, -1, -1, Columns);
-            this.SetPage(this._Terminis);
             this._Header.OriginPageID = 0;
             this._Header.TerminalPageID = 0;
-
+            this._Terminis = new Page(PageSize, 0, -1, -1, Columns);
+            this.SetPage(this._Terminis);
         }
 
         public override void Insert(Record Value)
@@ -1830,7 +1850,7 @@ namespace Rye.Data.Spectre
                 }
 
                 // Because we're forking, we should increment the page count //
-                //this.PageCount = this._Host.PageCache.InMemoryPageCount(this.Key);
+                //this.PageCount = this._Host.PageManager.InMemoryPageCount(this.Key);
 
             }
 
@@ -2110,288 +2130,5 @@ namespace Rye.Data.Spectre
         }
 
     }
-
-    //public sealed class TerminisIndex : DerivedTable
-    //{
-
-    //    public const string NAME_PAGE_ID = "PAGE_ID";
-        
-    //    private IRecordMatcher _StrongMatcher;
-
-    //    /// <summary>
-    //    /// This points to the column that holds the page id
-    //    /// </summary>
-    //    private int _RefOfPageID = 0;
-
-    //    /// <summary>
-    //    /// This ctor assumes it's not creating an index form scratch; it assumes it already exists
-    //    /// </summary>
-    //    /// <param name="Parent"></param>
-    //    /// <param name="DerivedHeader"></param>
-    //    public TerminisIndex(BaseTable Parent, TableHeader DerivedHeader)
-    //        : base(Parent.Host, DerivedHeader, Parent)
-    //    {
-
-    //        // Need to build the correct matcher
-    //        //      The left key compares using the base key
-    //        //      The right key compares using the derived key
-    //        this._StrongMatcher = new RecordMatcher(Parent.Header.SortKey, Data.Key.Build(Parent.Header.SortKey.Count));
-
-    //        // Set the ref variable == the key length
-    //        this._RefOfPageID = Parent.Header.SortKey.Count;
-
-    //    }
-
-    //    /// <summary>
-    //    /// This ctor assumes it's creating a new index
-    //    /// </summary>
-    //    /// <param name="Parent"></param>
-    //    public TerminisIndex(BaseTable Parent)
-    //        : this(Parent, TerminisIndex.DerivedHeader(Parent))
-    //    {
-
-    //        // Need to do a few things:
-    //        // -- Generate the index page
-    //        // -- Set the first, last, and radix pages == the new page id
-    //        Page p = this.GenerateNewPage();
-    //        this._Header.OriginPageID = p.PageID;
-    //        this._Header.TerminalPageID = p.PageID;
-    //        this._Header.RadixPageID = p.PageID;
-
-    //    }
-
-    //    // Base Overrides //
-    //    /// <summary>
-    //    /// Generates a new page
-    //    /// </summary>
-    //    /// <returns></returns>
-    //    public override Page GenerateNewPage()
-    //    {
-
-    //        // Create the new page //
-    //        SortedPage p = new SortedPage(this.PageSize, this.GenerateNewPageID, this.TerminalPageID, -1, this.Columns, this._StrongMatcher);
-
-    //        // Get the last page and switch it's next page id //
-    //        Page q = this.TerminalPage;
-    //        q.NextPageID = p.PageID;
-
-    //        // Add this page //
-    //        this.SetPage(p);
-
-    //        // Increment the terminal page id //
-    //        this.TerminalPageID = q.PageID;
-
-    //        return p;
-
-    //    }
-
-    //    /// <summary>
-    //    /// 
-    //    /// </summary>
-    //    /// <param name="Value"></param>
-    //    public override void InsertKey(Record Value)
-    //    {
-
-    //        // Figure out the page to insert into //
-    //        int id = this.SearchPage(Value);
-
-    //        // Get the page we need to insert the record on //
-    //        Page p = this.GetPage(id);
-
-    //        // If this page is full, we need to split in half //
-    //        if (p.IsFull)
-    //        {
-
-    //            // Fork the page //
-    //            this.ForkPage(p.PageID);
-
-    //            // Decide if this we should insert on this page or the next page //
-    //            if (this._StrongMatcher.Between(Value, p.OriginRecord, p.TerminalRecord) != 0)
-    //            {
-    //                p = this.GetPage(p.NextPageID);
-    //            }
-
-    //            // Because we're forking, we should increment the page count //
-    //            //this.PageCount = this._Host.PageCache.InMemoryPageCount(this.Key);
-
-    //        }
-
-    //        // InsertKey the value
-    //        p.InsertKey(Value);
-
-    //        // Step up the record count //
-    //        this.RecordCount++;
-
-    //    }
-
-    //    /// <summary>
-    //    /// Finds the page this record would hypothetically belong to; the exact record doesn't need to exist
-    //    /// </summary>
-    //    /// <param name="Key"></param>
-    //    /// <returns></returns>
-    //    public int SearchPage(Record Key)
-    //    {
-
-    //        // If page count == 0 //
-    //        if (this.PageCount == 0)
-    //            return 0;
-
-    //        // If the page count == 1 //
-    //        if (this.PageCount == 1)
-    //            return this.OriginPageID;
-
-    //        Page p = this.OriginPage;
-    //        if (p.Count == 0)
-    //            return 0;
-
-    //        // If the element is less than the first record on the origin page, this record should be placed on the origin page
-    //        // If it is greater than the last record on the terminal page, this record belongs on the terminal page
-    //        if (this._StrongMatcher.Compare(Key, this.OriginPage.OriginRecord) <= 0)
-    //        {
-    //            return 0;
-    //        }
-    //        else if (this._StrongMatcher.Compare(Key, this.TerminalPage.TerminalRecord) >= 0)
-    //        {
-    //            return this.TerminalPageID;
-    //        }
-
-    //        // Check p before we loop //
-    //        p = this.GetPage(this._Header.RadixPageID);
-    //        int idx = 0;
-    //        idx = this._StrongMatcher.Between(Key, p.OriginRecord, p.TerminalRecord);
-    //        if (idx == 0)
-    //            return p.PageID;
-
-    //        // Otherwise, the record should exist somewhere in this table
-    //        while (p.NextPageID != -1 && p.LastPageID != -1)
-    //        {
-
-    //            // If idx < 0 then the desired page is down stream, otherwise its upstream
-    //            p = this.GetPage(idx < 0 ? p.LastPageID : p.NextPageID);
-    //            idx = this._StrongMatcher.Between(Key, p.OriginRecord, p.TerminalRecord);
-
-    //            if (idx == 0)
-    //                return p.PageID;
-
-    //        }
-
-    //        // Now we've cycled through every page, if we end on +1, return the terminal page id //
-    //        if (idx > 0)
-    //            return this.TerminalPageID;
-    //        else if (idx < 0)
-    //            return this.OriginPageID;
-
-    //        // If we made it this far, there's an error somewhere //
-    //        throw new Exception("Unknown error occured");
-
-
-
-    //    }
-
-    //    /// <summary>
-    //    /// 
-    //    /// </summary>
-    //    /// <param name="Key"></param>
-    //    /// <param name="Exact"></param>
-    //    /// <returns></returns>
-    //    public RecordKey Search(Record Key, bool Exact)
-    //    {
-
-    //        // 0 records //
-    //        if (this.PageCount == 0)
-    //            return (Exact ? RecordKey.RecordNotFound : new RecordKey(0, 0));
-    //        if (this.PageCount == 1 && this.OriginPage.Count == 0)
-    //            return (Exact ? RecordKey.RecordNotFound : new RecordKey(0, 0));
-    //        if (this.PageCount == 1)
-    //        {
-    //            SortedPage p = this.OriginPage as SortedPage;
-    //            int idx = p.Search(Key, Exact);
-    //            return new RecordKey(p.PageID, idx);
-    //        }
-
-    //        // Set the radix //
-    //        int i = 0;
-    //        int Radix = (int)this.PageCount - 1;
-    //        int Index = 0;
-
-    //        // Seek!!! //
-    //        while (i <= Radix)
-    //        {
-
-    //            Index = i + (Radix - i >> 1);
-    //            Page p = this.GetPage(Index);
-    //            int Seek = this._StrongMatcher.Between(Key, p.OriginRecord, p.TerminalRecord);
-    //            if (Seek == 0)
-    //            {
-    //                int q = p.Search(Key);
-    //                return new RecordKey(Index, q);
-    //            }
-    //            else if (Seek < 0)
-    //            {
-    //                i = Index + 1;
-    //            }
-    //            else
-    //            {
-    //                Radix = Index - 1;
-    //            }
-
-    //        }
-
-    //        int r = this.GetPage(i).Search(Key);
-    //        return (Exact ? RecordKey.RecordNotFound : new RecordKey(i, r));
-
-    //    }
-
-    //    // Derived clones of base overrides
-    //    // -- Base methods assume they're getting passed the key + page id
-    //    // -- Derived methods assume the record they're getting the whole record
-        
-    //    /// <summary>
-    //    /// Used to insert a data record into the collection; this should only be used when forking a data page
-    //    /// </summary>
-    //    /// <param name="Value">DATA record</param>
-    //    /// <param name="PageID"></param>
-    //    public void InsertKey(Record Value, int PageID)
-    //    {
-    //    }
-
-    //    /// <summary>
-    //    /// Updates an index entry; this may be called frequently
-    //    /// </summary>
-    //    /// <param name="Value">DATA record</param>
-    //    /// <param name="PageID">The page id the data record resides on</param>
-    //    /// <param name="Pointer">The location of the page in this index</param>
-    //    public void Update(Record Value, int PageID, RecordKey Pointer)
-    //    {
-    //    }
-
-    //    /// <summary>
-    //    /// Given a DATA record, this method finds the PARENT page id the record should be stored on
-    //    /// </summary>
-    //    /// <param name="Value"></param>
-    //    /// <returns></returns>
-    //    public int Search(Record Value)
-    //    {
-    //    }
-
-    //    // Statics //
-    //    public static Schema DerivedSchema(Schema TableColumns, Key SortKey)
-    //    {
-
-    //        Schema s = Schema.Split(TableColumns, SortKey);
-    //        s.Add(NAME_PAGE_ID, CellAffinity.INT);
-    //        return s;
-
-    //    }
-
-    //    public static TableHeader DerivedHeader(BaseTable Parent)
-    //    {
-
-    //        TableHeader h = new TableHeader(Parent.Header.IsPrimaryKey ? "PRIMARY_KEY" : "SORT_KEY", null, null, 0, 0, -1, -1, Parent.PageSize, DerivedSchema(Parent.Columns, Parent.Header.SortKey));
-    //        return h;
-
-    //    }
-
-    //}
 
 }

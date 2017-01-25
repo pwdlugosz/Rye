@@ -134,13 +134,20 @@ namespace Rye.Data.Spectre
 
         bool IsUnique { get; }
 
+        void Initialize();
+
         void Insert(Record Element);
 
-        ReadStream OpenReader();
+    }
 
-        ReadStream OpenReader(Record Key);
+    public interface IOptimizedRecordReader
+    {
 
-        ReadStream OpenReader(Record LowerKey, Record UpperKey);
+        RecordReader OpenReader();
+
+        RecordReader OpenReader(Record Key, Key Columns);
+
+        RecordReader OpenReader(Record LowerKey, Record UpperKey, Key Columns);
 
     }
 
@@ -168,6 +175,7 @@ namespace Rye.Data.Spectre
                 this._Parent.SetPage(p);
                 this._Terminis = p;
                 this._Parent.Header.TerminalPageID = p.PageID;
+                this._Parent.Header.PageCount++;
 
             }
 
@@ -175,6 +183,12 @@ namespace Rye.Data.Spectre
             this._Terminis.Insert(Element);
             this._Parent.RecordCount++;
 
+        }
+
+        public void Close()
+        {
+            if (this._Terminis != null)
+                this._Parent.SetPage(this._Terminis);
         }
 
     }
@@ -202,7 +216,7 @@ namespace Rye.Data.Spectre
             this._Root = this.NewRootAsLeaf();
             this._T.SetPage(this._Root);
             this._MaxRecord = Schema.Split(this._T.Columns, this._IndexColumns).MaxRecord;
-            
+            this.IsUnique = false;
         }
 
         public BaseTable Parent
@@ -220,13 +234,19 @@ namespace Rye.Data.Spectre
             get { return this._IndexColumns; }
         }
 
+        public bool IsUnique
+        {
+            get;
+            set;
+        }
+
         // Seek Methods //
         /// <summary>
         /// Finds the leaf page this record belongs on
         /// </summary>
         /// <param name="Element"></param>
         /// <returns></returns>
-        public BPTreePage SeekPage(Record Element)
+        public virtual BPTreePage SeekPage(Record Element)
         {
 
             // If the root page is a leaf node //
@@ -267,7 +287,7 @@ namespace Rye.Data.Spectre
         /// </summary>
         /// <param name="Key"></param>
         /// <returns></returns>
-        public BPTreePage SeekFirstPage(Record Key)
+        public virtual BPTreePage SeekFirstPage(Record Key)
         {
 
             // If the root page is a leaf node //
@@ -292,7 +312,7 @@ namespace Rye.Data.Spectre
         /// </summary>
         /// <param name="Key"></param>
         /// <returns></returns>
-        public BPTreePage SeekLast(Record Key)
+        public virtual BPTreePage SeekLast(Record Key)
         {
 
             // If the root page is a leaf node //
@@ -312,7 +332,54 @@ namespace Rye.Data.Spectre
 
         }
 
+        /// <summary>
+        /// Checks if a key exists
+        /// </summary>
+        /// <param name="Key"></param>
+        /// <returns></returns>
+        public virtual bool Exists(Record Key)
+        {
+
+            // If the root page is a leaf node //
+            if (this._Root.IsLeaf)
+                return this._Root.KeyExists(Key);
+
+            // Otherwise, starting at root, find the page //
+            BPTreePage x = this._Root;
+            while (true)
+            {
+                int PageID = x.PageSearch(Key);
+                x = this.GetPage(PageID);
+                if (x.IsLeaf)
+                    return x.KeyExists(Key);
+
+            }
+
+        }
+
         // Inserts //
+        /// <summary>
+        /// Core insertion step; inserts a value into the b+ tree and splits any nodes if needed
+        /// </summary>
+        /// <param name="Element"></param>
+        public virtual void Insert(Record Element)
+        {
+
+            // Check if it exists only if this is unqiue //
+            if (this.IsUnique)
+            {
+                if (this.Exists(Record.Split(Element, this._IndexColumns)))
+                    throw new DuplicateKeyException(string.Format("Key exists {0}", Record.Split(Element, this._IndexColumns)));
+            }
+
+            // Finde the leaf node to insert into //
+            BPTreePage node = this.SeekPage(Element);
+
+            // Actually insert the value //
+            this.InsertValue(node, Element);
+
+        }
+
         /// <summary>
         /// Adds a key/page id to the tree; if the node is currently full, this method will split it, and update it's parent; if the parent is full, it'll also split; if the parent is the root and it's
         /// full, it'll split that too;
@@ -385,19 +452,6 @@ namespace Rye.Data.Spectre
             {
                 y.Insert(Element);
             }
-
-        }
-
-        /// <summary>
-        /// Core insertion step; inserts a value into the b+ tree and splits any nodes if needed
-        /// </summary>
-        /// <param name="Element"></param>
-        public void Insert(Record Element)
-        {
-
-            BPTreePage node = this.SeekPage(Element);
-
-            this.InsertValue(node, Element);
 
         }
 
@@ -727,6 +781,17 @@ namespace Rye.Data.Spectre
             }
 
             return sb.ToString();
+
+        }
+
+        // Exceptions //
+        public class DuplicateKeyException : Exception
+        {
+
+            public DuplicateKeyException(string Message)
+                : base(Message)
+            {
+            }
 
         }
 

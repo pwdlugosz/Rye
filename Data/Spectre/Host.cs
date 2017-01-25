@@ -16,7 +16,7 @@ namespace Rye.Data.Spectre
 
         public const string GLOBAL = "PSY";
 
-        private PageCache _PageCache;
+        private PageManager _PageCache;
         private Communicator _IO;
         private Heap<Cell> _Scalars;
         private Heap<CellMatrix> _Matrixes;
@@ -25,7 +25,7 @@ namespace Rye.Data.Spectre
         public Host()
         {
 
-            this._PageCache = new PageCache();
+            this._PageCache = new PageManager(this);
             this._IO = new CommandLineCommunicator();
 
             this._Scalars = new Heap<Cell>();
@@ -39,7 +39,7 @@ namespace Rye.Data.Spectre
             this.PageCache.ShutDown();
         }
 
-        public PageCache PageCache
+        public PageManager PageCache
         {
             get { return this._PageCache; }
         }
@@ -86,237 +86,365 @@ namespace Rye.Data.Spectre
     /// <summary>
     /// This class holds all in memory pages and manages buffering pages and tables from disk
     /// </summary>
-    public sealed class PageCache
+    public sealed class PageManager
     {
 
         /// <summary>
         /// The default capacity is 128 MB
         /// </summary>
-        public const long DEFAULT_CAPACITY = 1024 * 1024 * 128;
+        public const long DEFAULT_CAPACITY = 1024 * 1024 * 32;
 
-        private Dictionary<string, Entry> _Elements;
-        private long _Capacity = 0;
+        //private Dictionary<string, Entry> _Elements;
+        //private BurnQueue<PageUID> _WoodPile;
+        private long _MaxMemory = 0;
+        private long _Memory = 0;
+        private Host _Host;
 
-        public PageCache(long Capacity)
+        // It's easier to keep two sets of books, one for the dream tables and one for scribe tables //
+        private Dictionary<string, ScribeTable> _ScribeTables;
+        private Dictionary<PageUID, Page> _ScribePages;
+        private Dictionary<PageUID, int> _ScribeWrites;
+        private Dictionary<string, DreamTable> _DreamTables;
+        private Dictionary<PageUID, Page> _DreamPages;
+
+        // Constructors //
+        public PageManager(Host Host, long Capacity)
         {
-            this._Elements = new Dictionary<string, Entry>(StringComparer.OrdinalIgnoreCase);
-            this._Capacity = Capacity;
+            //this._Elements = new Dictionary<string, Entry>(StringComparer.OrdinalIgnoreCase);
+            //this._WoodPile = new BurnQueue<PageUID>(PageUID.DefaultComparer);
+
+            this._ScribeTables = new Dictionary<string, ScribeTable>(StringComparer.OrdinalIgnoreCase);
+            this._ScribePages = new Dictionary<PageUID, Page>(PageUID.DefaultComparer);
+            this._ScribeWrites = new Dictionary<PageUID, int>(PageUID.DefaultComparer);
+            this._DreamTables = new Dictionary<string, DreamTable>(StringComparer.OrdinalIgnoreCase);
+            this._DreamPages = new Dictionary<PageUID, Page>(PageUID.DefaultComparer);
+            
+            this._MaxMemory = Capacity;
+            this._Host = Host;
+
         }
 
-        public PageCache()
-            : this(DEFAULT_CAPACITY)
+        public PageManager(Host Host)
+            : this(Host, DEFAULT_CAPACITY)
         {
         }
 
-        // Creation //
-        /// <summary>
-        /// Adds a table to the cache
-        /// </summary>
-        /// <param name="Table"></param>
-        public void AddTable(BaseTable Table)
+        // Properties //
+        public long MaxMemory
+        {
+            get { return this._MaxMemory; }
+        }
+
+        public long UsedMemory
+        {
+            get { return this._Memory; }
+        }
+
+        public long FreeMemory
+        {
+            get { return this._MaxMemory - this._Memory; }
+        }
+
+        // Scribe Tables //
+        public void AddScribeTable(ScribeTable Table)
         {
 
-            if (this.ElementExists(Table.Key))
+            if (this.ScribeTableExists(Table.Key))
             {
                 throw new ElementDoesNotExistException(Table.Key);
             }
 
-            this._Elements.Add(Table.Key, new Entry(Table));
+            this._ScribeTables.Add(Table.Key, Table);
+            this._Memory += TableHeader.SIZE;
 
         }
 
-        // Exists methods //
-        /// <summary>
-        /// Checks if an element exists
-        /// </summary>
-        /// <param name="Key"></param>
-        /// <returns></returns>
-        public bool ElementExists(string Key)
+        public ScribeTable RequestScribeTable(string Key)
         {
-            return this._Elements.ContainsKey(Key);
-        }
-
-        /// <summary>
-        /// Checks if a page exists
-        /// </summary>
-        /// <param name="Key"></param>
-        /// <param name="PageID"></param>
-        /// <returns></returns>
-        public bool PageExists(string Key, int PageID)
-        {
-
-            if (!this._Elements.ContainsKey(Key))
-                return false;
-            return this._Elements[Key].Exists(PageID);
-
-        }
-
-        /// <summary>
-        /// Checks if a table is in-memory only
-        /// </summary>
-        /// <param name="Key"></param>
-        /// <returns></returns>
-        public bool IsDream(string Key)
-        {
-            if (!this.ElementExists(Key))
-                return false;
-            return this._Elements[Key].IsDream;
-        }
-
-        // Request / Push Methods //
-        public Page RequestPage(string Key, int PageID)
-        {
-
-            // Check for the object //
-            if (!this.ElementExists(Key))
-                throw new ElementDoesNotExistException(Key);
-
-            // Check if the page is in memory already //
-            if (this._Elements[Key].Exists(PageID))
+            
+            if (this.ScribeTableExists(Key))
             {
-                return this._Elements[Key].Peek(PageID);
+                return this._ScribeTables[Key];
+            }
+            else
+            {
+
+                // Get the table header //
+                TableHeader h = this.Buffer(Key);
+
+                // Create the table //
+                ScribeTable t = new HeapScribeTable(this._Host, h); // The ctor adds the table to the cache
+            
+                // Check to see how many pages we can buffer //
+                int MaxPages = (int)(this.FreeMemory / h.PageSize);
+                int Pages = Math.Min(h.PageCount, MaxPages);
+
+                // Buffer a block of pages //
+                this.BufferBlock(h, 0, Pages);
+
+                return t;
+
             }
 
-            // Otherwise, check if this is hard object and buffer //
-            if (!this.IsDream(Key))
+            throw new ElementDoesNotExistException(Key);
+
+
+        }
+
+        public bool ScribeTableExists(string Key)
+        {
+            return this._ScribeTables.ContainsKey(Key);
+        }
+
+        public bool ScribePageExists(PageUID PID)
+        {
+            return this._ScribePages.ContainsKey(PID);
+        }
+
+        public void PushScribePage(string Key, Page Element, bool Write)
+        {
+
+            // Check if the element key doesnt exist //
+            if (!this.ScribeTableExists(Key))
+                throw new ElementDoesNotExistException(Key);
+
+            // Build a PID //
+            PageUID pid = new PageUID(Key, Element.PageID);
+
+            // If the page exists already //
+            if (this.ScribePageExists(pid))
+            {
+                this._ScribePages[pid] = Element;
+                this._ScribeWrites[pid]++;
+                Element.Cached = true; // just in case...
+            }
+            // Otherwise, add the page //
+            else
+            {
+                this._ScribePages.Add(pid, Element);
+                this._ScribeWrites.Add(pid, Write ? 1 : 0);
+                this._Memory += Element.PageID;
+                Element.Cached = true;
+            }
+
+
+        }
+
+        public void PushScribePage(string Key, Page Element)
+        {
+            this.PushScribePage(Key, Element, true);
+        }
+
+        public Page RequestScribePage(string Key, int PageID)
+        {
+
+            PageUID pid = new PageUID(Key, PageID);
+
+            if (!this.ScribeTableExists(Key))
+                throw new ElementDoesNotExistException(Key);
+
+            if (this.ScribePageExists(pid))
+            {
+                return this._ScribePages[pid];
+            }
+            else
             {
                 Page p = this.Buffer(Key, PageID);
-                this.PushPage(Key, p);
+                this.PushScribePage(Key, p, false);
                 return p;
             }
+                
+        }
 
-            // Otherwise, the page doesnt exist //
-            throw new PageDoesNotExistException(Key, PageID);
+        public void BurnScribePage(string Key, int PageID, bool Flush)
+        {
+
+            PageUID pid = new PageUID(Key, PageID);
+
+            // See if the page exists //
+            if (!this.ScribePageExists(pid))
+                throw new Exception("Page does not exist");
+
+            // Get the page //
+            Page p = this._ScribePages[pid];
+            int Writes = this._ScribeWrites[pid];
+
+            // Remove from the cache //
+            this._ScribePages.Remove(pid);
+            this._ScribeWrites.Remove(pid);
+
+            // Remove from memory //
+            this._Memory -= p.PageSize;
+
+            // Set the page to non-cached //
+            p.Cached = false;
+
+            // Actually hit disk //
+            if (Flush && Writes > 0)
+                this.Flush(Key, p);
 
         }
 
-        public BaseTable RequestTable(Host Host, string Key)
+        public void BurnScribeTable(string Key, bool Flush)
         {
 
-            if (this.ElementExists(Key))
-                return this._Elements[Key].Parent;
-
-            if (!File.Exists(Key))
-            {
-                throw new ElementDoesNotExistException(Key);
-            }
-
-            return this.Buffer(Host, Key, true);
-
-        }
-
-        public void PushPage(string Key, Page Element)
-        {
-
-            this.PushPage(Key, Element, false);
-
-        }
-
-        public void PushPage(string Key, Page Element, bool Write)
-        {
-
-            if (!this.ElementExists(Key))
-            {
-                throw new ElementDoesNotExistException(Key);
-            }
-
-            this._Elements[Key].Push(Element, Write);
-
-        }
-
-        // Memory Methods //
-        public void FreeAll(string Key)
-        {
-
-            if (!this.ElementExists(Key))
+            if (!this.ScribeTableExists(Key))
                 throw new ElementDoesNotExistException(Key);
 
-            if (!this._Elements[Key].IsDream)
+            // Get the table //
+            BaseTable t = this._ScribeTables[Key];
+
+            // Remove from memory //
+            this._ScribeTables.Remove(Key);
+            this._Memory -= TableHeader.SIZE;
+
+            // Get all the pages //
+            var Pages = this._ScribePages.Select((x) => { return x.Key.Key == Key; });
+
+            // Burn every page //
+            foreach (KeyValuePair<PageUID, Page> kv in this._ScribePages.ToList())
             {
-                this.FreePageSpace(Key, this._Elements[Key].Count);
+                this.BurnScribePage(kv.Key.Key, kv.Key.PageID, Flush);
             }
 
-            this._Elements.Remove(Key);
+            // Dump the table to disk //
+            if (Flush)
+                this.Flush(Key, t.Header);
+
 
         }
 
-        public int FreePageSpace(string Key, int ElementCount)
+        // Dream Tables //
+        public void AddDreamTable(DreamTable Table)
         {
 
-            if (!this.ElementExists(Key))
+            if (this.DreamTableExists(Table.Key))
+            {
+                throw new ElementDoesNotExistException(Table.Key);
+            }
+
+            this._DreamTables.Add(Table.Key, Table);
+
+        }
+
+        public DreamTable RequestDreamTable(string Key)
+        {
+            if (!this.DreamTableExists(Key))
                 throw new ElementDoesNotExistException(Key);
-            if (this._Elements[Key].IsDream)
-                return 0;
-
-            int DiskHits = 0;
-
-            int BurtPageCount = 0;
-            for (int i = 0; i < ElementCount; i++)
-            {
-
-                int PageID = this._Elements[Key].SuggestBurnPage();
-                if (PageID == -1)
-                    break;
-
-                // Check if this needs to be flushed to disk //
-                if (this._Elements[Key].WriteCount(PageID) > 0)
-                {
-                    Page p = this._Elements[Key].Pop(PageID);
-                    this.Flush(Key, p);
-                    DiskHits++;
-                }
-                else
-                {
-                    this._Elements[Key].Burn(PageID);
-                }
-                BurtPageCount++;
-
-            }
-
-            // If we hit the disk, we need to flush the header //
-            if (DiskHits > 0)
-            {
-                this.Flush(Key, this._Elements[Key].Parent.Header);
-            }
-
-            return BurtPageCount;
-
+            return this._DreamTables[Key];
         }
 
-        public int InMemoryPageCount(string Key)
+        public bool DreamTableExists(string Key)
+        {
+            return this._DreamTables.ContainsKey(Key);
+        }
+
+        public bool DreamPageExists(PageUID PID)
+        {
+            return this._DreamPages.ContainsKey(PID);
+        }
+
+        public void PushDreamPage(string Key, Page Element)
         {
 
-            if (!this.ElementExists(Key))
+            // Check if the element key doesnt exist //
+            if (!this.ScribeTableExists(Key))
                 throw new ElementDoesNotExistException(Key);
 
-            return this._Elements[Key].Count;
+            // Build a PID //
+            PageUID pid = new PageUID(Key, Element.PageID);
 
-        }
-
-        public long MemoryUsage()
-        {
-            long t = 0;
-            // Note: the dictionary enumerator breaks if the dictionary is modified; use .ToArray() to get around that
-            foreach (Entry x in this._Elements.Values.ToArray())
+            // If the page exists already //
+            if (this.DreamPageExists(pid))
             {
-                t += x.MemoryUsage;
+                this._DreamPages[pid] = Element;
+                Element.Cached = true;
             }
-            return t;
+            // Otherwise, add the page //
+            else
+            {
+                this._DreamPages.Add(pid, Element);
+                this._Memory += Element.PageID;
+                Element.Cached = true;
+            }
+
         }
 
-        public long FreeMemory()
+        public Page RequestDreamPage(string Key, int PageID)
         {
-            return this._Capacity - this.MemoryUsage();
+
+            PageUID pid = new PageUID(Key, PageID);
+
+            if (!this.ScribeTableExists(Key))
+                throw new ElementDoesNotExistException(Key);
+
+            if (this.ScribePageExists(pid))
+            {
+                return this._ScribePages[pid];
+            }
+
+            throw new Exception("Page does not exist");
+
         }
 
+        public void BurnDreamPage(string Key, int PageID)
+        {
+
+            PageUID pid = new PageUID(Key, PageID);
+
+            // See if the page exists //
+            if (!this.DreamPageExists(pid))
+                throw new Exception("Page does not exist");
+
+            // Get the page //
+            Page p = this._ScribePages[pid];
+
+            // Remove from the cache //
+            this._DreamPages.Remove(pid);
+
+            // Remove from memory //
+            this._Memory -= p.PageSize;
+
+            // Set the page to non-cached //
+            p.Cached = false;
+
+        }
+
+        public void BurnDreamTable(string Key)
+        {
+
+            if (!this.DreamTableExists(Key))
+                throw new ElementDoesNotExistException(Key);
+
+            // Get the table //
+            BaseTable t = this._DreamTables[Key];
+
+            // Remove from memory //
+            this._DreamTables.Remove(Key);
+            this._Memory -= TableHeader.SIZE;
+
+            // Get all the pages //
+            var Pages = this._DreamPages.Select((x) => { return x.Key.Key == Key; });
+
+            // Burn every page //
+            foreach (KeyValuePair<PageUID, Page> kv in this._DreamPages)
+            {
+                this.BurnDreamPage(kv.Key.Key, kv.Key.PageID);
+            }
+
+        }
+
+        // Freeing Methods //
         public void ShutDown()
         {
 
-            string[] Elements = this._Elements.Keys.ToArray();
-            foreach (string k in Elements)
-            {
-                this.FreeAll(k);
-            }
+            List<string> keys = this._ScribeTables.Keys.ToList();
+            foreach (string s in keys)
+                this.BurnScribeTable(s, true);
+
+            keys = this._DreamTables.Keys.ToList();
+            foreach (string s in keys)
+                this.BurnDreamTable(s);
 
         }
 
@@ -329,10 +457,7 @@ namespace Rye.Data.Spectre
         {
 
             // Take care of the entry //
-            if (this.ElementExists(Key))
-            {
-                this._Elements.Remove(Key);
-            }
+            this.BurnScribeTable(Key, false);
 
             // Take care of the file on disk //
             if (File.Exists(Key))
@@ -353,7 +478,7 @@ namespace Rye.Data.Spectre
         {
 
             // Get the header //
-            TableHeader h = this._Elements[Path].Parent.Header;
+            TableHeader h = this._ScribeTables[Path].Header;
 
             // Get the location on disk of the page //
             long Location = PageAddress(PageID, h.PageSize);
@@ -371,7 +496,7 @@ namespace Rye.Data.Spectre
 
             }
 
-            Page p = Page.Read(b, h.PageSize);
+            Page p = Page.Read(b, 0);
 
             return p;
 
@@ -459,55 +584,6 @@ namespace Rye.Data.Spectre
         }
 
         /// <summary>
-        /// Creates a map of all pages in memory
-        /// </summary>
-        /// <returns></returns>
-        internal string ElementMap()
-        {
-
-            StringBuilder sb = new StringBuilder();
-            foreach (Entry e in this._Elements.Values)
-            {
-                sb.AppendLine(string.Format("Object: {0}", e.Key));
-                sb.AppendLine(e.PageMap());
-            }
-            return sb.ToString();
-
-        }
-
-        /// <summary>
-        /// Pulls a table in from disk
-        /// </summary>
-        /// <param name="Host"></param>
-        /// <param name="Path"></param>
-        /// <param name="CacheAsMuchAsPossible"></param>
-        /// <returns></returns>
-        internal ScribeTable Buffer(Host Host, string Path, bool CacheAsMuchAsPossible)
-        {
-
-            // Get the table header //
-            TableHeader h = this.Buffer(Path);
-            ScribeTable t = new HeapScribeTable(Host, h);
-            if (!this.ElementExists(h.Key))
-            {
-                this.AddTable(t);
-            }
-
-            // Check to see how many pages we can buffer //
-            int MaxPages = (int)(this.FreeMemory() / h.PageSize);
-            int Pages = Math.Min(h.PageCount, MaxPages);
-
-            // Buffer a block of pages //
-            if (CacheAsMuchAsPossible)
-            {
-                this.BufferBlock(h, 0, Pages);
-            }
-
-            return new HeapScribeTable(Host, h);
-
-        }
-
-        /// <summary>
         /// Buffers a block of pages from disk
         /// </summary>
         /// <param name="Header"></param>
@@ -539,7 +615,7 @@ namespace Rye.Data.Spectre
                     p = new SortedPage(p, matcher);
                 }
                 Location += Header.PageSize;
-                this.PushPage(Header.Key, p);
+                this.PushScribePage(Header.Key, p, false);
 
             }
 
@@ -750,8 +826,95 @@ namespace Rye.Data.Spectre
 
         }
 
+    }
+
+    public class LRUQueue<TKey, TValue>
+    {
+
+        private class LRUNode<TKey, TValue>
+        {
+
+            public LRUNode<TKey, TValue> LastNode;
+            public LRUNode<TKey, TValue> NextNode;
+            public TKey Key;
+            public TValue Value;
+
+        }
+
+        private Dictionary<TKey, LRUNode<TKey,TValue>> _Dictionary;
+        private LRUNode<TKey, TValue> _Highest;
+        private LRUNode<TKey, TValue> _Lowest;
+        private int _Count;
+
+        public LRUQueue(IEqualityComparer<TKey> Comparer)
+        {
+            this._Count = 0;
+            this._Dictionary = new Dictionary<TKey,LRUNode<TKey,TValue>>(Comparer);
+        }
+
+        public LRUQueue()
+            :this(EqualityComparer<TKey>.Default)
+        {
+        }
+
+        public void Mark(TKey Key, TValue Value)
+        {
+
+            if (this._Dictionary.ContainsKey(Key))
+            {
+
+                LRUNode<TKey, TValue> oldhead = this._Highest;
+                this._Highest = this._Dictionary[Key];
+
+            }
+
+        }
 
     }
 
+    public class PageUID
+    {
+
+        public PageUID(string Key, int PageID)
+        {
+            this.Key = Key;
+            this.PageID = PageID;
+        }
+
+        public string Key
+        {
+            get;
+            set;
+        }
+
+        public int PageID
+        {
+            get;
+            set;
+        }
+
+        public static IEqualityComparer<PageUID> DefaultComparer
+        {
+            get { return new PageUIDComparer(); }
+        }
+
+        private sealed class PageUIDComparer : IEqualityComparer<PageUID>
+        {
+
+            public bool Equals(PageUID A, PageUID B)
+            {
+
+                return (StringComparer.OrdinalIgnoreCase.Compare(A.Key, B.Key) == 0 && A.PageID == B.PageID);
+
+            }
+
+            public int GetHashCode(PageUID A)
+            {
+                return StringComparer.OrdinalIgnoreCase.GetHashCode(A.Key) ^ A.PageID;
+            }
+
+        }
+
+    }
 
 }
