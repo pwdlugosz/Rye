@@ -163,8 +163,8 @@ namespace Rye.Data
         public byte[] Bash()
         {
 
-            byte[] b = new byte[4 + this.Count * 8];
-            Cell c = new Cell(this.Count);
+            byte[] b = new byte[8 + this.Count * 8];
+            Cell c = new Cell(this.Count, 0);
             b[0] = c.B0;
             b[1] = c.B1;
             b[2] = c.B2;
@@ -182,7 +182,6 @@ namespace Rye.Data
                 b[9 + i * 8] = c.B5;
                 b[10 + i * 8] = c.B6;
                 b[11 + i * 8] = c.B7;
-
             }
 
             return b;
@@ -343,6 +342,29 @@ namespace Rye.Data
             Key k = new Key();
             k._data = K._data.Distinct().ToList();
             return k;
+        }
+
+        public static Key Read(byte[] Buffer, int Location)
+        {
+
+            int cnt = BitConverter.ToInt32(Buffer, Location);
+            Key k = new Key();
+            for (int i = 0; i < cnt; i++)
+            {
+                Cell c = new Cell(0);
+                c.B0 = Buffer[Location + 4 + i * 8];
+                c.B1 = Buffer[Location + 4 + i * 8 + 1];
+                c.B2 = Buffer[Location + 4 + i * 8 + 2];
+                c.B3 = Buffer[Location + 4 + i * 8 + 3];
+                c.B4 = Buffer[Location + 4 + i * 8 + 4];
+                c.B5 = Buffer[Location + 4 + i * 8 + 5];
+                c.B6 = Buffer[Location + 4 + i * 8 + 6];
+                c.B7 = Buffer[Location + 4 + i * 8 + 7];
+                k.Add(c.INT_A, (KeyAffinity)c.INT_B);
+            }
+
+            return k;
+
         }
 
     }

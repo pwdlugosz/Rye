@@ -24,7 +24,7 @@ namespace Rye.Methods
         /// <summary>
         /// Create an assignment action
         /// </summary>
-        /// <param name="Parent">Parent node</param>
+        /// <param name="Storage">Storage node</param>
         /// <param name="Heap">The memory heap to work off of</param>
         /// <param name="Index">The direct location of the variable in the heap</param>
         /// <param name="Map">The expression to assign to</param>

@@ -156,6 +156,7 @@
     <Compile Include="Data\Kernel.cs" />
     <Compile Include="Data\Key.cs" />
     <Compile Include="Data\KeyAffinity.cs" />
+    <Compile Include="Data\Spectre\BPlusTree.cs" />
     <Compile Include="Data\Spectre\Comparer.cs" />
     <Compile Include="Data\Spectre\Host.cs" />
     <Compile Include="Data\Spectre\Index.cs" />
@@ -166,6 +167,7 @@
     <Compile Include="Data\RecordWriter.cs" />
     <Compile Include="Data\Schema.cs" />
     <Compile Include="Data\Spectre\RecordAccepter.cs" />
+    <Compile Include="Data\Spectre\Streams.cs" />
     <Compile Include="Data\Spectre\Table.cs" />
     <Compile Include="Exchange\ExchangeProvider.cs" />
     <Compile Include="Exchange\HTMLProvider.cs" />

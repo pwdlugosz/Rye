@@ -34,33 +34,44 @@ namespace Rye
             System.Diagnostics.Stopwatch sw = Stopwatch.StartNew();
 
 
-            Rye.Data.Spectre.Host h = new Data.Spectre.Host();
+            Rye.Data.Spectre.Host Enviro = new Data.Spectre.Host();
+            Enviro.AddConnection("TEMP", @"C:\Users\pwdlu_000\Documents\Rye Projects\Temp");
             Schema s = new Schema("Key int, Value double, xyz int");
             //HeapDreamTable x = new HeapDreamTable(h, "TEMP", s);
-            ScribeTable x = new HeapScribeTable(h, "Temp", @"C:\Users\pwdlu_000\Documents\Rye Projects\Temp", s, Page.DEFAULT_SIZE);
-            //ScribeTable OriginalNode = new SortedScribeTable(h, "Temp", @"C:\Users\pwdlu_000\Documents\Rye Projects\Temp", s, Page.DEFAULT_SIZE, new Key(0));
+            ClusteredScribeTable x = Enviro.CreateTable("TEMP", "Test1", s, new Key(0));
             RandomCell rng = new RandomCell(127);
-            //BPlusTree tree = new BPlusTree(x, new Key(1, 2));
-
+            
             Rye.Data.Spectre.WriteStream writer = x.OpenWriter();
-            for (int i = 0; i < 2000000; i++)
+            for (int i = 0; i < 200000; i++)
             {
 
                 Record r = Record.Stitch(rng.NextLong(0, 100), rng.NextDoubleGauss(), new Cell(i));
                 x.Insert(r);
-                //tree.Insert(r);
 
             }
             writer.Close();
 
-            Console.WriteLine(x.MetaData());
+            //RecordKey l = x.BaseTree.SeekFirst(Record.Stitch(new Cell(0)));
+            //RecordKey u = x.BaseTree.SeekLast(Record.Stitch(new Cell(0)));
+            //Console.WriteLine("{0} : {1}", l.PAGE_ID, l.ROW_ID);
+            //Console.WriteLine("{0} : {1}", u.PAGE_ID, u.ROW_ID);
 
-            //tree.Print(@"C:\Users\pwdlu_000\Documents\Rye Projects\BPlusTree.txt");
+            //ReadStream stream = new BoundReadStream(x, l, u);
+            Console.WriteLine("TERMINAL_PAGE_ID: {0}", x.TerminalPageID);
+            
+            ReadStream stream = x.OpenReader();
+            BaseTable.Dump(@"C:\Users\pwdlu_000\Documents\Rye Projects\Test1.txt", stream);
 
-            h.ShutDown();
+            Enviro.ShutDown();
 
-            ScribeTable table = h.PageCache.RequestScribeTable(@"C:\Users\pwdlu_000\Documents\Rye Projects\Temp\Temp.ryev1");
-            table.Dump(@"C:\Users\pwdlu_000\Documents\Rye Projects\Test2.txt");
+            BaseTable y = Enviro.OpenTable("TEMP", "Test1");
+            Console.WriteLine("TERMINAL_PAGE_ID: {0}", y.TerminalPageID);
+            
+            Console.WriteLine(y.MetaData());
+
+            stream = y.OpenReader(Record.Stitch(new Cell(0)));
+            BaseTable.Dump(@"C:\Users\pwdlu_000\Documents\Rye Projects\Test2.txt", stream);
+
 
             Console.WriteLine("::::::::::::::::::::::::::::::::: Complete :::::::::::::::::::::::::::::::::");
             Console.WriteLine("Run Time: {0}", sw.Elapsed);

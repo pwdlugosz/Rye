@@ -14,8 +14,8 @@ namespace Rye.Methods
 
     //    private Action _delegate;
 
-    //    public MethodGeneric(Method Parent, Action Delegate)
-    //        : base(Parent)
+    //    public MethodGeneric(Method Storage, Action Delegate)
+    //        : base(Storage)
     //    {
     //        this._delegate = Delegate;
     //    }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,9 @@ namespace Rye.Data.Spectre
 
 
     // Support //
+    /// <summary>
+    /// 
+    /// </summary>
     public sealed class Host
     {
 
@@ -20,7 +24,7 @@ namespace Rye.Data.Spectre
         private Communicator _IO;
         private Heap<Cell> _Scalars;
         private Heap<CellMatrix> _Matrixes;
-        private Heap<string> _Connects;
+        private Heap<string> _Connections;
 
         public Host()
         {
@@ -30,7 +34,7 @@ namespace Rye.Data.Spectre
 
             this._Scalars = new Heap<Cell>();
             this._Matrixes = new Heap<CellMatrix>();
-            this._Connects = new Heap<string>();
+            this._Connections = new Heap<string>();
 
         }
 
@@ -61,24 +65,56 @@ namespace Rye.Data.Spectre
 
         public Heap<string> Connections
         {
-            get { return this._Connects; }
+            get { return this._Connections; }
         }
 
         // Connection Support //
         public void AddConnection(string Alias, string Connection)
         {
-            this._Connects.Allocate(Alias, Connection);
+            this._Connections.Allocate(Alias, Connection);
         }
 
         // Table Support //
-        public BaseTable GetTable(string Key)
+        public BaseTable OpenTable(string Key)
         {
-            return null;
+
+            if (this._PageCache.ScribeTableExists(Key))
+                return this._PageCache.RequestScribeTable(Key);
+            else if (this._PageCache.DreamTableExists(Key))
+                return this._PageCache.RequestDreamTable(Key);
+
+            throw new Exception(string.Format("Table does not exist '{0}'", Key));
+
         }
 
-        public BaseTable GetTable(string Alias, string Name)
+        public BaseTable OpenTable(string Alias, string Name)
         {
-            return null;
+
+            if (StringComparer.OrdinalIgnoreCase.Compare(Alias, GLOBAL) == 0)
+                return this.OpenTable(Name);
+
+            if (this.Connections.Exists(Alias))
+                return this.OpenTable(TableHeader.DeriveV1Path(this.Connections[Alias], Name));
+
+            throw new Exception(string.Format("Table does not exist '{0}.{1}'", Alias, Name));
+
+        }
+
+        public ClusteredScribeTable CreateTable(string Alias, string Name, Schema Columns, Key ClusterColumns, int PageSize)
+        {
+            ClusteredScribeTable t = new ClusteredScribeTable(this, Name, this._Connections[Alias], Columns, ClusterColumns, PageSize);
+            return t;
+        }
+
+        public ClusteredScribeTable CreateTable(string Alias, string Name, Schema Columns, Key ClusterColumns)
+        {
+            ClusteredScribeTable t = new ClusteredScribeTable(this, Name, this._Connections[Alias], Columns, ClusterColumns, Page.DEFAULT_SIZE);
+            return t;
+        }
+
+        public HeapScribeTable CreateTable(string Alias, string Name, Schema Columns)
+        {
+            return new HeapScribeTable(this, Name, this._Connections[Alias], Columns, Page.DEFAULT_SIZE);
         }
 
     }
@@ -90,12 +126,15 @@ namespace Rye.Data.Spectre
     {
 
         /// <summary>
-        /// The default capacity is 128 MB
+        /// The default capacity is 23 MB
         /// </summary>
         public const long DEFAULT_CAPACITY = 1024 * 1024 * 32;
 
-        //private Dictionary<string, Entry> _Elements;
-        //private BurnQueue<PageUID> _WoodPile;
+        /// <summary>
+        /// The minimum memory capacity is 8 MB
+        /// </summary>
+        public const long MIN_CAPACITY = 1024 * 1024 * 8;
+
         private long _MaxMemory = 0;
         private long _Memory = 0;
         private Host _Host;
@@ -106,6 +145,9 @@ namespace Rye.Data.Spectre
         private Dictionary<PageUID, int> _ScribeWrites;
         private Dictionary<string, DreamTable> _DreamTables;
         private Dictionary<PageUID, Page> _DreamPages;
+
+        // This is the collection that holds pages to be burnt //
+        private FloatingQueue<PageUID> _BurnPile;
 
         // Constructors //
         public PageManager(Host Host, long Capacity)
@@ -118,6 +160,7 @@ namespace Rye.Data.Spectre
             this._ScribeWrites = new Dictionary<PageUID, int>(PageUID.DefaultComparer);
             this._DreamTables = new Dictionary<string, DreamTable>(StringComparer.OrdinalIgnoreCase);
             this._DreamPages = new Dictionary<PageUID, Page>(PageUID.DefaultComparer);
+            this._BurnPile = new FloatingQueue<PageUID>(4096, PageUID.DefaultComparer);
             
             this._MaxMemory = Capacity;
             this._Host = Host;
@@ -148,8 +191,8 @@ namespace Rye.Data.Spectre
         // Scribe Tables //
         public void AddScribeTable(ScribeTable Table)
         {
-
-            if (this.ScribeTableExists(Table.Key))
+            
+            if (this._ScribeTables.ContainsKey(Table.Key))
             {
                 throw new ElementDoesNotExistException(Table.Key);
             }
@@ -162,19 +205,27 @@ namespace Rye.Data.Spectre
         public ScribeTable RequestScribeTable(string Key)
         {
             
-            if (this.ScribeTableExists(Key))
+            if (this._ScribeTables.ContainsKey(Key))
             {
                 return this._ScribeTables[Key];
             }
-            else
+            else if (File.Exists(Key))
             {
 
                 // Get the table header //
                 TableHeader h = this.Buffer(Key);
 
                 // Create the table //
-                ScribeTable t = new HeapScribeTable(this._Host, h); // The ctor adds the table to the cache
-            
+                ScribeTable t;
+                if(h.RootPageID == -1)
+                {
+                    t = new HeapScribeTable(this._Host, h);
+                }
+                else
+                {
+                    t = new ClusteredScribeTable(this._Host, h); // The ctor adds the table to the cache
+                }
+
                 // Check to see how many pages we can buffer //
                 int MaxPages = (int)(this.FreeMemory / h.PageSize);
                 int Pages = Math.Min(h.PageCount, MaxPages);
@@ -188,12 +239,13 @@ namespace Rye.Data.Spectre
 
             throw new ElementDoesNotExistException(Key);
 
-
         }
 
         public bool ScribeTableExists(string Key)
         {
-            return this._ScribeTables.ContainsKey(Key);
+            if (this._ScribeTables.ContainsKey(Key))
+                return true;
+            return File.Exists(Key);
         }
 
         public bool ScribePageExists(PageUID PID)
@@ -208,8 +260,15 @@ namespace Rye.Data.Spectre
             if (!this.ScribeTableExists(Key))
                 throw new ElementDoesNotExistException(Key);
 
+            // Check if we have space //
+            if (Element.PageSize > this.FreeMemory)
+            {
+                this.ReleaseMemory(Element.PageSize);
+            }
+
             // Build a PID //
             PageUID pid = new PageUID(Key, Element.PageID);
+            this._BurnPile.EnqueueOrTag(pid);
 
             // If the page exists already //
             if (this.ScribePageExists(pid))
@@ -239,6 +298,7 @@ namespace Rye.Data.Spectre
         {
 
             PageUID pid = new PageUID(Key, PageID);
+            this._BurnPile.EnqueueOrTag(pid);
 
             if (!this.ScribeTableExists(Key))
                 throw new ElementDoesNotExistException(Key);
@@ -260,7 +320,7 @@ namespace Rye.Data.Spectre
         {
 
             PageUID pid = new PageUID(Key, PageID);
-
+            
             // See if the page exists //
             if (!this.ScribePageExists(pid))
                 throw new Exception("Page does not exist");
@@ -272,6 +332,7 @@ namespace Rye.Data.Spectre
             // Remove from the cache //
             this._ScribePages.Remove(pid);
             this._ScribeWrites.Remove(pid);
+            this._BurnPile.Remove(pid);
 
             // Remove from memory //
             this._Memory -= p.PageSize;
@@ -288,11 +349,14 @@ namespace Rye.Data.Spectre
         public void BurnScribeTable(string Key, bool Flush)
         {
 
-            if (!this.ScribeTableExists(Key))
+            if (!this._ScribeTables.ContainsKey(Key))
                 throw new ElementDoesNotExistException(Key);
 
             // Get the table //
             BaseTable t = this._ScribeTables[Key];
+
+            // Close it //
+            t.PreSerialize();
 
             // Remove from memory //
             this._ScribeTables.Remove(Key);
@@ -309,8 +373,27 @@ namespace Rye.Data.Spectre
 
             // Dump the table to disk //
             if (Flush)
+            {
                 this.Flush(Key, t.Header);
+            }
 
+
+        }
+
+        public void ReleaseMemory(int MemoryNeeded)
+        {
+
+            while (this.FreeMemory < (long)MemoryNeeded)
+            {
+
+                if (this._ScribePages.Count == 0)
+                    throw new OutOfMemoryException("Cannot free enough memory");
+
+                PageUID pid = this._BurnPile.Dequeue();
+
+                this.BurnScribePage(pid.Key, pid.PageID, true);
+
+            }
 
         }
 
@@ -348,7 +431,7 @@ namespace Rye.Data.Spectre
         {
 
             // Check if the element key doesnt exist //
-            if (!this.ScribeTableExists(Key))
+            if (!this.DreamTableExists(Key))
                 throw new ElementDoesNotExistException(Key);
 
             // Build a PID //
@@ -375,12 +458,12 @@ namespace Rye.Data.Spectre
 
             PageUID pid = new PageUID(Key, PageID);
 
-            if (!this.ScribeTableExists(Key))
+            if (!this.DreamTableExists(Key))
                 throw new ElementDoesNotExistException(Key);
 
-            if (this.ScribePageExists(pid))
+            if (this.DreamPageExists(pid))
             {
-                return this._ScribePages[pid];
+                return this._DreamPages[pid];
             }
 
             throw new Exception("Page does not exist");
@@ -397,11 +480,11 @@ namespace Rye.Data.Spectre
                 throw new Exception("Page does not exist");
 
             // Get the page //
-            Page p = this._ScribePages[pid];
+            Page p = this._DreamPages[pid];
 
             // Remove from the cache //
             this._DreamPages.Remove(pid);
-
+            
             // Remove from memory //
             this._Memory -= p.PageSize;
 
@@ -427,7 +510,7 @@ namespace Rye.Data.Spectre
             var Pages = this._DreamPages.Select((x) => { return x.Key.Key == Key; });
 
             // Burn every page //
-            foreach (KeyValuePair<PageUID, Page> kv in this._DreamPages)
+            foreach (KeyValuePair<PageUID, Page> kv in this._DreamPages.ToList())
             {
                 this.BurnDreamPage(kv.Key.Key, kv.Key.PageID);
             }
@@ -456,8 +539,13 @@ namespace Rye.Data.Spectre
         public void DropTable(string Key)
         {
 
+            // Don't throw an error if the table doesnt exist //
+            if (!this.ScribeTableExists(Key))
+                return;
+
             // Take care of the entry //
-            this.BurnScribeTable(Key, false);
+            if (this._ScribeTables.ContainsKey(Key))
+                this.BurnScribeTable(Key, false);
 
             // Take care of the file on disk //
             if (File.Exists(Key))
@@ -828,50 +916,138 @@ namespace Rye.Data.Spectre
 
     }
 
-    public class LRUQueue<TKey, TValue>
+    /// <summary>
+    /// Represents a Queue where elements can move up or down
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class FloatingQueue<T>
     {
 
-        private class LRUNode<TKey, TValue>
+        public enum State
         {
-
-            public LRUNode<TKey, TValue> LastNode;
-            public LRUNode<TKey, TValue> NextNode;
-            public TKey Key;
-            public TValue Value;
-
+            LeastRecentlyUsed,
+            MostRecentlyUsed
         }
 
-        private Dictionary<TKey, LRUNode<TKey,TValue>> _Dictionary;
-        private LRUNode<TKey, TValue> _Highest;
-        private LRUNode<TKey, TValue> _Lowest;
-        private int _Count;
-
-        public LRUQueue(IEqualityComparer<TKey> Comparer)
+        private Dictionary<T, LinkedListNode<T>> _Index;
+        LinkedList<T> _Trail;
+        private int _Capacity;
+        private State _State = State.LeastRecentlyUsed;
+        
+        public FloatingQueue(int Capacity, IEqualityComparer<T> Comparer)
         {
-            this._Count = 0;
-            this._Dictionary = new Dictionary<TKey,LRUNode<TKey,TValue>>(Comparer);
+            this._Index = new Dictionary<T, LinkedListNode<T>>(Comparer);
+            this._Trail = new LinkedList<T>();
+            this._Capacity = Capacity;
         }
 
-        public LRUQueue()
-            :this(EqualityComparer<TKey>.Default)
+        public FloatingQueue(int Capacity)
+            : this(Capacity, EqualityComparer<T>.Default)
         {
         }
 
-        public void Mark(TKey Key, TValue Value)
+        public FloatingQueue()
+            : this(128, EqualityComparer<T>.Default)
+        {
+        }
+
+        public bool IsEmpty
+        {
+            get { return this._Index.Count == 0; }
+        }
+
+        public bool IsFull
+        {
+            get { return this._Index.Count >= this._Capacity; }
+        }
+
+        public int Count
+        {
+            get { return this._Index.Count; }
+        }
+
+        // Public //
+        public T Peek()
+        {
+            if (this._State == State.LeastRecentlyUsed)
+                return this._Trail.Last.Value;
+            else
+                return this._Trail.First.Value;
+        }
+
+        public T Dequeue()
         {
 
-            if (this._Dictionary.ContainsKey(Key))
+            if (this.IsEmpty)
+                throw new IndexOutOfRangeException();
+           
+            T element;
+            if (this._State == State.LeastRecentlyUsed)
             {
-
-                LRUNode<TKey, TValue> oldhead = this._Highest;
-                this._Highest = this._Dictionary[Key];
-
+                element = this._Trail.Last.Value;
+                this._Trail.RemoveLast();
             }
+            else
+            {
+                element = this._Trail.First.Value;
+                this._Trail.RemoveFirst();
+            }
+            this._Index.Remove(element);
+
+            return element;
+
+        }
+
+        public void Enqueue(T Value)
+        {
+
+            LinkedListNode<T> node = new LinkedListNode<T>(Value);
+            this._Index.Add(Value, node);
+            this._Trail.AddFirst(node);
+
+        }
+
+        public void Tag(T Value)
+        {
+
+            LinkedListNode<T> node = this._Index[Value];
+            this._Trail.Remove(node);
+            this._Index.Remove(Value);
+            this.Enqueue(Value);
+
+        }
+
+        public void EnqueueOrTag(T Value)
+        {
+
+            if (this._Index.ContainsKey(Value))
+            {
+                this.Tag(Value);
+            }
+            else
+            {
+                this.Enqueue(Value);
+            }
+
+        }
+
+        public void Remove(T Value)
+        {
+            
+            if (!this._Index.ContainsKey(Value))
+                return;
+
+            LinkedListNode<T> x = this._Index[Value];
+            this._Trail.Remove(x);
+            this._Index.Remove(Value);
 
         }
 
     }
 
+    /// <summary>
+    /// Represents a Key and a PageID
+    /// </summary>
     public class PageUID
     {
 

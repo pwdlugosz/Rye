@@ -431,9 +431,9 @@ namespace Rye.Data
         //    return this._methods[NameSpace].PageExists(Name);
         //}
 
-        //public Method GetMethod(string Namespace, string Name, Method Parent, ParameterCollection Parameters)
+        //public Method GetMethod(string Namespace, string Name, Method Storage, ParameterCollection Parameters)
         //{
-        //    return this._methods[Namespace].RenderMethod(Parent, Name, Parameters);
+        //    return this._methods[Namespace].RenderMethod(Storage, Name, Parameters);
         //}
 
         //public ParameterCollectionSigniture GetMethodSigniture(string Namespace, string Name)

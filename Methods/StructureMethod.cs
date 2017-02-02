@@ -435,8 +435,8 @@ namespace Rye.Methods
 
         private bool _CanBeAsync = false;
 
-        public StructureMethod(Method Parent, MemoryStructure NameSpace, string Name, ParameterCollection Parameters, bool CanBeAsync)
-            : base(Parent, NameSpace)
+        public StructureMethod(Method Storage, MemoryStructure NameSpace, string Name, ParameterCollection Parameters, bool CanBeAsync)
+            : base(Storage, NameSpace)
         {
             this._CanBeAsync = CanBeAsync;
             this.Parameters = Parameters;
@@ -476,18 +476,18 @@ namespace Rye.Methods
         private Action<ParameterCollection> _Invoke;
         private Action<ParameterCollection> _EndInvoke;
 
-        public DynamicStructureMethod(Method Parent, MemoryStructure NameSpace, string Name, ParameterCollection Parameters, bool CanBeAsync, 
+        public DynamicStructureMethod(Method Storage, MemoryStructure NameSpace, string Name, ParameterCollection Parameters, bool CanBeAsync, 
             Action<ParameterCollection> Initial, Action<ParameterCollection> Main, Action<ParameterCollection> Finish)
-            :base(Parent, NameSpace, Name, Parameters, CanBeAsync)
+            :base(Storage, NameSpace, Name, Parameters, CanBeAsync)
         {
             this._BeginInvoke = Initial;
             this._Invoke = Main;
             this._EndInvoke = Finish;
         }
 
-        public DynamicStructureMethod(Method Parent, MemoryStructure NameSpace, string Name, ParameterCollection Parameters, bool CanBeAsync,
+        public DynamicStructureMethod(Method Storage, MemoryStructure NameSpace, string Name, ParameterCollection Parameters, bool CanBeAsync,
             Action<ParameterCollection> Main)
-            : this(Parent, NameSpace, Name, Parameters, CanBeAsync, (OriginalNode) => { }, Main, (OriginalNode) => { })
+            : this(Storage, NameSpace, Name, Parameters, CanBeAsync, (OriginalNode) => { }, Main, (OriginalNode) => { })
         {
         }
      

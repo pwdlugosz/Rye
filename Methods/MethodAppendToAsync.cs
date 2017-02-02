@@ -130,21 +130,21 @@ namespace Rye.Methods
         }
 
         /*
-        public static Method Optimize(Method Parent, BaseTable UseParentData, ExpressionCollection UseFields)
+        public static Method Optimize(Method Storage, BaseTable UseParentData, ExpressionCollection UseFields)
         {
 
             if (UseParentData.Columns.GetHashCode() == UseFields.Columns.GetHashCode())
-                return new MethodAppendToAsyncFast(Parent, UseParentData, UseFields);
-            return new MethodAppendToAsync(Parent, UseParentData, UseFields);
+                return new MethodAppendToAsyncFast(Storage, UseParentData, UseFields);
+            return new MethodAppendToAsync(Storage, UseParentData, UseFields);
 
         }
 
-        public static Method Optimize(Method Parent, Extent UseParentData, ExpressionCollection UseFields)
+        public static Method Optimize(Method Storage, Extent UseParentData, ExpressionCollection UseFields)
         {
 
             if (UseParentData.Columns.GetHashCode() == UseFields.Columns.GetHashCode())
-                return new MethodAppendToAsyncFast(Parent, UseParentData, UseFields);
-            return new MethodAppendToAsync(Parent, UseParentData, UseFields);
+                return new MethodAppendToAsyncFast(Storage, UseParentData, UseFields);
+            return new MethodAppendToAsync(Storage, UseParentData, UseFields);
 
         }
         */
@@ -249,8 +249,8 @@ namespace Rye.Methods
         private int _CurrentCount = 0;
         private int _MaxCount = 0;
 
-        public MethodAppendToAsyncFast(Method Parent, BaseTable UseParentData, ExpressionCollection UseFields)
-            : base(Parent)
+        public MethodAppendToAsyncFast(Method Storage, BaseTable UseParentData, ExpressionCollection UseFields)
+            : base(Storage)
         {
 
             if (UseParentData.Columns.Count != UseFields.Columns.Count)
@@ -265,8 +265,8 @@ namespace Rye.Methods
 
         }
 
-        public MethodAppendToAsyncFast(Method Parent, Extent UseParentData, ExpressionCollection UseFields)
-            : base(Parent)
+        public MethodAppendToAsyncFast(Method Storage, Extent UseParentData, ExpressionCollection UseFields)
+            : base(Storage)
         {
 
             if (UseParentData.Columns.Count != UseFields.Columns.Count)
@@ -345,9 +345,9 @@ namespace Rye.Methods
         public override Method CloneOfMe()
         {
             if (this._IsTable)
-                return new MethodAppendToAsyncFast(this.Parent, this._tParentData, this._Fields.CloneOfMe());
+                return new MethodAppendToAsyncFast(this.Storage, this._tParentData, this._Fields.CloneOfMe());
             else
-                return new MethodAppendToAsyncFast(this.Parent, this._eParentData, this._Fields.CloneOfMe());
+                return new MethodAppendToAsyncFast(this.Storage, this._eParentData, this._Fields.CloneOfMe());
         }
 
         public override string Message()
